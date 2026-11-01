@@ -125,64 +125,9 @@
       "title": "HowKnown",
       "type": "string"
     },
-    "Incident": {
-      "additionalProperties": false,
-      "description": "The night Aris was attacked, made once at world creation: who attacked her, why, and the\nfacts around it.",
-      "properties": {
-        "victim": {
-          "default": "aris",
-          "description": "Aris, who has been missing since.",
-          "maxLength": 64,
-          "pattern": "^[a-z][a-z0-9_]*$",
-          "title": "Victim",
-          "type": "string"
-        },
-        "attackers": {
-          "description": "The residents who attacked her, one to three.",
-          "items": {
-            "maxLength": 64,
-            "pattern": "^[a-z][a-z0-9_]*$",
-            "type": "string"
-          },
-          "maxItems": 3,
-          "minItems": 1,
-          "title": "Attackers",
-          "type": "array"
-        },
-        "motive": {
-          "description": "Why they did it, written once at world creation and never rewritten.",
-          "minLength": 1,
-          "title": "Motive",
-          "type": "string"
-        },
-        "night": {
-          "description": "When they attacked her, in sim time.",
-          "format": "date-time",
-          "title": "Night",
-          "type": "string"
-        },
-        "facts": {
-          "description": "Who did it, why, who saw what and who knows what. Each has its own id, and their leads go to one another. Their knowers grow as residents pass them on.",
-          "items": {
-            "$ref": "#/$defs/Fact"
-          },
-          "title": "Facts",
-          "type": "array"
-        }
-      },
-      "required": [
-        "victim",
-        "attackers",
-        "motive",
-        "night",
-        "facts"
-      ],
-      "title": "Incident",
-      "type": "object"
-    },
     "JournalEntry": {
       "additionalProperties": false,
-      "description": "Something the player learned about the incident: a fact, or a lie told about one.",
+      "description": "Something the player learned about Aris's disappearance: a fact, or a lie told about one.",
       "properties": {
         "fact_id": {
           "description": "The fact it's about. Several entries can be about one fact.",
@@ -303,7 +248,7 @@
           "type": "string"
         },
         "text": {
-          "description": "For the journal, e.g. \"Kofi paints in the lane at night. Ask him what he saw.\"",
+          "description": "For the journal, e.g. \"Kofi saw her the evening before she went missing. Ask him where she was going.\"",
           "minLength": 1,
           "title": "Text",
           "type": "string"
@@ -358,18 +303,6 @@
   "additionalProperties": false,
   "description": "The story and the player's journal of it, saved with the world. One object holds both, so\nit can be restored in place before the world has made its story.",
   "properties": {
-    "incident": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Incident"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "The incident, in a save from before the disappearance. Null if the world never made one."
-    },
     "disappearance": {
       "anyOf": [
         {
@@ -393,7 +326,6 @@
     }
   },
   "required": [
-    "incident",
     "disappearance",
     "journal"
   ],

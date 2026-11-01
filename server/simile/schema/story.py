@@ -74,8 +74,8 @@ class Lead(Model):
     fact_id: Id = Field(description="The fact following it turns up.")
     text: str = Field(
         min_length=1,
-        description='For the journal, e.g. "Kofi paints in the lane at night. Ask him what he '
-        'saw."',
+        description='For the journal, e.g. "Kofi saw her the evening before she went missing. '
+        'Ask him where she was going."',
     )
 
 
@@ -128,39 +128,6 @@ class Fact(Model):
         self.known_by = [*self.known_by, knower]
 
 
-class Incident(Model):
-    """The night Aris was attacked, made once at world creation: who attacked her, why, and the
-    facts around it."""
-
-    model_config = CHECKED
-
-    victim: Id = Field(default=ARIS, description="Aris, who has been missing since.")
-    attackers: list[Id] = Field(
-        min_length=1, max_length=3, description="The residents who attacked her, one to three."
-    )
-    motive: str = Field(
-        min_length=1,
-        description="Why they did it, written once at world creation and never rewritten.",
-    )
-    night: Timestamp = Field(description="When they attacked her, in sim time.")
-    facts: list[Fact] = Field(
-        description="Who did it, why, who saw what and who knows what. Each has its own id, and "
-        "their leads go to one another. Their knowers grow as residents pass them on."
-    )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _consistent(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            attackers = _strings(data.get("attackers"))
-            if _repeats(attackers):
-                raise ValueError("each attacker is named once")
-            if data.get("victim", ARIS) in attackers:
-                raise ValueError("the victim isn't one of the attackers")
-            _check_trail(data.get("facts"))
-        return data
-
-
 class Disappearance(Model):
     """The morning Aris was found gone, made once at world creation: who distrusted her bionics,
     and the facts around it. Nobody in the village made her vanish."""
@@ -211,7 +178,7 @@ class Source(Model):
 
 
 class JournalEntry(Model):
-    """Something the player learned about the incident: a fact, or a lie told about one."""
+    """Something the player learned about Aris's disappearance: a fact, or a lie told about one."""
 
     model_config = CHECKED
 
@@ -250,14 +217,17 @@ class Investigation(Model):
 
     model_config = CHECKED
 
-    incident: Incident | None = Field(
-        default=None,
-        description="The incident, in a save from before the disappearance. Null if the world "
-        "never made one.",
-    )
     disappearance: Disappearance | None = Field(
         default=None, description="Null until the world makes it, as in a save from before it."
     )
     journal: list[JournalEntry] = Field(
         default=[], description="What the player has learned, in the order they learned it."
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _without_incident(cls, data: Any) -> Any:
+        """Drops the incident from a save from before the disappearance."""
+        if isinstance(data, dict) and "incident" in data:
+            return {key: value for key, value in data.items() if key != "incident"}
+        return data

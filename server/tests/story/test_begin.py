@@ -19,7 +19,6 @@ from simile.persistence import WorldStore, investigation_of
 from simile.persistence.lifespan import FRESH_ENV
 from simile.schema import (
     Disappearance,
-    Incident,
     JournalEntry,
     Lead,
     Memory,
@@ -246,11 +245,6 @@ async def test_a_disappearance_missing_its_lift_log_gains_it_once_and_the_termin
     assert [entry.fact_id for entry in investigation.journal] == [LIFT_LOG]
 
 
-INCIDENT = Incident.model_validate(
-    json.loads((Path(__file__).parents[1] / "schema" / "incidents.json").read_text())[0]
-)
-
-
 def entry(fact_id: str, text: str, *leads: str, flushed: bool | None = None) -> JournalEntry:
     return JournalEntry(
         fact_id=fact_id,
@@ -262,14 +256,11 @@ def entry(fact_id: str, text: str, *leads: str, flushed: bool | None = None) -> 
     )
 
 
-async def test_a_save_with_an_incident_starts_over_with_a_disappearance_keeping_what_s_true() -> (
-    None
-):
+async def test_a_save_without_a_disappearance_starts_over_with_one_keeping_what_s_true() -> None:
     app = starting()
     investigation, memory = investigation_of(app), memory_of(app)
     lift = lift_log(START)
     town = next(iter(FACTS.values()))
-    investigation.incident = INCIDENT.model_copy(deep=True)
     investigation.journal = [
         entry("notes", "Aris wrote that R. said she'd regret it.", "grudge_raymond"),
         entry(LIFT_LOG, lift.what, HATCH_LOG, "attack"),
@@ -291,7 +282,7 @@ async def test_a_save_with_an_incident_starts_over_with_a_disappearance_keeping_
 
     disappearance = await begin(app, rng=random.Random(1))
 
-    assert disappearance is not None and investigation.incident is None
+    assert disappearance is not None
     assert investigation.disappearance is disappearance
     assert [(e.fact_id, [lead.fact_id for lead in e.leads]) for e in investigation.journal] == [
         (LIFT_LOG, [HATCH_LOG]),

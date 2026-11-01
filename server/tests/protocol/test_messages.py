@@ -337,15 +337,15 @@ IN_THE_METRO = STARTING.model_copy(
 
 FROM_THE_NOTES = JournalEntry(
     fact_id="notes",
-    text="Aris wrote that R. came about the machines again, and said he'd make her regret it.",
+    text="Aris wrote that R. told Mirela she's not one of us any more.",
     source=Source(kind=SourceKind.CLUE, id="aris_notes", name="Aris's notes"),
     learned=datetime(2026, 3, 14, 10, 5, tzinfo=UTC),
     flushed=None,
-    leads=[Lead(fact_id="motive", text="Who's R.? Mirela knows everyone's business.")],
+    leads=[Lead(fact_id="distrust_raymond", text="Who's R.? Ask Raymond how he got on with her.")],
 )
 FROM_RAYMOND = JournalEntry(
-    fact_id="attack",
-    text="Raymond says he was at home going over the accounts all night.",
+    fact_id="passed",
+    text="Raymond says he didn't see Aris that evening.",
     source=Source(kind=SourceKind.RESIDENT, id="raymond", name="Raymond"),
     learned=datetime(2026, 3, 17, 14, tzinfo=UTC),
     flushed=True,
@@ -1328,18 +1328,20 @@ def test_the_journal_has_every_entry_in_the_order_learned_with_its_open_leads() 
         "entries": [
             {
                 "fact_id": "notes",
-                "text": "Aris wrote that R. came about the machines again, and said he'd make her "
-                "regret it.",
+                "text": "Aris wrote that R. told Mirela she's not one of us any more.",
                 "source": {"kind": "clue", "id": "aris_notes", "name": "Aris's notes"},
                 "learned": "2026-03-14T10:05:00Z",
                 "flushed": None,
                 "leads": [
-                    {"fact_id": "motive", "text": "Who's R.? Mirela knows everyone's business."}
+                    {
+                        "fact_id": "distrust_raymond",
+                        "text": "Who's R.? Ask Raymond how he got on with her.",
+                    }
                 ],
             },
             {
-                "fact_id": "attack",
-                "text": "Raymond says he was at home going over the accounts all night.",
+                "fact_id": "passed",
+                "text": "Raymond says he didn't see Aris that evening.",
                 "source": {"kind": "resident", "id": "raymond", "name": "Raymond"},
                 "learned": "2026-03-17T14:00:00Z",
                 "flushed": True,

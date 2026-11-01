@@ -547,9 +547,9 @@ class PlayerCollapsedMessage(Model):
 
 
 class JournalMessage(Model):
-    """What the player has learned about the incident, in the order they learned it, with the
-    leads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead
-    is followed."""
+    """What the player has learned about Aris's disappearance, in the order they learned it, with
+    the leads still open. Sent after the snapshot on connect, and whenever an entry is added or a
+    lead is followed."""
 
     type: Literal["journal"] = "journal"
     entries: list[JournalEntry]

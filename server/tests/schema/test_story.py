@@ -14,7 +14,6 @@ from simile.schema import (
     Disappearance,
     Fact,
     HowKnown,
-    Incident,
     Investigation,
     JournalEntry,
     Knower,
@@ -27,16 +26,16 @@ from simile.schema import (
 )
 
 HERE = Path(__file__).parent
-INCIDENTS: list[dict[str, Any]] = json.loads((HERE / "incidents.json").read_text())
 JOURNAL: list[dict[str, Any]] = json.loads((HERE / "journal.json").read_text())
 DISAPPEARANCES: list[dict[str, Any]] = json.loads((HERE / "disappearances.json").read_text())
-ONE_ATTACKER, THREE_ATTACKERS = INCIDENTS
 VILLAGE, ONE_DISTRUSTER = DISAPPEARANCES
-GONE = VILLAGE["facts"][0]
-ATTACK, MOTIVE, SHOUTING, LANE, NOTES = ONE_ATTACKER["facts"]
-FROM_NOTES, FROM_TOBIAS, FROM_KOFI, FROM_RAYMOND = JOURNAL
+FACTS = {fact["id"]: fact for fact in VILLAGE["facts"]}
+GONE, NOTES, LAST_SEEN, DISTRUST = (
+    FACTS[id] for id in ["gone", "notes", "last_seen", "distrust_raymond"]
+)
+FROM_TOBIAS, FROM_NOTES, FROM_KOFI, FROM_RAYMOND = JOURNAL
 
-type Story = Incident | Disappearance | Fact | Knower | Lead | Source | JournalEntry | Investigation
+type Story = Disappearance | Fact | Knower | Lead | Source | JournalEntry | Investigation
 
 
 def schema(name: str) -> Draft202012Validator:
@@ -58,7 +57,6 @@ def changes(model: Story, field: str, value: Any, match: str) -> None:
 @pytest.mark.parametrize(
     ("model", "data"),
     [
-        *[pytest.param(Incident, data, id=f"incidents[{i}]") for i, data in enumerate(INCIDENTS)],
         *[
             pytest.param(Disappearance, data, id=f"disappearances[{i}]")
             for i, data in enumerate(DISAPPEARANCES)
@@ -75,45 +73,22 @@ def test_fixture_round_trips_through_json(model: type[Story], data: dict[str, An
 
 
 def test_they_are_exported_and_the_schema_accepts_the_fixtures() -> None:
-    assert {Incident, Disappearance, Fact, JournalEntry, Investigation} <= set(MODELS)
-    schema("Investigation").validate(
-        {"incident": ONE_ATTACKER, "disappearance": None, "journal": JOURNAL}
-    )
-    schema("Investigation").validate({"incident": None, "disappearance": VILLAGE, "journal": []})
+    assert {Disappearance, Fact, JournalEntry, Investigation} <= set(MODELS)
+    schema("Investigation").validate({"disappearance": None, "journal": JOURNAL})
+    schema("Investigation").validate({"disappearance": VILLAGE, "journal": []})
     for disappearance in DISAPPEARANCES:
         schema("Disappearance").validate(disappearance)
         for fact in disappearance["facts"]:
             schema("Fact").validate(fact)
     assert not schema("Disappearance").is_valid(VILLAGE | {"distrusted_by": []})
-    for incident in INCIDENTS:
-        schema("Incident").validate(incident)
-        for fact in incident["facts"]:
-            schema("Fact").validate(fact)
     for entry in JOURNAL:
         schema("JournalEntry").validate(entry)
-    assert not schema("Incident").is_valid(ONE_ATTACKER | {"attackers": []})
     assert not schema("JournalEntry").is_valid(FROM_KOFI | {"true": True})
 
 
-def test_the_fixtures_have_one_attacker_and_three() -> None:
-    incidents = TypeAdapter(list[Incident]).validate_python(INCIDENTS)
-
-    assert [len(incident.attackers) for incident in incidents] == [1, 3]
-    assert {incident.victim for incident in incidents} == {ARIS}
-
-
-def test_every_attacker_knows_what_they_did_and_lies_about_it() -> None:
-    for incident in TypeAdapter(list[Incident]).validate_python(INCIDENTS):
-        attack = next(fact for fact in incident.facts if fact.id == "attack")
-        did = {knower.id: knower for knower in attack.known_by if knower.how is HowKnown.DID}
-
-        assert did.keys() == set(incident.attackers)
-        assert all(knower.cover for knower in did.values())
-
-
-def test_the_journal_follows_the_trail_of_the_one_attacker_incident() -> None:
-    incident = Incident.model_validate(ONE_ATTACKER)
-    facts = {fact.id: fact for fact in incident.facts}
+def test_the_journal_follows_the_trail_of_the_village_disappearance() -> None:
+    disappearance = Disappearance.model_validate(VILLAGE)
+    facts = {fact.id: fact for fact in disappearance.facts}
     journal = TypeAdapter(list[JournalEntry]).validate_python(JOURNAL)
     learned = [entry.fact_id for entry in journal]
 
@@ -129,12 +104,15 @@ def test_the_journal_follows_the_trail_of_the_one_attacker_incident() -> None:
 
 
 def test_a_lie_opens_no_leads_but_closes_those_to_its_fact() -> None:
-    motive = Fact.model_validate(MOTIVE)
+    distrust = Fact.model_validate(DISTRUST)
 
-    assert (FROM_RAYMOND["fact_id"], FROM_RAYMOND["flushed"]) == ("motive", True)
-    assert motive.leads and FROM_RAYMOND["leads"] == []
-    assert [lead["fact_id"] for lead in NOTES["leads"]] == ["motive", "shouting"]
-    assert FROM_NOTES["leads"] == []
+    assert (FROM_RAYMOND["fact_id"], FROM_RAYMOND["flushed"]) == ("distrust_raymond", True)
+    assert distrust.leads and FROM_RAYMOND["leads"] == []
+    assert [lead["fact_id"] for lead in NOTES["leads"]] == [
+        "distrust_henrietta",
+        "distrust_raymond",
+    ]
+    assert [lead["fact_id"] for lead in FROM_NOTES["leads"]] == ["distrust_henrietta"]
 
 
 def test_a_clue_never_flushes_and_a_resident_without_the_eye_is_unread() -> None:
@@ -177,31 +155,6 @@ def test_the_notes_lead_to_the_noted_distrusters_and_the_trail_ends_underground(
     assert facts["hatch_log"].leads == []
 
 
-def test_the_victim_is_aris_unless_named() -> None:
-    data = {key: value for key, value in ONE_ATTACKER.items() if key != "victim"}
-
-    assert Incident.model_validate(data).victim == ARIS == "aris"
-
-
-@pytest.mark.parametrize(
-    ("update", "match"),
-    [
-        ({"attackers": []}, "at least 1 item"),
-        ({"attackers": ["raymond", "priya", "henrietta", "tobias"]}, "at most 3 items"),
-        ({"attackers": ["raymond", "raymond"]}, "each attacker is named once"),
-        ({"attackers": ["aris"]}, "the victim isn't one of the attackers"),
-        ({"motive": ""}, "at least 1 character"),
-        ({"night": "2026-03-06T23:40:00"}, "timezone"),
-        ({"facts": [ATTACK, ATTACK]}, "each fact has its own id"),
-        ({"facts": [MOTIVE]}, "a lead goes to attack, which isn't one of its facts"),
-        ({"victim": "Aris"}, "String should match pattern"),
-        ({"witnesses": []}, "Extra inputs are not permitted"),
-    ],
-)
-def test_rejects_invalid_incidents(update: dict[str, Any], match: str) -> None:
-    rejects(Incident, ONE_ATTACKER | update, match)
-
-
 @pytest.mark.parametrize(
     ("update", "match"),
     [
@@ -224,17 +177,17 @@ def test_rejects_invalid_disappearances(update: dict[str, Any], match: str) -> N
         ({"what": ""}, "at least 1 character"),
         ({"where": ""}, "at least 1 character"),
         ({"about": ["Raymond"]}, "String should match pattern"),
-        ({"known_by": [LANE["known_by"][0]] * 2}, "each resident knows it once"),
+        ({"known_by": [LAST_SEEN["known_by"][0]] * 2}, "each resident knows it once"),
         (
-            {"leads": [{"fact_id": "lane", "text": "Go round in circles."}]},
+            {"leads": [{"fact_id": "last_seen", "text": "Go round in circles."}]},
             "doesn't lead to itself",
         ),
-        ({"leads": [{"fact_id": "attack", "text": ""}]}, "at least 1 character"),
+        ({"leads": [{"fact_id": "passed", "text": ""}]}, "at least 1 character"),
         ({"found_in": "Aris's notes"}, "String should match pattern"),
     ],
 )
 def test_rejects_invalid_facts(update: dict[str, Any], match: str) -> None:
-    rejects(Fact, LANE | update, match)
+    rejects(Fact, LAST_SEEN | update, match)
 
 
 @pytest.mark.parametrize(
@@ -248,12 +201,12 @@ def test_rejects_invalid_facts(update: dict[str, Any], match: str) -> None:
     ],
 )
 def test_rejects_invalid_knowers(update: dict[str, Any], match: str) -> None:
-    rejects(Knower, LANE["known_by"][0] | update, match)
+    rejects(Knower, LAST_SEEN["known_by"][0] | update, match)
 
 
 @pytest.mark.parametrize("field", ["tells_from", "cover"])
 def test_a_knower_says_outright_whether_they_tell_and_lie(field: str) -> None:
-    knower = dict(LANE["known_by"][0])
+    knower = dict(LAST_SEEN["known_by"][0])
     del knower[field]
 
     rejects(Knower, knower, f"{field}\n  Field required")
@@ -284,21 +237,6 @@ def test_a_journal_entry_says_outright_whether_the_eye_saw_a_flush() -> None:
 @pytest.mark.parametrize(
     ("field", "value", "match"),
     [
-        ("attackers", [], "at least 1 item"),
-        ("attackers", ["raymond", "aris"], "the victim isn't one of the attackers"),
-        ("victim", "raymond", "the victim isn't one of the attackers"),
-        ("facts", [ATTACK, MOTIVE, ATTACK], "each fact has its own id"),
-        ("facts", [LANE], "a lead goes to attack"),
-        ("motive", "", "at least 1 character"),
-    ],
-)
-def test_rejects_invalid_changes_to_the_incident(field: str, value: Any, match: str) -> None:
-    changes(Incident.model_validate(ONE_ATTACKER), field, value, match)
-
-
-@pytest.mark.parametrize(
-    ("field", "value", "match"),
-    [
         ("distrusted_by", [], "at least 1 item"),
         ("distrusted_by", ["aris"], "Aris isn't one of those who distrusted her"),
         ("distrusted_by", ["mirela", "mirela"], "each resident distrusted her once"),
@@ -312,17 +250,17 @@ def test_rejects_invalid_changes_to_the_disappearance(field: str, value: Any, ma
 @pytest.mark.parametrize(
     ("field", "value", "match"),
     [
-        ("known_by", [Knower.model_validate(LANE["known_by"][0])] * 2, "knows it once"),
-        ("id", "attack", "doesn't lead to itself"),
-        ("leads", [Lead(fact_id="lane", text="Again.")], "doesn't lead to itself"),
+        ("known_by", [Knower.model_validate(LAST_SEEN["known_by"][0])] * 2, "knows it once"),
+        ("id", "passed", "doesn't lead to itself"),
+        ("leads", [Lead(fact_id="last_seen", text="Again.")], "doesn't lead to itself"),
     ],
 )
 def test_rejects_invalid_changes_to_a_fact(field: str, value: Any, match: str) -> None:
-    changes(Fact.model_validate(LANE), field, value, match)
+    changes(Fact.model_validate(LAST_SEEN), field, value, match)
 
 
 def test_a_resident_told_a_fact_is_added_as_a_knower_of_it() -> None:
-    fact = Fact.model_validate(LANE)
+    fact = Fact.model_validate(LAST_SEEN)
     seeded = fact.known_by
     told = Knower(id="mirela", how=HowKnown.TOLD, tells_from=0.6, cover=None)
 
@@ -334,7 +272,7 @@ def test_a_resident_told_a_fact_is_added_as_a_knower_of_it() -> None:
 
 
 def test_a_resident_who_already_knows_it_is_rejected_and_the_fact_is_unchanged() -> None:
-    fact = Fact.model_validate(LANE)
+    fact = Fact.model_validate(LAST_SEEN)
     before = fact.model_dump()
 
     with pytest.raises(ValidationError, match="each resident knows it once"):
@@ -344,7 +282,9 @@ def test_a_resident_who_already_knows_it_is_rejected_and_the_fact_is_unchanged()
 
 
 def test_rejects_invalid_changes_to_a_knower() -> None:
-    changes(Knower.model_validate(LANE["known_by"][0]), "tells_from", 1.5, "less than or equal")
+    knower = Knower.model_validate(LAST_SEEN["known_by"][0])
+
+    changes(knower, "tells_from", 1.5, "less than or equal")
 
 
 @pytest.mark.parametrize(
@@ -352,7 +292,7 @@ def test_rejects_invalid_changes_to_a_knower() -> None:
     [
         (FROM_NOTES, "flushed", True, "only a resident can flush"),
         (FROM_KOFI, "source", FROM_NOTES["source"], "only a resident can flush"),
-        (FROM_KOFI, "fact_id", "attack", "go to other facts"),
+        (FROM_KOFI, "fact_id", "passed", "go to other facts"),
         (FROM_KOFI, "text", "", "at least 1 character"),
     ],
 )
@@ -365,12 +305,12 @@ def test_rejects_invalid_changes_to_a_journal_entry(
 def test_a_valid_change_is_kept() -> None:
     entry = JournalEntry.model_validate(FROM_KOFI)
     entry.leads = []
-    incident = Incident.model_validate(THREE_ATTACKERS)
-    incident.attackers = ["henrietta", "priya"]
-    knower = Knower.model_validate(LANE["known_by"][0])
+    disappearance = Disappearance.model_validate(VILLAGE)
+    disappearance.distrusted_by = ["henrietta", "priya"]
+    knower = Knower.model_validate(LAST_SEEN["known_by"][0])
     knower.tells_from = None
 
-    assert (entry.leads, incident.attackers, knower.tells_from) == (
+    assert (entry.leads, disappearance.distrusted_by, knower.tells_from) == (
         [],
         ["henrietta", "priya"],
         None,
@@ -380,19 +320,20 @@ def test_a_valid_change_is_kept() -> None:
 SEEDED = Memory(
     owner="kofi",
     kind=MemoryKind.OBSERVATION,
-    content="I was painting in the lane when a man in a red top and sunglasses ran past.",
+    content="I saw Aris going down Banyan Row's steps towards the old metro, and Raymond "
+    "coming up them.",
     salience=0.8,
-    valence=-0.6,
-    timestamp=datetime(2026, 3, 6, 23, 50, tzinfo=UTC),
-    about=["raymond"],
-    fact_id="lane",
+    valence=-0.3,
+    timestamp=datetime(2026, 3, 6, 21, 40, tzinfo=UTC),
+    about=["aris", "raymond"],
+    fact_id="last_seen",
 )
 
 
 def test_a_memory_seeded_from_a_fact_carries_its_id() -> None:
     dumped = json.loads(SEEDED.model_dump_json())
 
-    assert dumped["fact_id"] == "lane"
+    assert dumped["fact_id"] == "last_seen"
     assert Memory.model_validate(dumped) == SEEDED
     schema("Memory").validate(dumped)
 
@@ -407,37 +348,36 @@ def test_any_other_memory_dumps_without_a_fact_id() -> None:
 def test_an_investigation_starts_with_no_story_and_an_empty_journal() -> None:
     investigation = Investigation()
 
-    assert (investigation.incident, investigation.disappearance, investigation.journal) == (
-        None,
-        None,
-        [],
-    )
-    assert json.loads(investigation.model_dump_json()) == {
-        "incident": None,
-        "disappearance": None,
-        "journal": [],
-    }
+    assert (investigation.disappearance, investigation.journal) == (None, [])
+    assert json.loads(investigation.model_dump_json()) == {"disappearance": None, "journal": []}
     assert Investigation.model_validate({}) == investigation
 
 
-def test_a_save_with_an_incident_loads_with_no_disappearance() -> None:
+OLD_INCIDENT = {
+    "victim": "aris",
+    "attackers": ["raymond"],
+    "motive": "Aris turned him down.",
+    "night": "2026-03-06T23:40:00Z",
+    "facts": [],
+}
+
+
+@pytest.mark.parametrize("incident", [OLD_INCIDENT, None, {"attackers": []}])
+def test_a_save_with_an_incident_loads_without_it_and_with_no_disappearance(
+    incident: dict[str, Any] | None,
+) -> None:
     investigation = Investigation.model_validate_json(
-        json.dumps({"incident": ONE_ATTACKER, "journal": JOURNAL})
+        json.dumps({"incident": incident, "journal": JOURNAL})
     )
 
-    assert investigation.incident == Incident.model_validate(ONE_ATTACKER)
     assert investigation.disappearance is None
     assert len(investigation.journal) == len(JOURNAL)
+    assert "incident" not in json.loads(investigation.model_dump_json())
 
 
-@pytest.mark.parametrize(
-    ("incident", "disappearance"),
-    [(THREE_ATTACKERS, None), (None, ONE_DISTRUSTER), (ONE_ATTACKER, VILLAGE)],
-)
-def test_an_investigation_round_trips_through_json(
-    incident: dict[str, Any] | None, disappearance: dict[str, Any] | None
-) -> None:
-    data = {"incident": incident, "disappearance": disappearance, "journal": JOURNAL}
+@pytest.mark.parametrize("disappearance", [None, ONE_DISTRUSTER, VILLAGE])
+def test_an_investigation_round_trips_through_json(disappearance: dict[str, Any] | None) -> None:
+    data = {"disappearance": disappearance, "journal": JOURNAL}
     investigation = Investigation.model_validate(data)
 
     assert json.loads(investigation.model_dump_json()) == data
@@ -446,17 +386,16 @@ def test_an_investigation_round_trips_through_json(
 @pytest.mark.parametrize(
     ("field", "value", "match"),
     [
-        ("incident", ONE_ATTACKER | {"attackers": []}, "at least 1 item"),
         ("disappearance", VILLAGE | {"distrusted_by": []}, "at least 1 item"),
         ("journal", [FROM_NOTES | {"flushed": True}], "only a resident can flush"),
     ],
 )
 def test_rejects_invalid_changes_to_the_investigation(field: str, value: Any, match: str) -> None:
-    changes(Investigation(incident=Incident.model_validate(ONE_ATTACKER)), field, value, match)
+    changes(Investigation(disappearance=Disappearance.model_validate(VILLAGE)), field, value, match)
 
 
 def test_the_story_and_its_facts_are_never_sent() -> None:
     defs = json.loads(PROTOCOL_SCHEMA.read_text())["$defs"]
 
     assert "JournalEntry" in defs
-    assert not {"Investigation", "Incident", "Disappearance", "Fact", "Knower"} & defs.keys()
+    assert not {"Investigation", "Disappearance", "Fact", "Knower"} & defs.keys()

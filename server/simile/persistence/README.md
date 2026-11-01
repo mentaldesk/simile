@@ -11,10 +11,11 @@ shop's latest batch. Each entry in E3's ledger is added to a `saved_ledger` tabl
 after it's made. The player's F2 `Player` (money, items, body and hunger) is saved with the world.
 Modules get it with `player_of(app)`, the same object whenever they ask, which `restore` sets to
 the saved player in place: the starting player on a fresh start, from a save from before the
-player, or unsaved with `SIMILE_DB=:memory:`. The F2 `Investigation`, the incident and the player's
-journal of it, is saved and restored the same way, through `investigation_of(app)`. It has no
-incident and no entries until the world makes one, and likewise on a fresh start, from a save from
-before it, or with `:memory:`.
+player, or unsaved with `SIMILE_DB=:memory:`. The F2 `Investigation`, Aris's disappearance and the
+player's journal of it, is saved and restored the same way, through `investigation_of(app)`. It has
+no disappearance and no entries until the world makes one, and likewise on a fresh start, from a
+save from before it, or with `:memory:`. A save from before the disappearance loads without its
+incident, and the story makes a disappearance for it, keeping only the entries still true.
 
 ## Saving
 

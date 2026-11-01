@@ -816,16 +816,16 @@ export interface Treatment {
   price: number;
 }
 /**
- * What the player has learned about the incident, in the order they learned it, with the
- * leads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead
- * is followed.
+ * What the player has learned about Aris's disappearance, in the order they learned it, with
+ * the leads still open. Sent after the snapshot on connect, and whenever an entry is added or a
+ * lead is followed.
  */
 export interface JournalMessage {
   type: 'journal';
   entries: JournalEntry[];
 }
 /**
- * Something the player learned about the incident: a fact, or a lie told about one.
+ * Something the player learned about Aris's disappearance: a fact, or a lie told about one.
  */
 export interface JournalEntry {
   /**
@@ -874,7 +874,7 @@ export interface Lead {
    */
   fact_id: string;
   /**
-   * For the journal, e.g. "Kofi paints in the lane at night. Ask him what he saw."
+   * For the journal, e.g. "Kofi saw her the evening before she went missing. Ask him where she was going."
    */
   text: string;
 }

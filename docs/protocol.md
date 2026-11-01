@@ -190,7 +190,7 @@ player sees through the infrared eye. The server sets it exactly when the line i
 code decides it, and the player has the eye fitted, so the client draws it as given and never
 guesses. It's left out unless it's `true`, so a client that predates it, and every line without a
 flush, look as before: read it as `message.flushed ?? false`. A flush the player sees on a line
-that tells them something about the incident is also marked in the [`journal`](#journal).
+that tells them something about Aris's disappearance is also marked in the [`journal`](#journal).
 
 ### `npc_state`
 
@@ -430,16 +430,16 @@ With nothing but the lamp, they leave no pile. Clients that predate it ignore it
 
 ### `journal`
 
-`entries`: what the player has learned about the incident, in the order they learned it, each an
-F2 `JournalEntry` (`server/simile/schema/story.py`). The server sends it after the `snapshot` and
-`clock` on connect, and again whenever an entry is added or a lead is followed, and the client
-replaces what it had. There's no request for it: the client keeps the last one for when the player
-opens the journal. Clients that predate it ignore it.
+`entries`: what the player has learned about Aris's disappearance, in the order they learned it,
+each an F2 `JournalEntry` (`server/simile/schema/story.py`). The server sends it after the
+`snapshot` and `clock` on connect, and again whenever an entry is added or a lead is followed, and
+the client replaces what it had. There's no request for it: the client keeps the last one for
+when the player opens the journal. Clients that predate it ignore it.
 
 | Field | Type | |
 |---|---|---|
 | `fact_id` | string | The fact it's about. Several entries can be about one fact: two witnesses, or a lie and then the truth. |
-| `text` | string | What the player learned, as the journal puts it. A lie is written as it was told: "Raymond says he was at home all night." |
+| `text` | string | What the player learned, as the journal puts it. A lie is written as it was told: "Raymond says he didn't see Aris that evening." |
 | `source` | `Source` | Who told them, or the clue they found it in. |
 | `learned` | string | When, in sim time. |
 | `flushed` | boolean or `null` | Whether the infrared eye saw the resident flush as they told it. The eye shows a flush exactly on a lie, as the code decides it, so `true` is a lie it caught and `false` the truth. `null` if the player had no infrared eye then, and always for a clue. |
@@ -450,18 +450,18 @@ Aris's notes, at a terminal or in the sewers); its `id`, the resident's or the c
 interactable's; and its `name`, as the journal shows it.
 
 A `Lead` has its `fact_id`, the fact that following it turns up, and its `text`, what to follow up:
-"Kofi paints in the lane at night. Ask him what he saw."
+"Kofi saw her the evening before she went missing. Ask him where she was going."
 
 Two rules decide which leads are open:
 
 - **A lie opens no leads.** Its entry is about the fact it hides, and that fact's leads would give
   the truth away.
-- **Any entry about a fact closes the leads to it, a lie included.** Asking Raymond where he was
-  follows the lead whatever he says. The journal doesn't record which entries are lies (`flushed`
+- **Any entry about a fact closes the leads to it, a lie included.** Asking Raymond whether he saw
+  her follows the lead whatever he says. The journal doesn't record which entries are lies (`flushed`
   shows only what the eye saw), so this is the only rule the server can apply after a restart.
 
-The incident and its facts (F2's `Incident` and `Fact`) stay on the server: who did it, why, who
-knows what and who lies about it are never sent. The client sees only what the player has learned.
+The disappearance and its facts (F2's `Disappearance` and `Fact`) stay on the server: who
+distrusted her, who saw her last, who knows what and who lies about it are never sent. The client sees only what the player has learned.
 
 ### `audio_chunk`
 

@@ -1,32 +1,35 @@
 [
   {
-    "fact_id": "notes",
-    "text": "Aris wrote that R. came about the machines again. She told him no, and he said she'd regret it.",
-    "source": {"kind": "clue", "id": "aris_notes", "name": "Aris's notes"},
+    "fact_id": "gone",
+    "text": "One morning Aris's workshop was found standing open, her tea cold and her tools left on the bench as if she'd stepped out. Nobody saw her leave.",
+    "source": {"kind": "resident", "id": "tobias", "name": "Tobias"},
     "learned": "2026-03-14T10:05:00Z",
     "flushed": null,
     "leads": []
   },
   {
-    "fact_id": "shouting",
-    "text": "Tobias heard shouting and breaking glass from the maker space just before midnight.",
-    "source": {"kind": "resident", "id": "tobias", "name": "Tobias"},
+    "fact_id": "notes",
+    "text": "Aris wrote in her notebook: \"H. crossed the lane again rather than pass my door.\" \"R. told Mirela I'm not one of us any more.\"",
+    "source": {"kind": "clue", "id": "aris_notes", "name": "Aris's notes"},
     "learned": "2026-03-14T11:30:00Z",
     "flushed": null,
-    "leads": []
+    "leads": [
+      {"fact_id": "distrust_henrietta", "text": "Who's H.? Henrietta never goes near the maker space. Ask her how she got on with Aris."}
+    ]
   },
   {
-    "fact_id": "lane",
-    "text": "Kofi saw a grey-haired man in a red top and sunglasses run from the maker space at midnight, holding his arm.",
+    "fact_id": "last_seen",
+    "text": "Kofi saw Aris heading down Banyan Row's steps towards the old metro at about 21:40 the evening before she went missing, with Raymond going the other way.",
     "source": {"kind": "resident", "id": "kofi", "name": "Kofi"},
     "learned": "2026-03-17T09:10:00Z",
     "flushed": false,
     "leads": [
-      {"fact_id": "attack", "text": "Grey hair, a red top and sunglasses at midnight. Raymond dresses like that: ask him where he was."}
+      {"fact_id": "lift_log", "text": "She was heading for the old metro. See whether anything down there remembers her."},
+      {"fact_id": "passed", "text": "Raymond passed her on the steps. Ask him whether he saw her that evening."}
     ]
   },
   {
-    "fact_id": "motive",
+    "fact_id": "distrust_raymond",
     "text": "Raymond says he and Aris always got on fine.",
     "source": {"kind": "resident", "id": "raymond", "name": "Raymond"},
     "learned": "2026-03-17T14:00:00Z",

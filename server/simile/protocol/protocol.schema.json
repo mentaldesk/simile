@@ -858,7 +858,7 @@
     },
     "JournalEntry": {
       "additionalProperties": false,
-      "description": "Something the player learned about the incident: a fact, or a lie told about one.",
+      "description": "Something the player learned about Aris's disappearance: a fact, or a lie told about one.",
       "properties": {
         "fact_id": {
           "description": "The fact it's about. Several entries can be about one fact.",
@@ -913,7 +913,7 @@
     },
     "JournalMessage": {
       "additionalProperties": false,
-      "description": "What the player has learned about the incident, in the order they learned it, with the\nleads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead\nis followed.",
+      "description": "What the player has learned about Aris's disappearance, in the order they learned it, with\nthe leads still open. Sent after the snapshot on connect, and whenever an entry is added or a\nlead is followed.",
       "properties": {
         "type": {
           "const": "journal",
@@ -966,7 +966,7 @@
           "type": "string"
         },
         "text": {
-          "description": "For the journal, e.g. \"Kofi paints in the lane at night. Ask him what he saw.\"",
+          "description": "For the journal, e.g. \"Kofi saw her the evening before she went missing. Ask him where she was going.\"",
           "minLength": 1,
           "type": "string"
         }
