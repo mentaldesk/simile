@@ -157,7 +157,7 @@
           "type": "string"
         },
         "text": {
-          "description": "For the journal, e.g. \"Kofi paints in the lane at night. Ask him what he saw.\"",
+          "description": "For the journal, e.g. \"Kofi saw her the evening before she went missing. Ask him where she was going.\"",
           "minLength": 1,
           "title": "Text",
           "type": "string"

@@ -38,7 +38,6 @@ async def begin(
     made = make_disappearance(npcs, clock.now, rng=rng, config=config)
     still_true(investigation, made.disappearance)
     memory.add(*made.memories)
-    investigation.incident = None
     investigation.disappearance = made.disappearance
     if saver is not None:
         await saver.save()
