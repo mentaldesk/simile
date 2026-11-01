@@ -10,6 +10,7 @@ from simile.schema import (
     Fact,
     HowKnown,
     Id,
+    Key,
     Knower,
     Lead,
     Memory,
@@ -37,6 +38,7 @@ WHAT_GONE = (
 METRO = "She was heading for the old metro. See whether anything down there remembers her."
 DOWN = "She was going down to the old metro. See whether anything down there remembers her."
 EVENING = "the evening before she went missing"
+ARIS_EVENING = "the evening before Aris went missing"
 SAW_HER = f"whether {{they}} saw Aris {EVENING}"
 READ = "Her notes are still on the workshop bench. Read what she wrote last."
 
@@ -57,6 +59,10 @@ def question(fact_id: Id, how: HowKnown) -> str:
 
 def initial(name: str) -> str:
     return name.strip()[:1].upper()
+
+
+def street_name(street: Key) -> str:
+    return street.replace("_", " ").title()
 
 
 @dataclass(frozen=True)
@@ -96,11 +102,13 @@ class _Building:
             cover=None if honest else self.content.texts.covers[part],
         )
 
+    def lies(self, npc: Id) -> bool:
+        return self.npcs[npc].values[CoreValue.HONESTY] < self.config.distruster_lies_below
+
     def distruster(self, npc: Id, how: HowKnown, cover: str) -> Knower:
-        """A distruster, who tells anyone if strongly against and honest, and else lies below
-        `admits_from` if they're dishonest."""
+        """A distruster: tells anyone if strongly against and honest, else lies if dishonest."""
         config, values = self.config, self.npcs[npc].values
-        honest = values[CoreValue.HONESTY] >= config.distruster_lies_below
+        honest = not self.lies(npc)
         strongly = level(tolerance(values)) == -2
         return Knower(
             id=npc,
@@ -111,8 +119,7 @@ class _Building:
 
 
 def distrusters(npcs: Sequence[Npc], config: StoryConfig = DEFAULT_CONFIG) -> list[Npc]:
-    """Those at `distrusts_from` or further against bionics, least tolerant first, or else the
-    least tolerant alone."""
+    """Those at or past `distrusts_from`, least tolerant first, or else the least tolerant."""
     ranked = sorted(npcs, key=lambda npc: (tolerance(npc.values), npc.id))
     found = [npc for npc in ranked if level(tolerance(npc.values)) <= config.distrusts_from]
     return found or ranked[:1]
@@ -133,11 +140,14 @@ def build(
     seen = _evening(gone - timedelta(days=1), config.seen_between, rng)
     others = [npc.id for npc in npcs if npc.id not in ids]
     bystanders = _bystanders(others, rng)
-    noted = rng.sample(ids, min(len(ids), rng.choice((1, 2))))
-    passer = rng.choice(noted)
+    passer = rng.choice([npc for npc in ids if making.lies(npc)] or ids)
+    rest = [npc for npc in ids if npc != passer]
+    noted = [passer, *rng.sample(rest, min(len(rest), rng.choice((0, 1))))]
+    rng.shuffle(noted)
     seen_by = next(bystanders, None)
     passer_name = making.name(passer)
     street, last_seen = content.aris.street, content.aris.last_seen
+    steps = f"{street_name(last_seen)}'s steps"
 
     making.add(lift_log(seen), {})
     making.add(hatch_log(seen), {})
@@ -145,15 +155,15 @@ def build(
     making.add(
         Fact(
             id=PASSED,
-            what=f"{passer_name} passed Aris on Banyan Row's steps that last evening, heading "
-            "down towards the old metro, and said nothing to her.",
+            what=f"{passer_name} passed Aris on {steps} that last evening as she went down "
+            "towards the old metro, and said nothing to her.",
             when=seen,
             where=last_seen,
             about=[passer, ARIS],
             known_by=[making.distruster(passer, HowKnown.WITNESSED, texts.not_seen)],
             leads=[Lead(fact_id=LIFT_LOG, text=DOWN)],
         ),
-        {passer: memories.passed},
+        {passer: memories.passed.format(steps=steps)},
     )
 
     if seen_by is not None:
@@ -161,8 +171,8 @@ def build(
         making.add(
             Fact(
                 id=LAST_SEEN,
-                what=f"{making.name(seen_by)} saw Aris heading down Banyan Row's steps towards "
-                f"the old metro at about {at} {EVENING}, with {passer_name} going the other way.",
+                what=f"{making.name(seen_by)} saw Aris heading down {steps} towards the old metro "
+                f"at about {at} {EVENING}, with {passer_name} going the other way.",
                 when=seen,
                 where=last_seen,
                 about=[ARIS, passer],
@@ -172,11 +182,11 @@ def build(
                     Lead(
                         fact_id=PASSED,
                         text=f"{passer_name} passed her on the steps. Ask {passer_name} "
-                        f"whether they saw her {EVENING}.",
+                        f"about {ARIS_EVENING}.",
                     ),
                 ],
             ),
-            {seen_by: memories.saw.format(time=at, name=passer_name)},
+            {seen_by: memories.saw.format(time=at, name=passer_name, steps=steps)},
         )
 
     heard_by: dict[Id, Id | None] = {npc: next(bystanders, None) for npc in ids}
@@ -200,8 +210,7 @@ def build(
                 leads=[
                     Lead(
                         fact_id=PASSED,
-                        text=f"{name} was out on Banyan Row that last evening. Ask {name} "
-                        f"whether they saw Aris {EVENING}.",
+                        text=f"{name} had no time for Aris. Ask {name} about {ARIS_EVENING}.",
                     )
                 ]
                 if npc == passer
@@ -321,8 +330,7 @@ def _ask_how(making: _Building, npc: Id, heard_by: Id | None) -> Lead:
     witness = making.name(heard_by)
     return Lead(
         fact_id=distrust(npc),
-        text=f"Who's {who}? {witness} heard someone talk about Aris that way. Ask {witness} "
-        "what they heard said about her.",
+        text=f"Who's {who}? {witness} might know. Ask {witness} what's been said about Aris.",
     )
 
 

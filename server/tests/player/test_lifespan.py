@@ -268,5 +268,35 @@ def test_e_at_aris_bench_teaches_the_datajack(
     assert [recipe["bionic"] for recipe in searched["recipes"]] == ["datajack"]
 
 
+def state_where(ws: Any, test: Callable[[dict[str, Any]], bool]) -> dict[str, Any]:
+    for _ in range(500):
+        if test(message := next_of(ws, "player_state")):
+            return message
+    raise AssertionError("no such player_state")
+
+
+def test_rest_at_the_bed_lies_them_down_and_moving_off_gets_them_up(
+    make_package: MakePackage,
+) -> None:
+    app = make_app(make_package)
+    player_of(app).health = 0.1
+    bed = {"map": "maker_space_floor_2", "x": 5, "y": 2}
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        move(client, app, ws, 5, 2, "maker_space_floor_2")
+        client.portal.call(world_of(app).loop.tick)
+        at_the_bed = state_where(ws, lambda m: "bed" in m)
+        ws.send_json({"type": "rest", "on": True})
+        lain = state_where(ws, lambda m: "resting" in m)
+        move(client, app, ws, 8, 2, "maker_space_floor_2")
+        client.portal.call(world_of(app).loop.tick)
+        up = state_where(ws, lambda m: "bed" not in m)
+
+    assert (at_the_bed["bed"], "resting" in at_the_bed) == (bed, False)
+    assert (lain["bed"], lain["resting"]) == (bed, True)
+    assert "resting" not in up
+
+
 def metro(piles: list[dict]) -> list[dict]:
     return [pile for pile in piles if pile["at"]["map"] == "metro"]

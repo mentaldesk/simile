@@ -115,13 +115,82 @@ def test_the_bed_at_home_is_in_the_maker_spaces_loft() -> None:
     assert beds_in(MAKER_SPACE) == {Spot(BED.map, BED.x, BED.y)}
 
 
-def test_resting_in_bed_heals_from_a_tenth_to_full_in_about_three_real_seconds() -> None:
+LIE_DOWN = DEFAULT_HEALTH.lie_down
+AT_HOME = DEFAULT_HEALTH.heal_at_home * SPEED / HOUR
+"""How much health a real second at home brings back at `SPEED`."""
+
+
+def test_resting_in_bed_heals_from_a_tenth_to_full_in_three_real_seconds_once_lain_down() -> None:
     patient = Patient(Player(health=0.1), at=BED)
 
+    assert patient.health.rest(True)
+    patient.rest(LIE_DOWN)
+    assert patient.health.resting()
+    assert patient.player.health == pytest.approx(0.1 + LIE_DOWN * AT_HOME, abs=1e-3)
     patient.rest(2.5)
-    assert patient.player.health == pytest.approx(0.1 + 2.5 / DEFAULT_HEALTH.rest)
-    patient.rest(0.3)
+    assert patient.player.health == pytest.approx(0.1 + 2.5 / DEFAULT_HEALTH.rest, abs=0.01)
+    patient.rest(0.5)
     assert patient.player.health == 1
+    assert not patient.health.resting()
+
+
+def test_standing_on_the_bed_without_resting_heals_as_the_rest_of_home_does() -> None:
+    patient = Patient(Player(health=0.1), at=BED)
+
+    patient.rest(3)
+
+    assert patient.health.bed() == Spot(BED.map, BED.x, BED.y)
+    assert not patient.health.resting()
+    assert patient.player.health == pytest.approx(0.1 + 3 * AT_HOME)
+
+
+def test_rest_is_ignored_off_the_bed_at_full_health_and_while_infected() -> None:
+    off = Patient(Player(health=0.1), at=Point(8, 2, LOFT))
+    full = Patient(at=BED)
+    infected = Patient(Player(health=0.5), at=BED)
+    infected.health.afflict(INFECTION, 1.0)
+
+    assert not any(patient.health.rest(True) for patient in (off, full, infected))
+    infected.rest(3)
+
+    assert off.health.bed() is None
+    assert not any(patient.health.resting() for patient in (off, full, infected))
+    assert infected.player.health < 0.5
+
+
+def test_rest_is_ignored_while_already_resting_or_already_up() -> None:
+    patient = Patient(Player(health=0.1), at=BED)
+
+    assert not patient.health.rest(False)
+    assert patient.health.rest(True)
+    assert not patient.health.rest(True)
+    assert patient.health.rest(False)
+    assert not patient.health.resting()
+
+
+def test_moving_off_the_bed_ends_the_rest_even_once_they_are_back() -> None:
+    patient = Patient(Player(health=0.1), at=BED)
+    patient.health.rest(True)
+    patient.rest(1)
+
+    patient.movement.track(PLAYER_ID, Point(8, 2, LOFT))
+    assert not patient.health.resting()
+    patient.movement.track(PLAYER_ID, BED)
+    before = patient.player.health
+    patient.rest(1)
+
+    assert not patient.health.resting()
+    assert patient.player.health == pytest.approx(before + AT_HOME)
+
+
+def test_collapsing_ends_the_rest() -> None:
+    patient = Patient(Player(health=0.1), at=BED)
+    patient.health.rest(True)
+
+    patient.health.hurt(0.2)
+
+    assert patient.collapses == 1
+    assert not patient.health.resting()
 
 
 def test_off_the_bed_healing_is_unchanged() -> None:
@@ -139,6 +208,7 @@ def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
     beds = home_without_a_bed(tmp_path)
     patient = Patient(Player(health=0.1), at=BED, beds=beds)
 
+    assert not patient.health.rest(True)
     patient.rest(3)
 
     assert beds == frozenset()
@@ -147,10 +217,13 @@ def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
     )
 
 
-def test_an_infection_keeps_health_from_coming_back_in_bed() -> None:
+def test_an_infection_setting_in_ends_the_rest_and_lets_no_health_come_back() -> None:
     patient = Patient(Player(health=0.5), at=BED)
+    patient.health.rest(True)
     patient.health.afflict(INFECTION, 1.0)
 
+    patient.rest(0.1)
+    assert not patient.health.resting()
     patient.rest(3)
 
     assert patient.player.health < 0.5
