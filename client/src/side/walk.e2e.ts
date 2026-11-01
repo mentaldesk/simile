@@ -12,6 +12,8 @@ type Counter = Place & { behind: number };
 type State = Place & {
   climbing: string | null;
   run: number;
+  /** 0 up to 1 lying in bed. */
+  bed: number;
   /** Whether Shift has switched running on. */
   running: boolean;
   airborne: boolean;
@@ -515,10 +517,12 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
 const cornerLines = (page: Page) =>
   page.$$eval('.hunger-hint div', (lines) => lines.filter((line) => !(line as HTMLElement).hidden).map((line) => line.textContent ?? ''));
 
-/** E at the loft bed while hurt rests them to full, a move key gets them up early, and at full health E offers nothing. */
+/** E at the loft bed while hurt lies them down and rests them to full, when they get up by themselves; a move key gets
+ * them up early, and only then walks; at full health E offers nothing. */
 async function restLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'resting at the loft bed';
   const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+  const inBed = async () => (await api.state())!.bed;
   await teleport(page, api, bed, name);
   await run(page, 300);
   if ((await api.rest()).bed?.x !== bed.x) throw new Error(`${name}: not at the bed: ${JSON.stringify(await api.rest())}`);
@@ -526,24 +530,41 @@ async function restLeg(page: Page, api: Api, index: number): Promise<void> {
   await api.hurt(0.5);
   await run(page, 200);
   if (!(await cornerLines(page)).includes('Press E to rest.')) throw new Error(`${name}: no rest prompt while hurt: ${await cornerLines(page)}`);
-  await pressingE(page, api, name);
+  await page.keyboard.press('e');
+  await run(page, 400);
+  const lyingDown = await inBed();
+  if (!(lyingDown > 0 && lyingDown < 1)) throw new Error(`${name}: not lying down 0.4 s after E: ${lyingDown}`);
+  await shot(page, index, `${name} 1 lying down`);
+  await run(page, 600);
   if (!(await api.rest()).resting || !(await cornerLines(page)).includes('Resting. Your health comes back.')) {
     throw new Error(`${name}: E didn't rest them: ${JSON.stringify(await api.rest())}, ${await cornerLines(page)}`);
   }
-  await shot(page, index, name);
+  if ((await inBed()) !== 1) throw new Error(`${name}: not lying in bed 1 s after E: ${await inBed()}`);
+  await shot(page, index, `${name} 2 lying`);
   await until(page, async () => !(await api.rest()).resting, 3, `${name}: healing to full`);
   if ((await api.rest()).health < 1) throw new Error(`${name}: the rest ended at ${(await api.rest()).health}`);
-  await api.hurt(0.5);
-  await run(page, 200);
+  await run(page, 400);
+  const gettingUp = await inBed();
+  if (!(gettingUp > 0 && gettingUp < 1)) throw new Error(`${name}: not getting up at full health: ${gettingUp}`);
+  await shot(page, index, `${name} 3 getting up`);
+  await until(page, async () => (await inBed()) === 0, 1, `${name}: getting up at full health`);
+  await shot(page, index, `${name} 4 up`);
   for (const key of ['e', 'ArrowLeft']) {
+    await api.hurt(0.2);
+    await run(page, 200);
     await page.keyboard.press('e');
-    await run(page, 300);
-    if (!(await api.rest()).resting) throw new Error(`${name}: E didn't rest them again`);
-    await page.keyboard.press(key);
+    await run(page, 1000);
+    if (!(await api.rest()).resting || (await inBed()) !== 1) throw new Error(`${name}: E didn't lie them down again: ${JSON.stringify(await api.rest())}, ${await inBed()}`);
+    await page.keyboard.down(key);
     await run(page, 200);
     const up = await api.rest();
     if (up.resting || up.health >= 1) throw new Error(`${name}: ${key} didn't get them up early: ${JSON.stringify(up)}`);
+    const still = (await api.state())!;
+    if (still.x !== bed.x || !(still.bed > 0)) throw new Error(`${name}: ${key} moved them before they got up: ${JSON.stringify(still)}`);
+    await until(page, async () => (await inBed()) === 0, 1, `${name}: getting up on ${key}`);
+    await page.keyboard.up(key);
   }
+  await teleport(page, api, bed, name);
   await api.hurt(1);
   await run(page, 200);
 }
