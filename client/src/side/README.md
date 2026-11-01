@@ -61,6 +61,10 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the posts are drawn in code (`textures.ts`).
 - **Residents and the player** (`side-doll.ts`) are drawn as their painted figures, each step of a
   cycle's frame worked out once and kept (`poses.ts`), and tinted with the light where they are.
+  In bed they lie on the mattress, `BED_M` up as measured from the bed's art, centred on the piece
+  by their `bed` point. Lying down takes `LIE_SECONDS` (0.8 s), eased: they sit on the bed's edge,
+  then lie back into the middle of it; getting up plays it backwards. `Drawn.bed` says how far
+  into bed a figure is, `settle` steps it and `inBed` draws it, for the player's rest too.
 - **Light** (`light.ts`): the manifest's four times of day, blended across each change, give a tint
   for each layer's depth (distant layers take some of the sky's colour, the foreground falls
   darker), haze on the far and mid layers, the glow maps added at night and 55% in the evening, and
@@ -124,7 +128,11 @@ The Phaser-free halves are tested under vitest.
 
 - `residents.ts`: residents from `snapshot` and `entity_moved`, walked between positions, climbing on
   a map's stairs or ladder by their cell's kind, and `climbing` or `riding` at a link's end played
-  along the link (`runs.ts`'s `crossing`) until the server moves them onto the other floor.
+  along the link (`runs.ts`'s `crossing`) until the server moves them onto the other floor. They lie
+  down once they reach the cell where they're posed `sleeping`, and get up before walking off when
+  they're posed otherwise, the walk waiting and catching up after. A snapshot shows them lying, or
+  up, at once. In the harness Ingrid sleeps in house 10's bed on Banyan Row, gets up, goes to her
+  wardrobe and goes back to bed (`at=house_10_floor_0:5&hour=23` to watch at night).
 - `player.ts`: the player's walking, running, jumping, doors, climbs and rides, by #311's choices,
   #325's, #330's and #331's: what the keys take is `ways.ts`'s `waysNear` and `chosen`. Walking
   stops at walls, stairs and ladders on a map, which are taken with up or down, and walks off a

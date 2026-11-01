@@ -3,7 +3,7 @@ import type { Facing } from '../net/protocol';
 import { dolls } from './assets';
 import type { FigureManifest, PaintedPose, SpritePose } from './manifest';
 import type { DollPose, PoseOptions } from './rig';
-import { LANDING_SQUASH, leap, placed, shown, spritePose, WALK_BOB } from './sprite';
+import { LANDING_SQUASH, leap, placed, shown, spritePose, WALK_BOB, type Shown } from './sprite';
 
 const frame = (x: number, feet: [number, number]) => ({ frame: [x, 0, 60, 170] as [number, number, number, number], feet });
 
@@ -48,6 +48,7 @@ describe('a pose', () => {
     ['climbing', 'east', {}, 'walk'],
     ['climbing', 'east', { on: 'ladder' }, 'climb'],
     ['climbing', 'south', { on: 'stairs' }, 'walk'],
+    ['sleeping', 'west', {}, 'lie'],
   ])('%s facing %s with %o is drawn as %s', (pose, facing, options, kind) => {
     expect(spritePose(pose, facing, options)).toBe(kind);
   });
@@ -125,6 +126,53 @@ describe('sitting', () => {
     }
     const floor = placed(figure, { pose: 'sit', frame: 'sit', flip: false, bob: 0, sway: 0, seat: 0 });
     expect(floor.originY * h).toBeCloseTo(120);
+  });
+});
+
+describe('lying', () => {
+  const lying: FigureManifest = {
+    ...figure,
+    frames: { ...figure.frames, lie: { frame: [0, 180, 150, 60], feet: [70, 58], bed: [70, 58] } },
+    poses: { ...figure.poses, lie: ['lie'] },
+  };
+  /** Where a point of the frame is drawn, from the figure's origin, in its pixels. */
+  const drawnAt = (doll: FigureManifest, shown: Shown, [px, py]: [number, number]) => {
+    const { originX, originY, x, y, angle } = placed(doll, shown);
+    const [, , w, h] = doll.frames[shown.frame].frame;
+    const [dx, dy] = [px - originX * w, py - originY * h];
+    const turn = (angle * Math.PI) / 180;
+    return [x + dx * Math.cos(turn) - dy * Math.sin(turn), y + dx * Math.sin(turn) + dy * Math.cos(turn)];
+  };
+
+  it('is never mirrored', () => {
+    expect(shown(lying, 'sleeping', 'west')).toMatchObject({ pose: 'lie', frame: 'lie', flip: false });
+  });
+
+  it('puts its bed point on the bed, shifted along it', () => {
+    const at = { ...shown(lying, 'sleeping', 'east', 0, { seat: 0.4 }), shift: 0.5 };
+    const [x, y] = drawnAt(lying, at, [70, 58]);
+    expect(x).toBeCloseTo(0.5 * lying.ppm);
+    expect(y).toBeCloseTo(-0.4 * lying.ppm);
+  });
+
+  it('raises its head about its bed point', () => {
+    const flat = shown(lying, 'sleeping', 'east');
+    const tilted = { ...flat, sway: 25 };
+    const [bed, head] = [[70, 58], [0, 30]] as [number, number][];
+    expect(drawnAt(lying, tilted, bed)).toEqual(drawnAt(lying, flat, bed));
+    expect(drawnAt(lying, tilted, head)[1]).toBeLessThan(drawnAt(lying, flat, head)[1] - 25);
+  });
+
+  it('turns its standing frame head to the left without lying painted', () => {
+    const at = shown(figure, 'sleeping', 'east', 0, { seat: 0.4 });
+    expect(at).toMatchObject({ pose: 'lie', frame: 'stand', flip: false });
+    const [hx, hy] = drawnAt(figure, at, [30, 0]);
+    const [fx, fy] = drawnAt(figure, at, [30, 166]);
+    expect(hx).toBeLessThan(fx - 150);
+    expect(hy).toBeCloseTo(fy);
+    const [mx, my] = drawnAt(figure, at, [0, 83]);
+    expect(mx).toBeCloseTo(0);
+    expect(my).toBeCloseTo(-0.4 * figure.ppm);
   });
 });
 

@@ -29,6 +29,8 @@ export type Drawn = {
   seated: boolean;
   /** How far a walk has turned into a run, 0 to 1. */
   run: number;
+  /** How far from standing by a bed to lying on it, 0 to 1 (`poses.ts`'s `inBed`). */
+  bed: number;
 };
 
 export const sideways = (heading: number): Facing => (heading < 0 ? 'west' : 'east');
@@ -97,7 +99,7 @@ export function drawnCrossing(out: Drawn, kind: ClimbKind | 'lift', heading: num
   return out;
 }
 
-export const emptyDrawn = (): Drawn => ({ pose: 'standing', facing: 'south', phase: 0, seated: false, run: 0 });
+export const emptyDrawn = (): Drawn => ({ pose: 'standing', facing: 'south', phase: 0, seated: false, run: 0, bed: 0 });
 
 export class Walker {
   readonly position: { x: number; y: number };

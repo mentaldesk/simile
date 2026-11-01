@@ -87,7 +87,7 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     return this.draw(shown(this.figure, pose, facing, phase, options));
   }
 
-  /** Does nothing unless the frame, its flip, bob, sway, seat or squash changed. */
+  /** Does nothing unless the frame, its flip, bob, sway, seat, squash or shift changed. */
   draw(next: Shown): this {
     const last = this.drawn;
     if (
@@ -97,18 +97,19 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
       last.bob === next.bob &&
       last.sway === next.sway &&
       last.seat === next.seat &&
-      last.squash === next.squash
+      last.squash === next.squash &&
+      last.shift === next.shift
     ) {
       return this;
     }
     this.drawn = next;
-    const { originX, originY, y, angle } = placed(this.figure, next);
+    const { originX, originY, x, y, angle } = placed(this.figure, next);
     const squash = next.squash ?? 0;
     this.image
       .setTexture(this.key, next.frame)
       .setOrigin(originX, originY)
       .setFlipX(next.flip)
-      .setPosition(0, y)
+      .setPosition(x, y)
       .setAngle(angle)
       .setScale(1 + squash / 2, 1 - squash);
     return this;

@@ -1,4 +1,4 @@
-// A dev page drawing the figures as the game does, and the flat doll with the rig: /src/dolls/preview.html?show=lineup|poses|walk|run|climb|flat
+// A dev page drawing the figures as the game does, and the flat doll with the rig: /src/dolls/preview.html?show=lineup|poses|walk|run|climb|lie|flat
 import Phaser from 'phaser';
 import type { Facing } from '../net/protocol';
 import { dolls, flatDoll } from './assets';
@@ -32,7 +32,7 @@ const who = named?.[0] ?? 'player';
 const height = Number(params.get('height') ?? 245);
 const fixed = params.has('phase') ? Number(params.get('phase')) : undefined;
 const frames = Number(params.get('frames') ?? 8);
-const cellWidth = height * 0.62;
+const cellWidth = height * (show === 'lie' || show === 'poses' ? 1.2 : 0.62);
 const cellHeight = height * 1.35;
 const FACINGS: Facing[] = ['east', 'south', 'north', 'west'];
 const POSES: DollPose[] = [
@@ -45,6 +45,7 @@ const POSES: DollPose[] = [
   'climbing',
   'riding',
   'jumping',
+  'sleeping',
 ];
 
 function cells(ids: string[]): Cell[][] {
@@ -83,6 +84,13 @@ function cells(ids: string[]): Cell[][] {
           options: stairs,
         })),
       ];
+    case 'lie': {
+      const rows: Cell[][] = [];
+      for (let i = 0; i < ids.length; i += 4) {
+        rows.push(ids.slice(i, i + 4).map((id) => ({ id, pose: 'sleeping', facing: 'east' })));
+      }
+      return rows;
+    }
     case 'views':
       return (params.get('facings')?.split(',') ?? ['east', 'south', 'north']).map((facing) =>
         ids.map((id) => ({

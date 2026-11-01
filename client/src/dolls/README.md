@@ -44,7 +44,10 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
     ground (`leap`), lowered so its toes are on the ground line, where a jump starts and lands. No
     figure has a jump painted yet, so every one, a creator's character too, leaps in its run;
   - `landing` plays `land` frames, and without any, stands squashed by `LANDING_SQUASH` of its
-    height as `phase` starts, springing back by its end.
+    height as `phase` starts, springing back by its end;
+  - `sleeping` lies on its side, head to the left, never mirrored, placed by its frame's `bed`
+    point, `options.seat` metres up. A figure without `lie` painted lies as its standing frame
+    turned 90°. The side view lies on the bed under the sleeper (`side/poses.ts`'s `inBed`).
 
   Westward facings mirror the frames, sitting included, so a resident faces the way their seat
   does. North and south show the three-quarter figure, as Paper Mario does.
@@ -64,6 +67,7 @@ does:
 | `show=walk&who=kofi,priya` | the walk cycle, in `frames` steps |
 | `show=run&who=kofi,priya` | a row each: walking, running from the side, front and back, and walking into a run and back as Shift goes down and up |
 | `show=climb&who=kofi` | a ladder from the back and stairs from the side |
+| `show=lie` | everyone lying, four to a row |
 | `show=flat&appearance=<base64 JSON>` | the flat-doll route's doll for any look, with the rig |
 
 `height` sets their size (245, street size, by default), and `phase` stops the animation there.
