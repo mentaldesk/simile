@@ -11,7 +11,7 @@ export const LADDER_BOB = 0.015;
 export const LANDING_SQUASH = 0.1;
 
 /** A frame of a figure as drawn: mirrored to face left, raised by `bob` of its height and turned
- * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up. */
+ * `sway` degrees clockwise about its feet, or sitting on a seat or lying on a bed `seat` metres up. */
 export type Shown = {
   pose: SpritePose;
   frame: string;
@@ -21,6 +21,8 @@ export type Shown = {
   seat: number;
   /** Of its height, landing. */
   squash?: number;
+  /** Metres to the right. */
+  shift?: number;
 };
 
 export const facesLeft = (facing: Facing): boolean => facing.endsWith('west');
@@ -39,6 +41,8 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
       return 'land';
     case 'sitting':
       return 'sit';
+    case 'sleeping':
+      return 'lie';
     case 'reading':
     case 'working':
       return options.seated ? 'sit' : 'stand';
@@ -49,16 +53,25 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
   }
 }
 
-/** Where a frame is drawn: its origin, as fractions of the frame, at the feet as drawn, or on a
- * seat where it sits, mirrored or not; `y` up by the bob or the seat, in the figure's pixels;
- * and turned `angle` degrees clockwise. */
-export function placed(figure: FigureManifest, { frame, flip, bob, sway, seat }: Shown) {
-  const { frame: box, feet, seat: sits } = figure.frames[frame];
+/** Where a frame is drawn: its origin, as fractions of the frame, at the feet as drawn, on a seat
+ * where it sits, or on a bed where it lies, mirrored or not; `x` and `y` from there by the shift,
+ * the bob, the seat or the bed, in the figure's pixels; and turned `angle` degrees clockwise. A
+ * lying figure is never mirrored, and without lying painted it lies as its standing frame turned,
+ * head to the left. */
+export function placed(figure: FigureManifest, { pose, frame, flip, bob, sway, seat, shift = 0 }: Shown) {
+  const { frame: box, feet, seat: sits, bed } = figure.frames[frame];
   const [, , w, h] = box;
+  const along = shift * figure.ppm;
+  if (pose === 'lie') {
+    const y = -seat * figure.ppm;
+    if (bed) return { originX: bed[0] / w, originY: bed[1] / h, x: along, y, angle: sway };
+    return { originX: 0, originY: feet[1] / 2 / h, x: along, y, angle: sway - 90 };
+  }
   const [x, y] = seat > 0 && sits ? sits : feet;
   return {
     originX: (flip ? w - x : x) / w,
     originY: y / h,
+    x: along,
     y: -bob * figure.height - (seat > 0 && sits ? seat * figure.ppm : 0),
     angle: flip ? -sway : sway,
   };
@@ -93,6 +106,8 @@ export function shown(
       return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: options.seat ?? 0 };
     case 'jump':
       return { pose: kind, frame, flip: facesLeft(facing), bob: lift(figure, frame), sway: 0, seat: 0 };
+    case 'lie':
+      return { pose: kind, frame, flip: false, bob: 0, sway: 0, seat: options.seat ?? 0 };
     case 'land': {
       const squash = figure.poses.land?.length ? 0 : LANDING_SQUASH * (1 - cycle);
       return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: 0, squash };

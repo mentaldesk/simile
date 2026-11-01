@@ -36,11 +36,14 @@ export type SpriteFrame = {
   feet: Point;
   /** Where a sitting figure sits, under the middle of its head. */
   seat?: Point;
+  /** Where a lying figure lies on the mattress: the middle of its underside. */
+  bed?: Point;
 };
 
 /** What a figure is painted doing; every `DollPose` is drawn as one of them. */
-export type SpritePose = PaintedPose | 'jump' | 'land';
-/** What every figure has painted. Without a jump it jumps in its run's leap, and without a landing it lands standing. */
+export type SpritePose = PaintedPose | 'jump' | 'land' | 'lie';
+/** What every figure has painted. Without a jump it jumps in its run's leap, without a landing it lands
+ * standing, and without lying it lies as its standing frame turned. */
 export type PaintedPose = 'stand' | 'walk' | 'run' | 'sit' | 'climb';
 
 export const isFigure = (doll: DollManifest): doll is FigureManifest => 'frames' in doll;

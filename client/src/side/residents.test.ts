@@ -3,6 +3,7 @@ import type { Entity, EntityMovedMessage, Facing, Pose, Position } from '../net'
 import { WALKING_SPEED } from '../world/tuning';
 import { village } from './content';
 import { CLIMB_SPEED, RIDE_SPEED, Walker, WALK_CYCLE_M } from './motion';
+import { LIE_SECONDS } from './poses';
 import { server } from '../net';
 import { Residents, sideResidents } from './residents';
 
@@ -199,6 +200,58 @@ describe('crossing between floors', () => {
     all.move(moved({ x: 16, y: 2, map: 'gallery_floor_0' }, 'climbing', 'south'));
     run(all, 1);
     expect(all.all.get('odalys')!.under).toBeUndefined();
+  });
+});
+
+describe('going to bed', () => {
+  const bedroom = (x: number, pose: Pose = 'standing'): Entity => ({
+    ...odalys,
+    position: { x, y: 2, map: 'house_3_floor_1' },
+    pose,
+    facing: 'east',
+  });
+  const at = (x: number) => ({ x, y: 2, map: 'house_3_floor_1' });
+
+  it('lies down once it reaches its bed, over LIE_SECONDS', () => {
+    const all = residents(bedroom(4));
+    const odalysAt = all.all.get('odalys')!;
+    all.move(moved(at(3), 'sleeping', 'east'));
+    all.update(0.1);
+    expect(odalysAt.drawn.bed).toBe(0);
+    run(all, 1 / WALKING_SPEED);
+    expect(odalysAt.drawn.bed).toBeGreaterThan(0);
+    expect(odalysAt.drawn.bed).toBeLessThan(1);
+    run(all, LIE_SECONDS);
+    expect(odalysAt.drawn).toMatchObject({ pose: 'sleeping', bed: 1 });
+  });
+
+  it('gets up before it walks off, then catches up', () => {
+    const all = residents(bedroom(3, 'sleeping'));
+    const odalysAt = all.all.get('odalys')!;
+    all.move(moved(at(4), 'walking', 'east'));
+    run(all, LIE_SECONDS / 2);
+    expect(odalysAt.walker.position.x).toBe(3);
+    expect(odalysAt.drawn.bed).toBeCloseTo(0.5, 1);
+    all.move(moved(at(5), 'walking', 'east'));
+    run(all, LIE_SECONDS / 2 + 0.02);
+    expect(odalysAt.drawn.bed).toBe(0);
+    expect(odalysAt.walker.position.x).toBeLessThan(3.1);
+    run(all, 2 / WALKING_SPEED);
+    expect(odalysAt.walker.position.x).toBe(5);
+  });
+
+  it('is shown lying at once from a snapshot, and up at once from the next', () => {
+    const all = residents(bedroom(3, 'sleeping'));
+    const odalysAt = all.all.get('odalys')!;
+    all.update(0.01);
+    expect(odalysAt.drawn.bed).toBe(1);
+    all.reset([bedroom(5)]);
+    all.update(0.01);
+    expect(odalysAt.drawn.bed).toBe(0);
+    all.reset([bedroom(3, 'sleeping')]);
+    all.update(0.01);
+    expect(odalysAt.drawn.bed).toBe(1);
+    expect(odalysAt.walker.position.x).toBe(3);
   });
 });
 

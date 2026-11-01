@@ -50,7 +50,7 @@ const NAMES: Record<string, string> = {
 type Spot = MapPosition & { pose: Pose; facing: Facing };
 const spot = (map: string, x: number, y: number, pose: Pose, facing: Facing): Spot => ({ map, x, y, pose, facing });
 
-/** Every pose, facing right, left, back and front. */
+/** Every pose, facing right, left, back and front, and Ingrid asleep in her bed. */
 const STARTS: Record<string, Spot> = {
   kofi: spot('high_street', 30, 15, 'walking', 'east'),
   priya: spot('high_street', 48, 15, 'sitting', 'south'),
@@ -62,7 +62,7 @@ const STARTS: Record<string, Spot> = {
   raymond: spot('kapok_walk', 4, 15, 'sitting', 'south'),
   marguerite: spot('lychee_lane', 43, 15, 'standing', 'east'),
   tobias: spot('banyan_row', 47, 15, 'standing', 'east'),
-  ingrid: spot('gallery_floor_0', 10, 2, 'looking', 'north'),
+  ingrid: spot('house_10_floor_1', 2, 2, 'sleeping', 'east'),
 };
 
 class Puppet {
@@ -177,14 +177,10 @@ function direct(all: Record<string, Puppet>, village: Village): void {
     await tobias.settle('looking', 'north', 4);
   });
   void forever(async () => {
+    await ingrid.settle('sleeping', 'east', 8);
+    await ingrid.walkTo(5);
     await ingrid.settle('looking', 'north', 3);
-    await ingrid.walkTo(16);
-    await ingrid.cross();
-    await ingrid.walkTo(8);
-    await ingrid.settle('looking', 'north', 4);
-    await ingrid.walkTo(15);
-    await ingrid.cross();
-    await ingrid.walkTo(10);
+    await ingrid.walkTo(2);
   });
 }
 

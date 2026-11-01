@@ -2,9 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { dolls } from '../dolls/assets';
 import { placed, shown } from '../dolls/sprite';
 import { village } from './content';
-import { DOLL_M, feetOf, FURNITURE_DROP_M, furniturePlacement, PPM } from './layout';
+import { DOLL_M, feetOf, FURNITURE_DROP_M, furniturePlacement, PPM, xOf } from './layout';
 import type { Placed } from './maps';
-import { facesLeft, hiddenInFront, PoseCache, SEAT_M, seatHeight, STEPS } from './poses';
+import {
+  BED_M,
+  bedAt,
+  facesLeft,
+  hiddenInFront,
+  inBed,
+  LIE_SECONDS,
+  PoseCache,
+  SEAT_M,
+  seatHeight,
+  settle,
+  STEPS,
+} from './poses';
 
 describe('the pose cache', () => {
   const figure = dolls.kofi;
@@ -81,6 +93,66 @@ describe('a seat', () => {
         expect(feetOf(map.offset.y + spot.y) + thighs).toBeCloseTo(front, 6);
       }
     }
+  });
+});
+
+describe('a bed', () => {
+  const beds = [...village.maps.values()].flatMap((map) =>
+    map.spots.filter(({ type }) => type === 'bed').map((spot) => ({ map, spot })),
+  );
+
+  it('is under every bed spot, and every sleeper lies on its mattress, in the middle of the piece', () => {
+    expect(beds.length).toBe(11);
+    for (const { map, spot } of beds) {
+      const piece = map.furniture.find((f) => f.type === 'bed' && f.x <= spot.x && spot.x < f.x + f.w && f.y === spot.y);
+      expect(piece, `${map.id} ${spot.name}`).toBeDefined();
+      const bed = bedAt(map, spot.x, spot.y);
+      const drawn = furniturePlacement(piece!, map);
+      for (const figure of Object.values(dolls)) {
+        const scale = (DOLL_M * PPM) / figure.height;
+        const at = inBed(figure, bed, 1);
+        const { x, y, angle } = placed(figure, at);
+        expect(at).toMatchObject({ pose: 'lie', flip: false });
+        expect(angle).toBe(0);
+        expect(xOf(map.offset.x + spot.x) + x * scale).toBeCloseTo(drawn.x, 6);
+        expect(feetOf(map.offset.y + spot.y) + y * scale).toBeCloseTo(drawn.y - BED_M * PPM, 6);
+      }
+    }
+  });
+
+  it('is the floor anywhere else', () => {
+    expect(bedAt(village.map('high_street')!, 10, 15)).toEqual({ height: 0, along: 0 });
+  });
+});
+
+describe('lying down and getting up', () => {
+  const figure = dolls.ingrid;
+  const bed = { height: BED_M - FURNITURE_DROP_M, along: 0.55 };
+  const steps = Array.from({ length: 41 }, (_, i) => inBed(figure, bed, i / 40));
+
+  it('takes LIE_SECONDS each way', () => {
+    expect(settle(0, true, LIE_SECONDS / 2)).toBeCloseTo(0.5);
+    expect(settle(0.9, true, LIE_SECONDS)).toBe(1);
+    expect(settle(1, false, LIE_SECONDS / 4)).toBeCloseTo(0.75);
+    expect(settle(0.1, false, LIE_SECONDS)).toBe(0);
+  });
+
+  it('sits on the edge of the bed, then lies back on it, never mirrored', () => {
+    expect(new Set(steps.slice(0, 20).map(({ pose, frame }) => `${pose} ${frame}`))).toEqual(new Set([`sit ${figure.poses.sit[0]}`]));
+    expect(new Set(steps.slice(20).map(({ pose, frame }) => `${pose} ${frame}`))).toEqual(new Set(['lie lie']));
+    expect(steps.every(({ flip }) => !flip)).toBe(true);
+    expect(steps[19].seat).toBeCloseTo(bed.height, 2);
+    expect(steps[40]).toMatchObject({ seat: bed.height, sway: 0, shift: bed.along });
+  });
+
+  it('eases in and out of each half', () => {
+    const { feet, seat } = figure.frames[figure.poses.sit[0]];
+    expect(steps[0].seat).toBeCloseTo((feet[1] - seat![1]) / figure.ppm);
+    expect(Math.abs(steps[1].seat - steps[0].seat)).toBeLessThan(Math.abs(steps[10].seat - steps[9].seat) / 4);
+    const tilts = steps.slice(20).map(({ sway }) => sway);
+    expect(tilts[0]).toBeGreaterThan(20);
+    for (let i = 1; i < tilts.length; i++) expect(tilts[i]).toBeLessThanOrEqual(tilts[i - 1]);
+    expect(tilts[0] - tilts[1]).toBeLessThan((tilts[10] - tilts[11]) / 4);
   });
 });
 

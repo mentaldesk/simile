@@ -10,6 +10,7 @@ import {
   Walker,
   type Drawn,
 } from './motion';
+import { settle } from './poses';
 import { crossing, pointAlong, type Crossing } from './runs';
 
 type Under = { crossing: Crossing; distance: number; arrival?: Position & { map: string } };
@@ -25,6 +26,8 @@ export class Resident {
   pending?: Crossing;
   under?: Under;
   idle = 0;
+  /** How far into bed, 0 up to 1 lying. */
+  bed: number;
   /** In street cells. */
   readonly at = { x: 0, y: 0 };
   readonly drawn: Drawn = emptyDrawn();
@@ -36,6 +39,7 @@ export class Resident {
     this.pose = pose;
     this.facing = facing;
     this.walker = new Walker(position, WALKING_SPEED);
+    this.bed = pose === 'sleeping' ? 1 : 0;
   }
 
   get drawnMap(): string {
@@ -58,8 +62,15 @@ export class Residents {
       if (entity.kind !== 'npc') continue;
       ids.add(entity.id);
       const known = this.all.get(entity.id);
-      if (known) this.move({ type: 'entity_moved', entity_id: entity.id, ...entity });
-      else this.all.set(entity.id, new Resident(entity));
+      if (!known) {
+        this.all.set(entity.id, new Resident(entity));
+        continue;
+      }
+      this.move({ type: 'entity_moved', entity_id: entity.id, ...entity });
+      known.bed = entity.pose === 'sleeping' ? 1 : 0;
+      if (!known.bed) continue;
+      known.walker.place(entity.position);
+      known.pending = known.under = undefined;
     }
     for (const id of this.all.keys()) if (!ids.has(id)) this.all.delete(id);
   }
@@ -108,7 +119,11 @@ export class Residents {
 
   private step(resident: Resident, dt: number): void {
     const { walker } = resident;
-    walker.update(dt);
+    const sleeping = resident.pose === 'sleeping';
+    if (resident.bed > 0 && !sleeping) resident.bed = settle(resident.bed, false, dt);
+    else walker.update(dt);
+    if (sleeping && walker.arrived && !resident.pending && !resident.under) resident.bed = settle(resident.bed, true, dt);
+    resident.drawn.bed = resident.bed;
     resident.idle += dt;
     const { pending } = resident;
     if (pending && walker.arrived) {
