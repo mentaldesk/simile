@@ -7,8 +7,8 @@ export const HELP_KEY = '?';
 export const CONTROLS: readonly (readonly [keys: readonly string[], what: string])[] = [
   [['← →', 'A D'], 'walk, or steer in the air'],
   [['Shift'], 'switch between walking and running, until pressed again'],
-  [['Space'], 'jump, higher while held and further running; land on a rat to kill it'],
-  [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up; on a ladder, Space jumps off it'],
+  [['Space', 'PgUp'], 'jump; hold the key to jump higher, and run to jump further; land on a rat to kill it'],
+  [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up; on a ladder, Space or PgUp jumps off it'],
   [['↓', 'S'], 'downstairs or down a ladder from beside its top, or the lift down'],
   [['E'], 'go through a door or onto another street; off a door, read the news at a terminal, pick something up, sell salvage, trade at the clinic, look at a clue, or use a machine with the datajack'],
   [['T'], 'talk to the ringed resident, or at a counter order from whoever serves there; with nobody near, open or close the conversation log'],

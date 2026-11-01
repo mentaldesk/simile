@@ -1,6 +1,6 @@
 import type { Controls } from './player';
 
-/** Which arrow (or WASD) keys are down, whether running is on, and Space pressed (`jump`) or down (`hold`). */
+/** Which arrow (or WASD) keys are down, whether running is on, and a jump key pressed (`jump`) or down (`hold`). */
 export type Held = {
   up: boolean;
   down: boolean;
@@ -25,6 +25,32 @@ export class RunToggle {
     if (key !== 'Shift' || !this.alone) return;
     this.alone = false;
     this.on = !this.on;
+  }
+}
+
+/** Phaser's names for the keys that jump: Space, and PageUp for keyboards that can't hold Space. */
+export const JUMP_KEYS = ['SPACE', 'PAGE_UP'] as const;
+
+type JumpPress = Pick<KeyboardEvent, 'key' | 'repeat' | 'preventDefault'>;
+
+/** Either jump key: pressed since the last read, and held while any is down. */
+export class JumpKeys {
+  private pressed = false;
+  private readonly keys: readonly { readonly isDown: boolean }[];
+
+  constructor(keys: readonly { readonly isDown: boolean }[]) {
+    this.keys = keys;
+  }
+
+  readonly keyDown = (event: JumpPress): void => {
+    if (event.key === 'PageUp') event.preventDefault();
+    this.pressed ||= !event.repeat;
+  };
+
+  read(held: Held): void {
+    held.jump = this.pressed;
+    held.hold = this.keys.some((key) => key.isDown);
+    this.pressed = false;
   }
 }
 
