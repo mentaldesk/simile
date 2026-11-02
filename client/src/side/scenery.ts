@@ -3,10 +3,10 @@ export type Rgb = [number, number, number];
 export const TIMES = ['morning', 'afternoon', 'evening', 'night'] as const;
 export type TimeName = (typeof TIMES)[number];
 
-export const LAYERS = ['sky', 'far', 'mid', 'near', 'ground', 'foreground'] as const;
+export const LAYERS = ['sky', 'city', 'far', 'mid', 'near', 'ground', 'foreground'] as const;
 export type LayerName = (typeof LAYERS)[number];
-/** The city sits between the sky and the far layer, and streets underground leave it out. */
-type Layers<T> = Record<LayerName, T> & { city?: T };
+/** Streets underground leave the city out. */
+type Layers<T> = Record<Exclude<LayerName, 'city'>, T> & { city?: T };
 
 export type Time = {
   tint: Rgb;

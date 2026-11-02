@@ -15,15 +15,18 @@ import {
 } from './layout';
 import type { Link, Placed, SideMap, Village } from './maps';
 import { crossing } from './runs';
-import type { SceneryManifest } from './scenery';
+import type { Moulding, SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
 
 const WINDOWS = [0.3, 0.7];
 const WINDOW_ROW = 1.9;
 const SLAB_M = 0.3;
 const FRAME_M = 1.0;
-/** In the frame picture's px, kept as it stretches round a painting. */
-const MOULDING = { left: 13, right: 11, top: 18, bottom: 14 };
+/** In the frame picture's px, kept as it stretches round a painting, for a manifest that doesn't say. */
+export const MOULDING: Moulding = { left: 13, right: 11, top: 18, bottom: 14 };
+
+export const mouldingOf = (manifest: Pick<SceneryManifest, 'furniture'>): Moulding =>
+  manifest.furniture.picture_frame?.moulding ?? MOULDING;
 const FRAME_FILL = 0.9;
 const EMPTY_ASPECT = 0.85;
 const LADDER_ABOVE_M = 0.6;
@@ -60,6 +63,7 @@ export class House {
   private readonly away: number[] = [];
   private readonly frames = new Map<string, Hung>();
   private readonly tints: Tints;
+  private readonly moulding: Moulding;
   private shown = true;
   private carKey?: string;
 
@@ -75,6 +79,7 @@ export class House {
     this.textures = textures;
     this.manifest = manifest;
     this.tints = tints;
+    this.moulding = mouldingOf(manifest);
     this.name = building.name;
     this.box = dollhouse(building, village.floors(building.name));
     const papers = manifest.buildings[building.name]?.floors ?? [];
@@ -150,15 +155,16 @@ export class House {
   private fit(hung: Hung, aspect: number): void {
     const { frame, shadow, image } = hung;
     if (!frame) return;
-    const sides = MOULDING.left + MOULDING.right;
+    const { left, right, top, bottom } = this.moulding;
+    const sides = left + right;
     const tall = frame.frame.realHeight;
-    const opening = tall - MOULDING.top - MOULDING.bottom;
+    const opening = tall - top - bottom;
     const wide = opening * aspect + sides;
     const scale = Math.min((FRAME_M * PPM) / tall, hung.maxWidth / wide);
     frame.setSize(wide, tall).setScale(scale);
     if (shadow) shadow.setScale((wide * scale) / frame.frame.realWidth / 0.5, (tall * scale) / tall / 0.5);
-    const dx = ((MOULDING.left - MOULDING.right) / 2) * scale;
-    const dy = ((MOULDING.top - MOULDING.bottom) / 2) * scale;
+    const dx = ((left - right) / 2) * scale;
+    const dy = ((top - bottom) / 2) * scale;
     image?.setPosition(hung.x + dx, hung.y + dy).setDisplaySize(opening * aspect * scale, opening * scale);
   }
 
@@ -209,7 +215,7 @@ export class House {
       const hung: Hung = { map: map.id, id: painting.name, x, y, maxWidth: painting.w * TILE * FRAME_FILL };
       const key = manifest.furniture.picture_frame?.piece;
       if (key) {
-        const { left, right, top, bottom } = MOULDING;
+        const { left, right, top, bottom } = this.moulding;
         const frame = scene.add.nineslice(x, y, textures.key(key), undefined, 0, 0, left, right, top, bottom);
         hung.frame = this.tints.add('inside', frame.setDepth(DEPTH.frame));
         hung.shadow = dropShadow(scene, textures, key, [0.5, 0.5], x, y, { ppm: PPM, alpha: 0.3 });

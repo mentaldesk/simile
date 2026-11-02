@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { spans, stretchParts, TEXTURE_LIMIT } from './layout';
+import { PPM, spans, stretchParts, TEXTURE_LIMIT } from './layout';
 
 const PREFIX = 'side:';
 const SHADOW = '#1e140c';
@@ -12,6 +12,16 @@ export type Part = { key: string; x: number; width: number };
 /** `name` makes more from it; `scale` and `pad` scale it back up. */
 export type Derived = { key: string; name: string; scale: number; pad: number; parts: Part[] };
 type Source = HTMLImageElement | HTMLCanvasElement;
+
+/** The runtime shadows' look: `opacity` scales their alpha, and `offset` moves them on by that many metres. */
+export type ShadowLook = { opacity: number; offset: { x: number; y: number } };
+export const SHADOW_LOOK: ShadowLook = { opacity: 1, offset: { x: 0, y: 0 } };
+
+/** Where in its texture's px a shadow made at `scale` is drawn, and the room round it. */
+export function shadowSpread(look: ShadowLook, scale: number, blur: number): { pad: number; dx: number; dy: number } {
+  const [dx, dy] = [look.offset.x * PPM * scale, look.offset.y * PPM * scale];
+  return { pad: Math.ceil(blur * 2.5 + Math.max(Math.abs(dx), Math.abs(dy))), dx, dy };
+}
 
 function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const canvas = document.createElement('canvas');
@@ -54,9 +64,11 @@ export class SideTextures {
   private readonly derived = new Map<string, Derived>();
   private readonly wide = new Map<string, { source: Source; parts: Part[] }>();
   private readonly limit: number;
+  private readonly shadowLook: ShadowLook;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, shadowLook = SHADOW_LOOK) {
     this.scene = scene;
+    this.shadowLook = shadowLook;
     const renderer = scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer> | undefined;
     this.limit = renderer?.getMaxTextureSize?.() ?? TEXTURE_LIMIT;
   }
@@ -94,14 +106,16 @@ export class SideTextures {
 
   /** Blurred and dark, from its alpha. */
   shadow(key: string, scale: number, blur: number): Derived {
-    return this.make(`${key}#shadow${scale}`, key, (source, context, pad) => {
+    const { pad, dx, dy } = shadowSpread(this.shadowLook, scale, blur);
+    return this.make(`${key}#shadow${scale}`, key, (source, context) => {
       context.filter = `blur(${blur}px)`;
-      context.drawImage(source, pad, pad, source.width * scale, source.height * scale);
+      context.drawImage(source, pad + dx, pad + dy, source.width * scale, source.height * scale);
       context.filter = 'none';
       context.globalCompositeOperation = 'source-in';
+      context.globalAlpha = this.shadowLook.opacity;
       context.fillStyle = SHADOW;
       context.fillRect(0, 0, context.canvas.width, context.canvas.height);
-    }, scale, Math.ceil(blur * 2.5));
+    }, scale, pad);
   }
 
   light(key: string, scale: number, blur = 0): Derived {

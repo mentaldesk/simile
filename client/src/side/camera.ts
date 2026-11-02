@@ -37,6 +37,7 @@ export function follow(current: Point, target: Point, dt: number, out: Point): P
 
 /** Metres below the street's feet line, up negative: #309's previews' composition. */
 export const LAYER_PLACES: Record<Exclude<LayerName, 'sky' | 'ground'>, { bottom: number; height?: number }> = {
+  city: { bottom: -7.5 },
   far: { bottom: -7.5, height: 5.75 },
   mid: { bottom: -2.75, height: 6.25 },
   near: { bottom: 0.1 },
@@ -57,6 +58,12 @@ export function layerCopies(
   const k = Math.floor((view.left - shift) / width);
   out.first = k * width + shift;
   out.count = Math.ceil((view.left + view.width - out.first) / width) + 1;
-  out.y = baseY + (view.centre.y - streetY) * (1 - Math.min(parallax, 1));
+  out.y = parallaxY(parallax, baseY, view.centre.y, streetY);
   return out;
 }
+
+export const parallaxY = (parallax: number, baseY: number, centreY: number, streetY: number): number =>
+  baseY + (centreY - streetY) * (1 - Math.min(parallax, 1));
+
+/** In the middle of the view when its centre is `at` along the street, wherever the view's centre is. */
+export const landmarkX = (at: number, parallax: number, centreX: number): number => at + (centreX - at) * (1 - parallax);

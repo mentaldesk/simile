@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dolls } from '../dolls/assets';
 import { placed, shown } from '../dolls/sprite';
-import { village } from './content';
+import { scenery, village } from './content';
 import { DOLL_M, feetOf, FURNITURE_DROP_M, furniturePlacement, PPM, xOf } from './layout';
 import type { Placed } from './maps';
 import {
@@ -11,6 +11,7 @@ import {
   hiddenInFront,
   inBed,
   LIE_SECONDS,
+  measureFrom,
   PoseCache,
   SEAT_M,
   seatHeight,
@@ -75,6 +76,22 @@ describe('a seat', () => {
     expect(seatHeight(map, 3, 2)).toBe(0);
   });
 
+  it("falls back to SEAT_M where today's manifest doesn't measure a seat", () => {
+    measureFrom(scenery);
+    expect(seatHeight(map, 4, 2)).toBeCloseTo(drawn('stool'));
+    expect(seatHeight(map, 6, 2)).toBeCloseTo(drawn('bench'));
+    expect(seatHeight(map, 8, 2)).toBeCloseTo(drawn('cafe_table'));
+  });
+
+  it("is the manifest's seat where it measures one, for a piece SEAT_M doesn't know too", () => {
+    const furniture = { stool: { seat: 0.6 }, cafe_table: { seat: 0.5 }, sofa: { seat: 0.4 } };
+    const sofa = { ...map, spots: [...map.spots, at('seat', 12)], furniture: [...map.furniture, at('sofa', 12, 2)] };
+    expect(seatHeight(map, 4, 2, furniture)).toBeCloseTo(0.6 - FURNITURE_DROP_M);
+    expect(seatHeight(map, 6, 2, furniture)).toBeCloseTo(drawn('bench'));
+    expect(seatHeight(map, 8, 2, furniture)).toBeCloseTo(0.5 - FURNITURE_DROP_M);
+    expect(seatHeight(sofa, 12, 2, furniture)).toBeCloseTo(0.4 - FURNITURE_DROP_M);
+  });
+
   it('is under every seat in the village, and every sitter rests on it', () => {
     const seats = [...village.maps.values()].flatMap((map) =>
       map.spots.filter(({ type }) => type === 'seat' || type === 'bar').map((spot) => ({ map, spot })),
@@ -122,6 +139,19 @@ describe('a bed', () => {
 
   it('is the floor anywhere else', () => {
     expect(bedAt(village.map('high_street')!, 10, 15)).toEqual({ height: 0, along: 0 });
+  });
+
+  it("is BED_M up where today's manifest doesn't measure it, and the manifest's bed where it does", () => {
+    const { map, spot } = beds[0];
+    measureFrom(scenery);
+    expect(bedAt(map, spot.x, spot.y).height).toBeCloseTo(BED_M - FURNITURE_DROP_M);
+    const measured = bedAt(map, spot.x, spot.y, { bed: { bed: 0.52 } });
+    expect(measured.height).toBeCloseTo(0.52 - FURNITURE_DROP_M);
+    expect(measured.along).toBe(bedAt(map, spot.x, spot.y).along);
+    const bedroll: Placed = { name: 'bedroll', type: 'bedroll', x: 3, y: 2, w: 2, h: 1, props: {} };
+    const floor = { furniture: [bedroll] };
+    expect(bedAt(floor, 3, 2)).toEqual({ height: 0, along: 0 });
+    expect(bedAt(floor, 3, 2, { bedroll: { bed: 0.1 } }).height).toBeCloseTo(0.1 - FURNITURE_DROP_M);
   });
 });
 

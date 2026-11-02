@@ -1,6 +1,11 @@
 export const DEPTH = {
   sky: 0,
   skyAdd: 1,
+  landmark: 1.2,
+  landmarkHaze: 1.3,
+  landmarkGlow: 1.4,
+  city: 1.5,
+  cityHaze: 1.6,
   far: 2,
   farHaze: 3,
   mid: 4,

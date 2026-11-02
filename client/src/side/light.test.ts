@@ -64,6 +64,19 @@ describe('tints by layer depth', () => {
     }
   });
 
+  it('tints the city by the time of day nearer the sky than the far layer, and hazes it more', () => {
+    for (const hour of [7, 13, 19, 23]) {
+      const at = lightAt(hour, scenery);
+      const [city, far] = [[...layerTint(at, 'city', out)], [...layerTint(at, 'far', out)]];
+      for (let i = 0; i < 3; i++) {
+        expect(Math.abs(city[i] - at.sky[i])).toBeLessThanOrEqual(Math.abs(far[i] - at.sky[i]) + 1e-9);
+      }
+      expect(hazeOf(at, 'city')).toBeGreaterThan(hazeOf(at, 'far'));
+      expect(hazeOf(at, 'city')).toBeLessThanOrEqual(1);
+    }
+    expect(layerTint(lightAt(23, scenery), 'city', out)).not.toEqual(layerTint(lightAt(13, scenery), 'city', [0, 0, 0]));
+  });
+
   it('darkens the foreground and hazes the far layer twice the mid', () => {
     expect(layerTint(light, 'foreground', out)[1]).toBeCloseTo(light.tint[1] * FOREGROUND_SHADE);
     expect(hazeOf(light, 'far')).toBeCloseTo(2 * hazeOf(light, 'mid'));

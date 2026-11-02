@@ -9,6 +9,7 @@ import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
 import './harness.css';
 import { glowAround, sightOf } from './darkness';
+import { scenery } from './content';
 import { lampHere } from './lamp';
 import { cellOf, isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
@@ -338,6 +339,82 @@ function answer(message: ClientMessage, scene: SideScene): void {
   sendPlayerState();
 }
 
+const SKETCH = { city: 'sketch/city', apex: 'sketch/apex', glow: 'sketch/apex-glow' };
+
+function canvas(width: number, height: number, draw: (context: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+  const made = document.createElement('canvas');
+  [made.width, made.height] = [width, height];
+  draw(made.getContext('2d')!);
+  return made;
+}
+
+/** Plain stand-ins for P74's city and Apex towers, drawn in code (`city=sketch`). */
+function sketchCity(scene: SideScene, village: Village): void {
+  if (params.get('city') !== 'sketch') return;
+  const city = canvas(2400, 840, (context) => {
+    context.fillStyle = '#7b879c';
+    for (let x = 0, i = 0; x < 2400; i++) {
+      const width = 70 + ((i * 53) % 110);
+      const top = 840 * (0.18 + ((i * 37) % 30) / 100);
+      context.fillRect(x, top, Math.min(width, 2400 - x), 840 - top);
+      if (i % 4 === 1) context.fillRect(x + width / 2 - 3, top - 70, 6, 70);
+      x += width;
+    }
+  });
+  const towers = [
+    { x: 380, width: 200, top: 0 },
+    { x: 160, width: 160, top: 220 },
+    { x: 620, width: 170, top: 320 },
+  ];
+  const [width, height] = [960, 936];
+  const apex = canvas(width, height, (context) => {
+    context.fillStyle = '#4a5368';
+    for (const tower of towers) {
+      context.fillRect(tower.x, tower.top + 60, tower.width, height - tower.top - 60);
+      context.beginPath();
+      context.moveTo(tower.x, tower.top + 60);
+      context.lineTo(tower.x + tower.width / 2, tower.top);
+      context.lineTo(tower.x + tower.width, tower.top + 60);
+      context.fill();
+    }
+  });
+  const glow = canvas(width, height, (context) => {
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, width, height);
+    for (const tower of towers) {
+      for (let y = tower.top + 100; y < height - 30; y += 34) {
+        for (let x = tower.x + 18; x < tower.x + tower.width - 24; x += 30) {
+          context.fillStyle = (x * 7 + y * 3) % 5 === 0 ? '#000' : (x + y) % 3 === 0 ? '#9fd8ff' : '#ffd890';
+          context.fillRect(x, y, 12, 16);
+        }
+      }
+      context.fillStyle = '#ff5048';
+      context.beginPath();
+      context.arc(tower.x + tower.width / 2, tower.top + 8, 9, 0, Math.PI * 2);
+      context.fill();
+    }
+  });
+  const piece = (kind: 'layer' | 'sprite' | 'glow', drawn: HTMLCanvasElement, metres: number) => ({
+    file: '',
+    size: [drawn.width, drawn.height] as [number, number],
+    height: metres,
+    kind,
+    anchor: [0.5, 1] as [number, number],
+  });
+  Object.assign(scenery.pieces, {
+    [SKETCH.city]: piece('layer', city, 7),
+    [SKETCH.apex]: piece('sprite', apex, 7.6),
+    [SKETCH.glow]: piece('glow', glow, 7.6),
+  });
+  const above = village.streets.filter(({ underground }) => !underground);
+  for (const { id } of above) if (scenery.streets[id]) scenery.streets[id].city = SKETCH.city;
+  const at = Object.fromEntries(above.map(({ id }) => [id, 0.6]));
+  scenery.landmarks = { apex: { piece: SKETCH.apex, glow: SKETCH.glow, at } };
+  for (const [key, drawn] of [[SKETCH.city, city], [SKETCH.apex, apex], [SKETCH.glow, glow]] as const) {
+    scene.textures.addCanvas(`side:${key}`, drawn);
+  }
+}
+
 function clockAt(hour: number): string {
   const date = new Date(Date.UTC(2026, 9, 21, 0, 0, 0) + hour * 3_600_000);
   return date.toISOString();
@@ -479,6 +556,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   };
   const [map, x, y] = (params.get('at') ?? 'high_street:51:15').split(':');
   const player: Position = { map, x: Number(x), y: Number(y ?? (village.map(map)?.kind === 'floor' ? 2 : 15)) };
+  sketchCity(scene, village);
   const all = puppets(village);
   const entities: Entity[] = [
     { id: PLAYER_ID, kind: 'player', name: 'You', position: player, pose: 'standing', facing: 'east' },
