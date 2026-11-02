@@ -11,7 +11,6 @@ import {
   hiddenInFront,
   inBed,
   LIE_SECONDS,
-  measureFrom,
   PoseCache,
   SEAT_M,
   seatHeight,
@@ -66,21 +65,19 @@ describe('a seat', () => {
   };
   const drawn = (type: string) => SEAT_M[type] - FURNITURE_DROP_M;
 
-  it('is the front edge of the seat of the piece under it, as drawn, and nothing off a seat', () => {
-    expect(seatHeight(map, 1, 2)).toBeCloseTo(drawn('cafe_table'));
-    expect(seatHeight(map, 4, 2)).toBeCloseTo(drawn('stool'));
-    expect(seatHeight(map, 5, 2)).toBeCloseTo(drawn('stool'));
-    expect(seatHeight(map, 6, 2)).toBeCloseTo(drawn('bench'));
-    expect(seatHeight(map, 8, 2)).toBeCloseTo(drawn('cafe_table'));
-    expect(seatHeight(map, 9, 2)).toBe(0);
-    expect(seatHeight(map, 3, 2)).toBe(0);
+  it("is SEAT_M's front edge of the seat of the piece under it for a manifest that measures none, and nothing off a seat", () => {
+    expect(seatHeight(map, 1, 2, {})).toBeCloseTo(drawn('cafe_table'));
+    expect(seatHeight(map, 4, 2, {})).toBeCloseTo(drawn('stool'));
+    expect(seatHeight(map, 5, 2, {})).toBeCloseTo(drawn('stool'));
+    expect(seatHeight(map, 6, 2, {})).toBeCloseTo(drawn('bench'));
+    expect(seatHeight(map, 8, 2, {})).toBeCloseTo(drawn('cafe_table'));
+    expect(seatHeight(map, 9, 2, {})).toBe(0);
+    expect(seatHeight(map, 3, 2, {})).toBe(0);
   });
 
-  it("falls back to SEAT_M where today's manifest doesn't measure a seat", () => {
-    measureFrom(scenery);
-    expect(seatHeight(map, 4, 2)).toBeCloseTo(drawn('stool'));
-    expect(seatHeight(map, 6, 2)).toBeCloseTo(drawn('bench'));
-    expect(seatHeight(map, 8, 2)).toBeCloseTo(drawn('cafe_table'));
+  it("is the same by today's manifest's measurements", () => {
+    for (const name of Object.keys(SEAT_M)) expect(scenery.furniture[name].seat, name).toBe(SEAT_M[name]);
+    for (const x of [1, 4, 5, 6, 8, 9]) expect(seatHeight(map, x, 2, scenery.furniture)).toBe(seatHeight(map, x, 2, {}));
   });
 
   it("is the manifest's seat where it measures one, for a piece SEAT_M doesn't know too", () => {
@@ -102,7 +99,7 @@ describe('a seat', () => {
         (f) => f.type in SEAT_M && f.x <= spot.x && spot.x < f.x + f.w && f.y <= spot.y && spot.y < f.y + f.h,
       );
       expect(piece, `${map.id} ${spot.name}`).toBeDefined();
-      const seat = seatHeight(map, spot.x, spot.y);
+      const seat = seatHeight(map, spot.x, spot.y, scenery.furniture);
       const front = furniturePlacement(piece!, map).y - SEAT_M[piece!.type] * PPM;
       for (const figure of Object.values(dolls)) {
         const scale = (DOLL_M * PPM) / figure.height;
@@ -123,7 +120,7 @@ describe('a bed', () => {
     for (const { map, spot } of beds) {
       const piece = map.furniture.find((f) => f.type === 'bed' && f.x <= spot.x && spot.x < f.x + f.w && f.y === spot.y);
       expect(piece, `${map.id} ${spot.name}`).toBeDefined();
-      const bed = bedAt(map, spot.x, spot.y);
+      const bed = bedAt(map, spot.x, spot.y, scenery.furniture);
       const drawn = furniturePlacement(piece!, map);
       for (const figure of Object.values(dolls)) {
         const scale = (DOLL_M * PPM) / figure.height;
@@ -138,19 +135,19 @@ describe('a bed', () => {
   });
 
   it('is the floor anywhere else', () => {
-    expect(bedAt(village.map('high_street')!, 10, 15)).toEqual({ height: 0, along: 0 });
+    expect(bedAt(village.map('high_street')!, 10, 15, scenery.furniture)).toEqual({ height: 0, along: 0 });
   });
 
-  it("is BED_M up where today's manifest doesn't measure it, and the manifest's bed where it does", () => {
+  it("is BED_M up for a manifest that doesn't measure it, as today's measures it, and the manifest's bed where it says", () => {
     const { map, spot } = beds[0];
-    measureFrom(scenery);
-    expect(bedAt(map, spot.x, spot.y).height).toBeCloseTo(BED_M - FURNITURE_DROP_M);
+    expect(bedAt(map, spot.x, spot.y, {}).height).toBeCloseTo(BED_M - FURNITURE_DROP_M);
+    expect(scenery.furniture.bed.bed).toBe(BED_M);
     const measured = bedAt(map, spot.x, spot.y, { bed: { bed: 0.52 } });
     expect(measured.height).toBeCloseTo(0.52 - FURNITURE_DROP_M);
-    expect(measured.along).toBe(bedAt(map, spot.x, spot.y).along);
+    expect(measured.along).toBe(bedAt(map, spot.x, spot.y, {}).along);
     const bedroll: Placed = { name: 'bedroll', type: 'bedroll', x: 3, y: 2, w: 2, h: 1, props: {} };
     const floor = { furniture: [bedroll] };
-    expect(bedAt(floor, 3, 2)).toEqual({ height: 0, along: 0 });
+    expect(bedAt(floor, 3, 2, {})).toEqual({ height: 0, along: 0 });
     expect(bedAt(floor, 3, 2, { bedroll: { bed: 0.1 } }).height).toBeCloseTo(0.1 - FURNITURE_DROP_M);
   });
 });

@@ -4,11 +4,9 @@ import { LAYER_PLACES, layerCopies, parallaxY, streetCentreY } from './camera';
 import { pieceUrl, scenery, village } from './content';
 import { DEPTH } from './depths';
 import { MOULDING } from './house';
-import { FURNITURE_DROP_M, furniturePlacement, GROUND_LIFT_M, PPM, streetRow, TILE } from './layout';
-import type { Placed } from './maps';
+import { furniturePlacement, GROUND_LIFT_M, PPM, streetRow, TILE } from './layout';
 import { emptyLight, lightAt } from './light';
 import type { SceneryManifest } from './scenery';
-import { BED_M, bedAt, SEAT_M, seatHeight } from './poses';
 import { CITY_PARALLAX, LAMP_HEAD_M, StreetView } from './street-view';
 import type { SideTextures } from './textures';
 
@@ -142,33 +140,50 @@ describe("today's manifest", () => {
     }
   });
 
+  it('measures what the constants say', () => {
+    expect(scenery.parallax.city).toBe(CITY_PARALLAX);
+    expect(scenery.furniture.lamp.light).toBe(LAMP_HEAD_M);
+    expect(scenery.furniture.picture_frame.moulding).toEqual(MOULDING);
+  });
+});
+
+/** Today's manifest without P69's measurements or `parallax.city`. */
+function bare(): SceneryManifest {
+  const manifest = structuredClone(scenery);
+  delete manifest.parallax.city;
+  for (const entry of Object.values(manifest.furniture)) {
+    for (const field of ['seat', 'bed', 'light', 'moulding'] as const) delete entry[field];
+  }
+  return manifest;
+}
+
+describe('a manifest without measurements', () => {
   it('lights each street lamp LAMP_HEAD_M up, and nothing else', () => {
     for (const id of STREETS) {
       const lamps = map(id).furniture.filter(({ name }) => name === 'lamp');
       const heads = lamps.map((lamp) => furniturePlacement(lamp, map(id)).y - LAMP_HEAD_M * PPM);
-      expect(drawStreet(id).at(DEPTH.lampGlow).map(({ y }) => y), id).toEqual(heads);
+      expect(drawStreet(id, bare()).at(DEPTH.lampGlow).map(({ y }) => y), id).toEqual(heads);
     }
   });
 
   it('draws the ground with its walking edge GROUND_LIFT_M above the feet line', () => {
     const feet = streetRow(map('high_street')) * TILE;
-    const tops = drawStreet('high_street').at(DEPTH.ground).map(({ y }) => y);
+    const tops = drawStreet('high_street', bare()).at(DEPTH.ground).map(({ y }) => y);
     expect(tops).toContain(feet - GROUND_LIFT_M * PPM);
   });
 
   it('frames the paintings with MOULDING', () => {
-    const { drawn } = drawStreet('banyan_row');
+    const { drawn } = drawStreet('banyan_row', bare());
     const frames = drawn.filter(({ key }) => key === 'side:furniture/picture_frame').map(({ args }) => args.slice(4, 8));
     expect(frames.length).toBeGreaterThan(0);
     for (const sides of frames) expect(sides).toEqual([MOULDING.left, MOULDING.right, MOULDING.top, MOULDING.bottom]);
   });
 });
 
-/** Today's manifest with a city on every street, the Apex towers, and measurements. */
+/** A bare manifest with a city on every street, the Apex towers, and measurements. */
 function measured(parallax?: number): SceneryManifest {
-  const manifest = structuredClone(scenery);
-  if (parallax === undefined) delete manifest.parallax.city;
-  else manifest.parallax.city = parallax;
+  const manifest = bare();
+  if (parallax !== undefined) manifest.parallax.city = parallax;
   const piece = (kind: 'layer' | 'sprite' | 'glow', size: [number, number], height: number) => ({
     file: `fixture/${kind}.webp`,
     size,
@@ -186,8 +201,6 @@ function measured(parallax?: number): SceneryManifest {
   manifest.furniture.lamp.light = 3;
   manifest.furniture.bench.light = 1.2;
   manifest.furniture.picture_frame.moulding = { left: 20, right: 21, top: 22, bottom: 23 };
-  manifest.furniture.stool.seat = 0.6;
-  manifest.furniture.bed.bed = 0.5;
   return manifest;
 }
 
@@ -306,17 +319,5 @@ describe('a manifest with a city, a landmark and measurements', () => {
     const frames = drawn.filter(({ key }) => key === 'side:furniture/picture_frame').map(({ args }) => args.slice(4, 8));
     expect(frames.length).toBeGreaterThan(0);
     for (const sides of frames) expect(sides).toEqual([20, 21, 22, 23]);
-  });
-
-  it("seats and beds figures by the manifest's measurements once a street has read it, and by today's after", () => {
-    const stool: Placed = { name: 'stool', type: 'stool', x: 1, y: 2, w: 1, h: 1, props: {} };
-    const bed: Placed = { name: 'bed', type: 'bed', x: 3, y: 2, w: 2, h: 1, props: {} };
-    const room = { spots: [{ ...stool, type: 'seat' }], furniture: [stool, bed] };
-    street();
-    expect(seatHeight(room, 1, 2)).toBeCloseTo(0.6 - FURNITURE_DROP_M);
-    expect(bedAt(room, 3, 2).height).toBeCloseTo(0.5 - FURNITURE_DROP_M);
-    drawStreet('high_street');
-    expect(seatHeight(room, 1, 2)).toBeCloseTo(SEAT_M.stool - FURNITURE_DROP_M);
-    expect(bedAt(room, 3, 2).height).toBeCloseTo(BED_M - FURNITURE_DROP_M);
   });
 });

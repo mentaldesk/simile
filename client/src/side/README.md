@@ -70,7 +70,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the posts are drawn in code (`textures.ts`).
 - **Residents and the player** (`side-doll.ts`) are drawn as their painted figures, each step of a
   cycle's frame worked out once and kept (`poses.ts`), and tinted with the light where they are.
-  Seats are the manifest's `seat` up, or `SEAT_M`'s, once a street has read it (`measureFrom`).
+  Seats are the manifest's `seat` up, or `SEAT_M`'s without.
   In bed they lie on the mattress, the manifest's `bed` or `BED_M` up, centred on the piece
   by their `bed` point. Lying down takes `LIE_SECONDS` (0.8 s), eased: they sit on the bed's edge,
   then lie back into the middle of it; getting up plays it backwards. `Drawn.bed` says how far

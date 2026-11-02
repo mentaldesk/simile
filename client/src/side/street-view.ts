@@ -4,7 +4,6 @@ import { LAYER_PLACES, landmarkX, layerCopies, parallaxY, streetCentreY, type Co
 import { DEPTH } from './depths';
 import { dropShadow, furnitureKey, placeDerived, placeFurniture, placeParts, tileAlong, Tints, type TintGroup } from './draw';
 import { House } from './house';
-import { measureFrom } from './poses';
 import {
   coverCrop,
   feetOf,
@@ -124,7 +123,6 @@ export class StreetView {
     this.width = map.width * TILE;
     this.cityBaseY = this.feet + LAYER_PLACES.city.bottom * PPM;
     this.cityParallax = content.scenery.parallax.city ?? CITY_PARALLAX;
-    measureFrom(content.scenery);
     this.buildLayers();
     this.buildLandmarks();
     this.buildGround();

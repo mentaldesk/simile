@@ -4,7 +4,7 @@ import type { DollPose, PoseOptions } from '../dolls/rig';
 import { facesLeft, shown, spritePose, type Shown } from '../dolls/sprite';
 import { FURNITURE_DROP_M, TILE_M } from './layout';
 import type { ClimbKind, SideMap } from './maps';
-import type { FurnitureEntry, SceneryManifest } from './scenery';
+import type { FurnitureEntry } from './scenery';
 
 export { facesLeft };
 
@@ -63,35 +63,30 @@ export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): 
 export const SEAT_M: Record<string, number> = { stool: 0.567, bench: 0.392, cafe_table: 0.442, noodle_table: 0.483 };
 const SEATS = new Set(['seat', 'bar', 'desk']);
 
-type Furniture = Record<string, Pick<FurnitureEntry, 'seat' | 'bed'>>;
-const measured: { furniture: Furniture } = { furniture: {} };
+/** The manifest's furniture, by name. */
+export type Furniture = Record<string, Pick<FurnitureEntry, 'seat' | 'bed'>>;
 
-/** The manifest's measurements of its furniture, for seats and beds from then on. */
-export function measureFrom(manifest: Pick<SceneryManifest, 'furniture'>): void {
-  measured.furniture = manifest.furniture;
-}
-
-const seatOf = (furniture: Furniture, type: string): number | undefined => furniture[type]?.seat ?? SEAT_M[type];
+const seatOf = (furniture: Furniture, name: string): number | undefined => furniture[name]?.seat ?? SEAT_M[name];
 
 /** Metres up the seat at a map cell as drawn: its piece's, a chair's without one, or 0 off a seat. */
 export function seatHeight(
   map: Pick<SideMap, 'spots' | 'furniture'>,
   x: number,
   y: number,
-  furniture: Furniture = measured.furniture,
+  furniture: Furniture,
 ): number {
   const cx = Math.round(x);
   const cy = Math.round(y);
   if (!map.spots.some((s) => s.x === cx && s.y === cy && SEATS.has(s.type))) return 0;
   const piece = map.furniture.find(
     (f) =>
-      seatOf(furniture, f.type) !== undefined &&
+      seatOf(furniture, f.name) !== undefined &&
       cx >= f.x &&
       cx < f.x + Math.max(1, f.w) &&
       cy >= f.y &&
       cy < f.y + Math.max(1, f.h),
   );
-  return (seatOf(furniture, piece?.type ?? 'cafe_table') ?? SEAT_M.cafe_table) - FURNITURE_DROP_M;
+  return (seatOf(furniture, piece?.name ?? 'cafe_table') ?? SEAT_M.cafe_table) - FURNITURE_DROP_M;
 }
 
 /** Metres up the front edge of the bed's mattress, measured from its art, for a manifest that doesn't say. */
@@ -107,11 +102,11 @@ export type Bed = { height: number; along: number };
 const FLOOR: Bed = { height: 0, along: 0 };
 const beds = new WeakMap<Furniture, WeakMap<object, Map<number, Bed>>>();
 
-const bedOf = (furniture: Furniture, type: string): number | undefined =>
-  furniture[type]?.bed ?? (type === 'bed' ? BED_M : undefined);
+const bedOf = (furniture: Furniture, name: string): number | undefined =>
+  furniture[name]?.bed ?? (name === 'bed' ? BED_M : undefined);
 
 /** The bed whose piece is under a map cell, or the floor. */
-export function bedAt(map: Pick<SideMap, 'furniture'>, x: number, y: number, furniture: Furniture = measured.furniture): Bed {
+export function bedAt(map: Pick<SideMap, 'furniture'>, x: number, y: number, furniture: Furniture): Bed {
   const cx = Math.round(x);
   const cy = Math.round(y);
   let byMap = beds.get(furniture);
@@ -123,14 +118,14 @@ export function bedAt(map: Pick<SideMap, 'furniture'>, x: number, y: number, fur
   if (!bed) {
     const piece = map.furniture.find(
       (f) =>
-        bedOf(furniture, f.type) !== undefined &&
+        bedOf(furniture, f.name) !== undefined &&
         cx >= f.x &&
         cx < f.x + Math.max(1, f.w) &&
         cy >= f.y &&
         cy < f.y + Math.max(1, f.h),
     );
     bed = piece
-      ? { height: bedOf(furniture, piece.type)! - FURNITURE_DROP_M, along: (piece.x + piece.w / 2 - cx - 0.5) * TILE_M }
+      ? { height: bedOf(furniture, piece.name)! - FURNITURE_DROP_M, along: (piece.x + piece.w / 2 - cx - 0.5) * TILE_M }
       : FLOOR;
     known.set(key, bed);
   }
