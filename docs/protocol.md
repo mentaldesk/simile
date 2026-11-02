@@ -567,9 +567,9 @@ carry limit is left where they stand, a new `Pile` at the end of their `left`. I
 ### `sell`
 
 `item`: one thing the player carries, by its `id`, or `null` for everything they carry that the
-buyer where they stand buys, `player_state`'s [`buyer`](#player_state). Each is sold for the
-buyer's price in `prices`, which goes to their `money`. The server sends the
-[`player_state`](#player_state) that follows. It ignores a `sell` where there's no buyer, and one
+buyer where they stand buys, `player_state`'s [`buyer`](#player_state), except the lamp, which is
+only sold on its own. Each is sold for the buyer's price in `prices`, which goes to their `money`.
+The server sends the [`player_state`](#player_state) that follows. It ignores a `sell` where there's no buyer, and one
 for an item they don't carry or the buyer doesn't buy.
 
 ### `lamp`

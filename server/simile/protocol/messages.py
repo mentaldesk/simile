@@ -667,7 +667,7 @@ class SellMessage(Model):
     type: Literal["sell"] = "sell"
     item: Id | None = Field(
         description="One thing they carry, by its `id`, or null for everything they carry that "
-        "the buyer buys."
+        "the buyer buys except the lamp, which is only sold on its own."
     )
 
 
