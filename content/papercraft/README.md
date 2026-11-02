@@ -95,7 +95,7 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 | `height` | How tall the picture is in metres. For sprites and fronts, `size[1] / height` is `ppm`. For layers and papers it's the height to draw them at. |
 | `kind` | One of the kinds below. |
 | `anchor` | Sprites, fronts and landmarks: the point that stands on the ground at the piece's x, as fractions of the width and height. |
-| `surface` | Optional, `ground` pieces: metres down from the strip's top edge to the far edge of the surface people walk on, for a strip painted with a kerb or a wall behind its pavement. Absent means 0: the top edge is that far edge, which the client stands 0.35 m above the street's feet line (`GROUND_LIFT_M`). |
+| `surface` | Optional, `ground` pieces: metres down from the strip's top edge to the far edge of the surface people walk on, for a strip painted with a kerb or a wall behind its pavement. Absent means 0. The client draws the strip's top `GROUND_LIFT_M + surface` metres above the street's feet line, so the far edge stays `GROUND_LIFT_M` (0.35 m) above it. |
 | `hash` | The hash of its inputs, for the build. |
 
 | Kind | |
@@ -119,13 +119,14 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   towers. Each has:
   - `piece`: the landmark's piece key. Its `anchor`, the middle of its foot, stands on the city
     layer's bottom edge, and its `height` is how tall to draw it in the street's metres, as a
-    layer's is. It moves with the city layer, at `parallax.city`, so the skyline hides its foot.
-  - `glow`: its lights at night, a `glow` piece the same size and placement as `piece`, added as a
-    front's glow is.
-  - `at`: by street map id, where along that street it stands, as a fraction of the street's width
-    from its left edge (0 to 1): the landmark's anchor is in the middle of the view when the
-    camera's centre is there, whatever `parallax.city` is. A street it leaves out, as it does those
-    underground, has no landmark.
+    layer's is. It moves with the city layer, at `parallax.city`, so the skyline hides its foot,
+    and takes the city layer's time-of-day tint and haze.
+  - `glow`: its lights at night, a `glow` piece the same size and placement as `piece`, added on
+    top as a front's glow is: in full at night, 55% in the evening.
+  - `at`: by street map id, where along that street it stands, as a fraction of the street map's
+    width from its left edge (0 to 1), not counting the ground drawn past either end: the
+    landmark's anchor is in the middle of the view when the camera's centre is there, whatever
+    `parallax.city` is. A street it leaves out, as it does those underground, has no landmark.
 - **`grounds`**: ground strips for stretches that aren't pavement: the square, the park and the
   river's promenade below Banyan Row.
 - **`buildings`**, by the id of the map's building: a location id, or for a building that only
@@ -140,13 +141,13 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   extras too, as the rooftops use the palm tree, the bicycle and the bin.
 
   An entry can also carry measurements of its art, which hold for its variants too. Each is
-  optional, and without it the client uses its own constant, as it does today:
+  optional, and without it the client does as it does today:
 
   | Field | |
   |---|---|
   | `seat` | Metres from the piece's foot (the bottom edge its `anchor` stands on) up to the top of the seat at its front edge, where a sitting figure rests. The client's `SEAT_M`. |
   | `bed` | Metres from the bed's foot up to the top of its mattress at its front edge, where a figure lies. The client's `BED_M`. |
-  | `light` | A lamp's: metres from its foot up to the middle of its head, where its light is centred. The client's `LAMP_HEAD_M`. |
+  | `light` | Metres from the piece's foot up to the middle of the lamp's head, where its light is centred. Any entry with `light` gets a light there, `lamp`, `sewer_lamp` and `floor_lamp` alike. Without it a piece has no light, except the street `lamp`, which falls back to the client's `LAMP_HEAD_M`. |
   | `moulding` | A frame's: `{"left", "right", "top", "bottom"}`, how wide its moulding is on each side in the piece's own px (as `size` counts them), kept as the frame stretches round a painting. The rest is the opening. The client's `MOULDING`. |
 - **`platforms`**: `stairs` (one storey, rising to the right: mirror it for a flight to the left),
   `ladder`, `steps` (stone steps rising to the right), `ledge` (stretch it by repeating its
@@ -154,10 +155,10 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   and `door` for back walls.
 - **`slab`**: the corrugated card band for floor slabs and the dollhouse's sides.
 - **`parallax`** and **`times`**: what the previews use, as a starting point for part 5.
-  `parallax` has the six layers, and `city` (about 0.1) once a street has a city layer. A time's
-  `tint` multiplies near layers and sprites, `sky` the sky, `haze` mixes the far layer that
-  fraction of the way to its colour (the mid layer half as much), and `glow` scales the glow
-  maps.
+  `parallax` has the six layers, and `city` is required whenever any street has a city layer. A
+  client reading a manifest without it uses 0.1. A time's `tint` multiplies near layers and
+  sprites, `sky` the sky, `haze` mixes the far layer that fraction of the way to its colour (the
+  mid layer half as much), and `glow` scales the glow maps.
 
 ## References
 

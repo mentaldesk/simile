@@ -42,7 +42,7 @@ export type FurnitureEntry = {
   seat?: number;
   /** Metres up the front edge. */
   bed?: number;
-  /** Metres up the lamp's head. */
+  /** Metres up to the middle of the lamp's head. */
   light?: number;
   /** The frame picture's px. */
   moulding?: Moulding;
