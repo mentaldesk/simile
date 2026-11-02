@@ -31,11 +31,11 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
     shift, and never while nobody works there.
 - **Collapsing.** At 1 they collapse. Their money and everything they carry but the lamp is left
   in a `Pile` where they fell, on the ground below if they were mid-air or partway up stairs or a
-  ladder, at the end of `Player.left`, and every effect clears. They wake in their bed at home,
-  already resting (see *Resting*), or at the entry of `home` if it has no bed, with hunger
-  `waking` (0.75), and the client gets `player_collapsed` to put them there, with `cause`
-  `hunger`. The lamp stays with them, so they can see to go back for the rest. A collapse for
-  health or power takes the same path.
+  ladder, at the end of `Player.left`, the money through the ledger as `dropped`, and every
+  effect clears. They wake in their bed at home, already resting (see *Resting*), or at the entry
+  of `home` if it has no bed, with hunger `waking` (0.75), and the client gets `player_collapsed`
+  to put them there, with `cause` `hunger`. The lamp stays with them, so they can see to go back
+  for the rest. A collapse for health or power takes the same path.
 - **Once a power cell is in** their stomach, hunger is 0 for good and nothing is on offer to eat:
   `meal()` is none and `eat` does nothing. They run on power instead.
 
@@ -118,8 +118,8 @@ Its constants are in `HealthConfig`, beside it.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
   fits under their carry limit, in order. Money weighs nothing, and from a pickup goes through the
-  ledger as `found`. Money they left when they collapsed never left them in the ledger, so it
-  comes back without an entry. Taking from a pickup records when, by its id, in `Player.taken`,
+  ledger as `found`. Money they left when they collapsed went into the ledger as `dropped`, and
+  comes back as `recovered`. Taking from a pickup records when, by its id, in `Player.taken`,
   which is saved, and whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any
   that don't fit of one of theirs stay in it.
 - **One thing per press.** Other modules add what else `pick_up` can take to `claimers_of(app)`,

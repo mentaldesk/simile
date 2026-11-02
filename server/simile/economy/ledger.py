@@ -10,7 +10,9 @@ OUTSIDE = "outside"
 """The world beyond the village: it pays wages and pensions, and takes rent and supplies."""
 PLAYER = PLAYER_ID
 """The player, who isn't a resident: their money is in the ledger but not in what residents hold."""
-_NOT_RESIDENTS = frozenset({OUTSIDE, PLAYER})
+PILES = "piles"
+"""What the player left when they collapsed: money in it is theirs again once picked up."""
+_NOT_RESIDENTS = frozenset({OUTSIDE, PLAYER, PILES})
 
 
 class Kind(StrEnum):
@@ -29,6 +31,10 @@ class Kind(StrEnum):
     """The player selling salvage to a buyer in the tunnels."""
     FOUND = "found"
     """Money the player picks up, such as a secret's cash."""
+    DROPPED = "dropped"
+    """Money the player leaves in a pile when they collapse."""
+    RECOVERED = "recovered"
+    """Money the player picks up from a pile they left."""
 
 
 class Entry(Model):

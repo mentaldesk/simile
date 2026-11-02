@@ -9,7 +9,7 @@ from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.cafe.config import DEFAULT_CONFIG as CAFE
 from simile.cafe.events import Served
 from simile.economy.config import DEFAULT_CONFIG, EconomyConfig, Shop
-from simile.economy.ledger import OUTSIDE, PLAYER, Entry, Kind, Ledger
+from simile.economy.ledger import OUTSIDE, PILES, PLAYER, Entry, Kind, Ledger
 from simile.economy.stock import Batch, stocked
 from simile.schema import Id, Item, ItemKind, Npc, PayKind, Player
 from simile.sim import Clock
@@ -197,7 +197,7 @@ class Economy:
             if party == PLAYER:
                 player = self._player()
                 player.money = max(player.money + change, 0.0)
-            elif party != OUTSIDE:
+            elif party not in (OUTSIDE, PILES):
                 self.money[party] += change
         self.ledger.record(entry)
 
@@ -223,6 +223,14 @@ class Economy:
     def find(self, amount: float, pickup: Id) -> None:
         """The player picks up money lying at a pickup."""
         self.pay(OUTSIDE, PLAYER, amount, Kind.FOUND, pickup)
+
+    def drop(self, amount: float) -> None:
+        """The player leaves money in a pile when they collapse."""
+        self.pay(PLAYER, PILES, amount, Kind.DROPPED)
+
+    def recover(self, amount: float) -> None:
+        """The player picks up money from a pile they left."""
+        self.pay(PILES, PLAYER, amount, Kind.RECOVERED)
 
     def tick(self, dt: float) -> None:
         self._elapsed += dt
