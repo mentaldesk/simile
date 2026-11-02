@@ -5,6 +5,8 @@ export type TimeName = (typeof TIMES)[number];
 
 export const LAYERS = ['sky', 'far', 'mid', 'near', 'ground', 'foreground'] as const;
 export type LayerName = (typeof LAYERS)[number];
+/** The city sits between the sky and the far layer, and streets underground leave it out. */
+type Layers<T> = Record<LayerName, T> & { city?: T };
 
 export type Time = {
   tint: Rgb;
@@ -26,18 +28,36 @@ export type Piece = {
   /** Metres. */
   width?: number;
   eaves?: number;
+  /** Ground pieces: metres down from the strip's top to the far edge of the walking surface. */
+  surface?: number;
 };
 
 export type BuildingEntry = { street: string; front: string; glow: string; floors: string[] };
-export type FurnitureEntry = { piece: string; variants?: Record<string, string>; stretch?: boolean };
+export type Moulding = { left: number; right: number; top: number; bottom: number };
+export type FurnitureEntry = {
+  piece: string;
+  variants?: Record<string, string>;
+  stretch?: boolean;
+  /** Metres up the front edge. */
+  seat?: number;
+  /** Metres up the front edge. */
+  bed?: number;
+  /** Metres up the lamp's head. */
+  light?: number;
+  /** The frame picture's px. */
+  moulding?: Moulding;
+};
+/** `at`: street id to a fraction of its width. */
+export type Landmark = { piece: string; glow: string; at: Record<string, number> };
 
 /** As content/papercraft/README.md describes it. */
 export type SceneryManifest = {
   version: number;
   ppm: number;
-  parallax: Record<LayerName, number>;
+  parallax: Layers<number>;
   times: Record<TimeName, Time>;
-  streets: Record<string, Record<LayerName, string>>;
+  streets: Record<string, Layers<string>>;
+  landmarks?: Record<string, Landmark>;
   grounds: Record<string, string>;
   buildings: Record<string, BuildingEntry>;
   furniture: Record<string, FurnitureEntry>;
