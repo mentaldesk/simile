@@ -8,7 +8,7 @@ import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 from types import TracebackType
-from typing import Protocol, Self
+from typing import Literal, Protocol, Self
 
 from PIL import Image
 
@@ -33,23 +33,41 @@ GRIMY = (
     "surface, a dirty, muted palette, chunky rounded simplified shapes, bold readable silhouettes"
 )
 """#329's properly grimy cartoon: the sewers' style."""
+CLEAN = (
+    "hand-drawn 2D cartoon game art: smooth, even dark brown ink outlines of one steady weight, "
+    "flat colour fills with simple soft shading, fresh, tidy surfaces that look new and well "
+    "kept, a bright, sunny palette, chunky rounded simplified shapes, bold readable silhouettes"
+)
+"""The dolls' look, kept clean: the village's comic style."""
+type Style = Literal["papercraft", "clean", "cartoon", "grimy"]
+WORDS: dict[Style, str] = {"papercraft": STYLE, "clean": CLEAN, "cartoon": CARTOON, "grimy": GRIMY}
 NO_TEXT = " No text, no lettering, no logos, no words on signs."
 REFERENCE_WIDTH = 768
 
 
+def in_style(subject: str, style: Style = "papercraft") -> str:
+    """`subject` in `style`, with the ban on lettering."""
+    return f"{subject} Art style: {WORDS[style]}.{NO_TEXT}"
+
+
 def styled(subject: str) -> str:
     """`subject` with the references' art style and the ban on lettering."""
-    return f"{subject} Art style: {STYLE}.{NO_TEXT}"
+    return in_style(subject, "papercraft")
+
+
+def clean(subject: str) -> str:
+    """`subject` in the village's clean cartoon, with the ban on lettering."""
+    return in_style(subject, "clean")
 
 
 def cartoon(subject: str) -> str:
     """`subject` in the tunnels' cartoon, with the ban on lettering."""
-    return f"{subject} Art style: {CARTOON}.{NO_TEXT}"
+    return in_style(subject, "cartoon")
 
 
 def grimy(subject: str) -> str:
     """`subject` in the sewers' grimy cartoon, with the ban on lettering."""
-    return f"{subject} Art style: {GRIMY}.{NO_TEXT}"
+    return in_style(subject, "grimy")
 
 
 def reference(name: str, width: int = REFERENCE_WIDTH) -> Image.Image:

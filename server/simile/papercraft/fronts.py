@@ -76,6 +76,9 @@ class Front:
     with awnings: FLUX boards up the middle of a shop window with no door near it."""
     unit: float = UNIT
     """The widest it's painted in one go."""
+    modern: bool = False
+    """Today's details drawn over the plan: slim dark window frames with blinds, a light band
+    over each shop window with a neon ring for its pictogram, and air-conditioning units."""
 
     @property
     def rise(self) -> float:
@@ -326,7 +329,88 @@ def draw(front: Front, ppm: float | None = None) -> Plan:
     a = np.asarray(image, dtype=np.int16)
     drawn = (np.abs(a - np.array(backdrop(front))).max(axis=2) > 6).astype(np.uint8) * 255
     shape = Image.fromarray(np.maximum(drawn, np.asarray(outline)))
-    return Plan(image, glow, ppm, left, ground, shape)
+    plan = Plan(image, glow, ppm, left, ground, shape)
+    return modernised(plan, front) if front.modern else plan
+
+
+DARK: Rgb = (52, 56, 62)
+CLEAR_GLASS: Rgb = (120, 150, 170)
+BLIND: Rgb = (226, 222, 212)
+LIT: Rgb = (240, 230, 204)
+AC: Rgb = (214, 216, 218)
+FAN: Rgb = (150, 154, 160)
+LEAF: Rgb = (78, 140, 84)
+
+
+def modernised(plan: Plan, f: Front) -> Plan:
+    """`plan` with today's details drawn over it: slim dark window frames with blinds instead of
+    curtains and sills, a light band instead of each striped awning, a lit shop window with a neon
+    ring for its pictogram, and air-conditioning units. The ring and the band glow at night."""
+    image, glow = plan.image.copy(), plan.glow.copy()
+    pen, light = ImageDraw.Draw(image), ImageDraw.Draw(glow)
+    ppm = plan.ppm
+
+    def px(box: Box) -> tuple[float, float, float, float]:
+        x0, y0, x1, y1 = box
+        return (
+            plan.left + x0 * ppm,
+            plan.ground - y1 * ppm,
+            plan.left + x1 * ppm,
+            plan.ground - y0 * ppm,
+        )
+
+    def rect(box: Box, fill: Rgb) -> None:
+        pen.rectangle(px(box), fill=fill)
+
+    windows = f.window_boxes()
+    canopies = [w for w in windows if f.awnings and w[1] < f.storey]
+    for x0, _, x1, y1 in canopies:
+        rect((x0 - 0.35, y1 - 0.2, x1 + 0.35, y1 + 0.7), f.wall)
+    for x0, _, x1, y1 in f.shop_boxes():
+        rect((x0 - 0.3, y1 - 0.2, x1 + 0.3, y1 + 0.7), f.wall)
+    for x0, y0, x1, y1 in windows:
+        rect((x0 - 0.17, y0 - 0.32, x1 + 0.17, y1 + 0.22), f.wall)
+        rect((x0 - 0.06, y0 - 0.06, x1 + 0.06, y1 + 0.06), DARK)
+        rect((x0, y0, x1, y1), CLEAR_GLASS)
+        rect((x0, y1 - 0.3 * (y1 - y0), x1, y1), BLIND)
+        middle = (x0 + x1) / 2
+        rect((middle - 0.03, y0, middle + 0.03, y1), DARK)
+        if f.flower_boxes and y0 > f.storey:
+            rect((x0 - 0.12, y0 - 0.3, x1 + 0.12, y0 - 0.06), f.flower_boxes)
+            for i, lx in enumerate(np.arange(x0, x1 + 0.01, 0.28)):
+                r = 0.16 if i % 2 else 0.12
+                pen.ellipse(px((lx - r, y0 - 0.1 - r, lx + r, y0 - 0.1 + r)), fill=LEAF)
+    for x0, _, x1, y1 in canopies:
+        rect((x0 - 0.3, y1 + 0.12, x1 + 0.3, y1 + 0.26), DARK)
+    for x0, y0, x1, y1 in f.shop_boxes():
+        rect((x0, y0, x1, y1), DARK)
+        rect((x0 + 0.1, y0 + 0.1, x1 - 0.1, y1 - 0.08), LIT)
+        panes = max(2, round((x1 - x0) / 1.6))
+        for i in range(1, panes):
+            x = x0 + (x1 - x0) * i / panes
+            rect((x - 0.04, y0, x + 0.04, y1), DARK)
+        middle = (x0 + x1) / 2 if panes % 2 else x0 + (x1 - x0) * (panes // 2 + 0.5) / panes
+        ring = px((middle - 0.36, (y0 + y1) / 2 - 0.36, middle + 0.36, (y0 + y1) / 2 + 0.36))
+        width = max(2, round(0.07 * ppm))
+        pen.ellipse(ring, outline=f.shop, width=width)
+        light.ellipse(ring, outline=255, width=width)
+        rect((x0 - 0.25, y1 + 0.02, x1 + 0.25, y1 + 0.62), DARK)
+        band = (x0 - 0.15, y1 + 0.12, x1 + 0.15, y1 + 0.52)
+        rect(band, f.shop or LIT)
+        light.rectangle(px(band), fill=255)
+    clear = [(w[0] - 0.2, w[1], w[2] + 0.2, w[3]) for w in windows] + list(f.murals)
+    for i, (_, y0, x1, _) in enumerate(w for w in windows if w[1] > f.storey):
+        box = (x1 + 0.3, y0 + 0.15, x1 + 1.05, y0 + 0.7)
+        inside = box[2] < f.width - 0.25
+        if i % 2 or not inside or any(_overlaps(box, c) for c in clear):
+            continue
+        rect(box, AC)
+        r, cx, cy = 0.2, box[0] + 0.28, (box[1] + box[3]) / 2
+        pen.ellipse(px((cx - r, cy - r, cx + r, cy + r)), fill=FAN)
+    a = np.asarray(image, dtype=np.int16)
+    drawn = (np.abs(a - np.array(backdrop(f))).max(axis=2) > 6).astype(np.uint8) * 255
+    shape = Image.fromarray(np.maximum(drawn, np.asarray(plan.shape)))
+    return replace(plan, image=image, glow=glow, shape=shape)
 
 
 def _door(

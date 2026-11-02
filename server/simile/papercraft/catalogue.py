@@ -2,27 +2,30 @@
 
 import zlib
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, NamedTuple
 
+from simile.papercraft import skyline
 from simile.papercraft.fronts import GREY, Front, backdrop, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
-from simile.papercraft.painter import cartoon, grimy, styled
+from simile.papercraft.painter import Style, in_style, styled
 from simile.papercraft.sketches import SKETCHES
 from simile.papercraft.village import (
-    CARTOON_PAPERS,
     CLAY,
     GROUNDS,
+    LANDMARKS,
     LOOKS,
+    PAPER_STYLES,
     PAPERS,
     SLATE,
     STREETS,
     TERRACOTTA,
+    Landmark,
     Look,
     front,
     papers,
 )
 
-type Kind = Literal["layer", "strip", "ground", "sprite", "front", "glow", "paper"]
+type Kind = Literal["layer", "strip", "ground", "sprite", "front", "glow", "paper", "landmark"]
 
 SPRITE = (
     "Seen straight from the front at eye level, a flat elevation with no perspective. One single "
@@ -73,6 +76,106 @@ GRIMY_REDRAW = (
 TUNNELS = "cartoon/street"
 TUNNEL_ROOMS = "cartoon/interior"
 """The tunnels' references, from #329's revised cartoon."""
+CLEAN_LEAD = "Make a new picture in exactly the clean cartoon style of the reference picture: "
+CLEAN_REDRAW = (
+    "Redraw image 1 as {subject}, hand-drawn in the clean cartoon style of image 2: smooth, even "
+    "dark ink outlines around every shape, flat colours with simple soft shading, everything "
+    "fresh and new. Keep every shape exactly where it is, with the same outlines and colours, "
+    "seen exactly from the side with no perspective, on a plain {back} background, and no shadow "
+    "on the background."
+)
+CLEAN_TEXTURE = (
+    "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with smooth, "
+    "even dark lines and flat colours, even light, no objects, no edges."
+)
+CLEAN_PAPER_LEAD = (
+    "Make a flat texture in the colours and clean cartoon style of the reference picture, "
+    "showing none of its objects: "
+)
+GRIMY_TEXTURE = (
+    "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with scratchy "
+    "dark ink lines and flat colours, heavy grime and damp stains, even light, no objects, no "
+    "edges."
+)
+GRIMY_PAPER_LEAD = (
+    "Make a flat texture in the colours and grimy cartoon style of the reference picture, "
+    "showing none of its objects: "
+)
+
+
+@dataclass(frozen=True)
+class Words:
+    """What a style's prompts say, and the references its layers and papers are painted from."""
+
+    lead: str
+    """Before a new picture's subject."""
+    redraw: str
+    """A sketch redrawn, with `{subject}` and `{back}`."""
+    paper_lead: str
+    texture: str
+    """A paper's pattern, with `{}`."""
+    front: str
+    """How a front or a landmark is redrawn from its plan."""
+    night: str
+    """What a night picture leaves in shadow."""
+    variant: str
+    """What a colour variant keeps."""
+    layers: str
+    rooms: str
+
+
+WORDS: dict[Style, Words] = {
+    "papercraft": Words(
+        LEAD,
+        REDRAW,
+        PAPER_LEAD,
+        TEXTURE,
+        "made of cut paper and card as a papercraft diorama: matt paper with visible fibres, cut "
+        "edges and soft shadows between layers",
+        "paper walls",
+        "the paper texture",
+        "street",
+        "house",
+    ),
+    "clean": Words(
+        CLEAN_LEAD,
+        CLEAN_REDRAW,
+        CLEAN_PAPER_LEAD,
+        CLEAN_TEXTURE,
+        "hand-drawn in the clean cartoon style: smooth, even dark ink outlines around every "
+        "shape, flat colours with simple soft shading, everything fresh and new",
+        "walls",
+        "the ink lines",
+        "street",
+        "house",
+    ),
+    "cartoon": Words(
+        CARTOON_LEAD,
+        CARTOON_REDRAW,
+        CARTOON_PAPER_LEAD,
+        CARTOON_TEXTURE,
+        "hand-drawn in the cartoon style: thick scratchy dark ink outlines around every shape, "
+        "flat colours with simple soft shading, and a little wear",
+        "walls",
+        "the ink lines",
+        TUNNELS,
+        TUNNEL_ROOMS,
+    ),
+    "grimy": Words(
+        GRIMY_LEAD,
+        GRIMY_REDRAW,
+        GRIMY_PAPER_LEAD,
+        GRIMY_TEXTURE,
+        "hand-drawn in the grimy cartoon style: thick scratchy dark ink outlines around every "
+        "shape, flat colours with simple soft shading, and heavy grime, damp stains and slime",
+        "walls",
+        "the ink lines",
+        TUNNELS,
+        TUNNEL_ROOMS,
+    ),
+}
+"""The clean style reads the papercraft references until it has its own."""
+SURFACE: frozenset[Style] = frozenset({"papercraft", "clean"})
 
 
 @dataclass(frozen=True)
@@ -107,45 +210,58 @@ class Painting:
     reseed: int = 0
     """Added to the seed, to paint a rejected painting again from the same prompt."""
     cut: tuple[str, ...] = ()
-    """What else to cut: a sprite's `shadows` and `gaps`, or `above` a ground piece's top row."""
+    """What else to cut: a sprite's `shadows` and `gaps`, `above` a ground piece's top row, or
+    `banded`, a ground piece made solid across its own band."""
+    landmark: str | None = None
+    """For a landmark or its glow map, its plan in `skyline.PLANS`."""
 
     @property
     def seed(self) -> int:
         return zlib.crc32((self.base or self.key).encode()) % 10_000 + self.reseed
 
 
-def layer(key: str, kind: Kind, subject: str, size: tuple[int, int], height: float) -> Painting:
-    """A street layer. The near and foreground ones are kept to plants, since edit mode copies
-    the street reference's houses into them otherwise."""
-    if key.startswith(("near-", "front-")):
+def layer(
+    key: str,
+    kind: Kind,
+    subject: str,
+    size: tuple[int, int],
+    height: float,
+    style: Style = "papercraft",
+    **kw,
+) -> Painting:
+    """A street layer. The village's near and foreground ones are kept to plants, since edit
+    mode copies the street reference's houses into them otherwise."""
+    words = WORDS[style]
+    if style in SURFACE and key.startswith(("near-", "front-")):
         subject += NOTHING_BUT_PLANTS
-    return Painting(f"layers/{key}", kind, styled(LEAD + subject), size, ("street",), height)
+    prompt = in_style(words.lead + subject, style)
+    return Painting(f"layers/{key}", kind, prompt, size, (words.layers,), height, **kw)
 
 
-def paper(key: str, pattern: str, size: tuple[int, int] = (768, 512), **kw) -> Painting:
-    prompt = styled(PAPER_LEAD + TEXTURE.format(pattern))
-    return Painting(f"papers/{key}", "paper", prompt, size, ("house",), **kw)
+def paper(
+    key: str, pattern: str, size: tuple[int, int] = (768, 512), style: Style = "papercraft", **kw
+) -> Painting:
+    words = WORDS[style]
+    prompt = in_style(words.paper_lead + words.texture.format(pattern), style)
+    return Painting(f"papers/{key}", "paper", prompt, size, (words.rooms,), **kw)
 
 
 def cartoon_paper(key: str, pattern: str, size: tuple[int, int] = (768, 512)) -> Painting:
-    prompt = cartoon(CARTOON_PAPER_LEAD + CARTOON_TEXTURE.format(pattern))
-    return Painting(f"papers/{key}", "paper", prompt, size, (TUNNEL_ROOMS,))
+    return paper(key, pattern, size, "cartoon")
 
 
 def sewer_layer(
     key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw
 ) -> Painting:
     """A layer of the sewers, in the grimy cartoon."""
-    prompt = grimy(GRIMY_LEAD + subject)
-    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height, **kw)
+    return layer(key, kind, subject, size, height, "grimy", **kw)
 
 
 def tunnel_layer(
     key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw
 ) -> Painting:
     """A layer of the tunnels, in the cartoon."""
-    prompt = cartoon(CARTOON_LEAD + subject)
-    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height, **kw)
+    return layer(key, kind, subject, size, height, "cartoon", **kw)
 
 
 SKY = Painting(
@@ -450,6 +566,15 @@ SLAB = paper(
 )
 
 
+class Moulding(NamedTuple):
+    """A frame's moulding on each side, in its piece's own px."""
+
+    left: int
+    right: int
+    top: int
+    bottom: int
+
+
 @dataclass(frozen=True)
 class Item:
     """A piece of furniture, a street prop or a platform piece, by the name the maps use."""
@@ -472,10 +597,14 @@ class Item:
     folder: str = "furniture"
     variants: dict[str, str] = field(default_factory=dict)
     """Colour variants: name, and what's recoloured to what."""
-    cartoon: bool = False
-    """Painted in the tunnels' cartoon rather than papercraft."""
-    grimy: bool = False
-    """Painted in the sewers' grimy cartoon."""
+    style: Style = "papercraft"
+    seat: float | None = None
+    """Metres from its foot up to the top of its seat at the front edge."""
+    bed: float | None = None
+    """Metres from its foot up to the top of its mattress at the front edge."""
+    light: float | None = None
+    """Metres from its foot up to the middle of its lamp's head."""
+    moulding: Moulding | None = None
 
 
 STREET = "street"
@@ -505,6 +634,7 @@ FURNITURE: dict[str, Item] = {
         (896, 512),
         side=True,
         variants={"blue": "Recolour the patchwork quilt to soft blues and greens."},
+        bed=0.45,
     ),
     "wardrobe": Item(
         "a tall wooden wardrobe painted sage green with two doors and brass knobs", 2.0, (512, 768)
@@ -565,6 +695,7 @@ FURNITURE: dict[str, Item] = {
         side=True,
         grey=True,
         cut=("shadows", "gaps"),
+        seat=0.442,
     ),
     "stove": Item(
         f"a big noodle stove of grey card with two burners, two tall stock pots and a wok, "
@@ -591,6 +722,7 @@ FURNITURE: dict[str, Item] = {
         0.7,
         (384, 640),
         variants={"teal": "Recolour the stool's seat to teal."},
+        seat=0.567,
     ),
     "noodle_table": Item(
         "a small square wooden table with a red paper lantern on a cord above it and a red "
@@ -600,6 +732,7 @@ FURNITURE: dict[str, Item] = {
         side=True,
         grey=True,
         cut=("deep shadows", "gaps"),
+        seat=0.483,
     ),
     "laser_cutter": Item(
         "a big laser cutter, a wide boxy cabinet of pale grey card with a tinted orange lid "
@@ -664,6 +797,7 @@ FURNITURE: dict[str, Item] = {
         0.9,
         (896, 512),
         ref=STREET,
+        seat=0.392,
     ),
     "news_terminal": Item(
         "a public news kiosk: a slim upright stand of teal-painted metal card with a small "
@@ -679,7 +813,13 @@ FURNITURE: dict[str, Item] = {
         (896, 768),
         ref=STREET,
     ),
-    "lamp": Item("an old dark green iron street lamp on a tall post", 3.6, (512, 1024), ref=STREET),
+    "lamp": Item(
+        "an old dark green iron street lamp on a tall post",
+        3.6,
+        (512, 1024),
+        ref=STREET,
+        light=3.35,
+    ),
     "tree": Item(
         "a leafy shade tree with a sturdy trunk and a broad round crown of big paper leaves",
         6.0,
@@ -718,7 +858,7 @@ FURNITURE: dict[str, Item] = {
         ref=TUNNELS,
         sketch="train_carriage",
         cut=("outline",),
-        cartoon=True,
+        style="cartoon",
     ),
     "catwalk": Item(
         "a steel maintenance catwalk seen exactly from the side: a deck of steel grating on a "
@@ -730,7 +870,7 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
         stretch=True,
         cut=("outline",),
-        cartoon=True,
+        style="cartoon",
     ),
     "metro_steps": Item(
         "a flight of old metro station steps seen exactly from the side, rising to the left: "
@@ -740,7 +880,7 @@ FURNITURE: dict[str, Item] = {
         ref=TUNNELS,
         sketch="metro_steps",
         cut=("outline",),
-        cartoon=True,
+        style="cartoon",
     ),
     "freight_lift": Item(
         "an old dead freight lift seen from the front: its car behind a folding steel grille "
@@ -749,7 +889,7 @@ FURNITURE: dict[str, Item] = {
         ref=TUNNELS,
         sketch="freight_lift",
         cut=("outline",),
-        cartoon=True,
+        style="cartoon",
     ),
     "scrap_stall": Item(
         "a scrap trader's stall: a battered trestle table piled with salvaged electronics, coils "
@@ -758,7 +898,7 @@ FURNITURE: dict[str, Item] = {
         2.2,
         (896, 768),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "turnstile": Item(
         "a pair of old metro turnstiles side by side: two waist-high posts of scuffed stainless "
@@ -767,7 +907,7 @@ FURNITURE: dict[str, Item] = {
         1.1,
         (768, 512),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "ticket_machine": Item(
         "an old metro ticket machine: a tall cabinet of scuffed steel and faded teal panels with "
@@ -775,7 +915,7 @@ FURNITURE: dict[str, Item] = {
         1.9,
         (512, 896),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "metro_bench": Item(
         "an old metro platform bench seen straight from the front: a row of three moulded orange "
@@ -783,7 +923,7 @@ FURNITURE: dict[str, Item] = {
         0.9,
         (896, 512),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "dead_terminal": Item(
         "an old metro control console: a waist-high cabinet of grimy grey steel with a dark "
@@ -791,7 +931,7 @@ FURNITURE: dict[str, Item] = {
         1.5,
         (512, 768),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "breaker_box": Item(
         "a maintenance power point: a grey steel breaker box on a short steel post, with a "
@@ -800,10 +940,10 @@ FURNITURE: dict[str, Item] = {
         1.4,
         (512, 768),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "crates": Item(
-        "a stack of two battered wooden crates", 1.0, (640, 640), ref=TUNNELS, cartoon=True
+        "a stack of two battered wooden crates", 1.0, (640, 640), ref=TUNNELS, style="cartoon"
     ),
     "rubble": Item(
         "a low heap of broken concrete chunks, bricks and twisted rusty rebar, twice as wide as "
@@ -811,7 +951,7 @@ FURNITURE: dict[str, Item] = {
         0.7,
         (768, 448),
         ref=TUNNELS,
-        cartoon=True,
+        style="cartoon",
     ),
     "bedroll": Item(
         "an abandoned sleeping spot on the floor seen from the side: a rolled-out stained "
@@ -820,7 +960,7 @@ FURNITURE: dict[str, Item] = {
         (768, 384),
         side=True,
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "pipes": Item(
         "a long run of three old pipes one above the other along a wall, of rusty iron and "
@@ -829,7 +969,7 @@ FURNITURE: dict[str, Item] = {
         (1280, 352),
         stretch=True,
         ref=TUNNELS,
-        cartoon=True,
+        style="cartoon",
     ),
     "sewer_walkway": Item(
         "a narrow old sewer walkway seen exactly from the side: a slab of stained concrete on "
@@ -841,7 +981,7 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
         stretch=True,
         cut=("outline",),
-        grimy=True,
+        style="grimy",
     ),
     "sewer_pipe": Item(
         "a huge old cast-iron sewer pipe lying along, seen exactly from the side, rusty and "
@@ -852,7 +992,7 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
         stretch=True,
         cut=("outline",),
-        grimy=True,
+        style="grimy",
     ),
     "sewer_pier": Item(
         "a tall narrow pier of old dark red brick between two sewer rooms, filthy and streaked "
@@ -862,7 +1002,7 @@ FURNITURE: dict[str, Item] = {
         sketch="sewer_pier",
         folder="platforms",
         cut=("outline",),
-        grimy=True,
+        style="grimy",
     ),
     "sewer_vault": Item(
         "a long band of the low brick vault of an old sewer seen exactly from the side, wet and "
@@ -873,7 +1013,7 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
         stretch=True,
         cut=("outline",),
-        grimy=True,
+        style="grimy",
     ),
     "sewer_weir": Item(
         "a squat old brick weir across a sewer, seen exactly from the side, with a rusty iron "
@@ -884,7 +1024,7 @@ FURNITURE: dict[str, Item] = {
         sketch="sewer_weir",
         folder="platforms",
         cut=("outline",),
-        grimy=True,
+        style="grimy",
     ),
     "maintenance_hatch": Item(
         "a heavy round steel maintenance hatch set in a patch of filthy brick wall, with big "
@@ -893,7 +1033,7 @@ FURNITURE: dict[str, Item] = {
         2.0,
         (768, 768),
         ref=TUNNELS,
-        grimy=True,
+        style="grimy",
     ),
     "sewer_outfall": Item(
         "the mouth of a big round old outflow pipe sticking out of a patch of filthy brick wall, "
@@ -901,7 +1041,7 @@ FURNITURE: dict[str, Item] = {
         1.6,
         (768, 768),
         ref=TUNNELS,
-        grimy=True,
+        style="grimy",
     ),
     "sewer_lamp": Item(
         "a caged bulkhead work lamp on a short rusty iron wall bracket, its bulb glowing a weak "
@@ -909,7 +1049,7 @@ FURNITURE: dict[str, Item] = {
         0.6,
         (512, 512),
         ref=TUNNELS,
-        grimy=True,
+        style="grimy",
     ),
     "tunnel_arch": Item(
         "a tall archway at the mouth of an old metro tunnel, seen straight from the front: two "
@@ -919,7 +1059,7 @@ FURNITURE: dict[str, Item] = {
         (512, 1280),
         ref=TUNNELS,
         cut=("gaps",),
-        cartoon=True,
+        style="cartoon",
     ),
     "shipping_container": Item(
         "an old steel shipping container seen exactly from the side: corrugated walls of faded "
@@ -934,7 +1074,7 @@ FURNITURE: dict[str, Item] = {
             "rust": "Recolour the container's blue paint to faded rust red.",
             "mustard": "Recolour the container's blue paint to faded mustard yellow.",
         },
-        cartoon=True,
+        style="cartoon",
     ),
     "switchboard": Item(
         "an old railway signal switchboard seen straight from the front: a tall cabinet of "
@@ -944,7 +1084,7 @@ FURNITURE: dict[str, Item] = {
         2.0,
         (640, 640),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "lockers": Item(
         "a row of three tall battered steel workers' lockers, dented and scuffed grey-green "
@@ -952,7 +1092,7 @@ FURNITURE: dict[str, Item] = {
         1.9,
         (640, 640),
         ref=TUNNEL_ROOMS,
-        cartoon=True,
+        style="cartoon",
     ),
     "bulkhead": Item(
         "a tall wall of grimy cream tiles seen straight from the front, with a heavy riveted "
@@ -963,7 +1103,7 @@ FURNITURE: dict[str, Item] = {
         ref=TUNNELS,
         sketch="bulkhead",
         cut=("outline",),
-        cartoon=True,
+        style="cartoon",
     ),
 }
 EXTRAS: dict[str, Item] = {
@@ -1000,6 +1140,7 @@ EXTRAS: dict[str, Item] = {
         0.9,
         (768, 640),
         grey=True,
+        moulding=Moulding(13, 11, 18, 14),
     ),
     "banyan_tree": Item(
         "a large banyan tree with a thick trunk, spreading branches, a broad crown of big paper "
@@ -1089,17 +1230,11 @@ PLATFORMS: dict[str, Item] = {
 
 def item(name: str, spec: Item, layout: Layout) -> Painting:
     key = f"{spec.folder}/{name}"
-    style, lead, redraw = (
-        (grimy, GRIMY_LEAD, GRIMY_REDRAW)
-        if spec.grimy
-        else (cartoon, CARTOON_LEAD, CARTOON_REDRAW)
-        if spec.cartoon
-        else (styled, LEAD, REDRAW)
-    )
+    words = WORDS[spec.style]
     if spec.sketch:
         sketch = SKETCHES[spec.sketch]()
         back = "medium grey" if sketch.getpixel((0, 0)) == GREY else "white"
-        prompt = style(redraw.format(subject=spec.subject, back=back))
+        prompt = in_style(words.redraw.format(subject=spec.subject, back=back), spec.style)
         refs = (spec.ref,)
         size, height = sketch.size, spec.height
         return Painting(
@@ -1117,21 +1252,22 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
     backdrop_text = SIDE_SPRITE if spec.side else SPRITE
     if spec.grey:
         backdrop_text = backdrop_text.replace("plain flat white", "plain flat medium grey")
-    prompt = style(lead + f"2D game asset: {spec.subject}. {backdrop_text}")
+    prompt = in_style(words.lead + f"2D game asset: {spec.subject}. {backdrop_text}", spec.style)
     return Painting(
         key, "sprite", prompt, size, (spec.ref,), spec.height, reseed=spec.reseed, cut=spec.cut
     )
 
 
 def variants(spec: Item, base: Painting) -> list[Painting]:
-    style, texture = (cartoon, "the ink lines") if spec.cartoon else (styled, "the paper texture")
+    texture = WORDS[spec.style].variant
     return [
         Painting(
             f"{base.key}-{variant}",
             "sprite",
-            style(
+            in_style(
                 f"{change} Keep everything else exactly the same: the shape, {texture}, "
-                "the background."
+                "the background.",
+                spec.style,
             ),
             base.size,
             height=base.height,
@@ -1177,26 +1313,71 @@ def _side(unit: Front) -> str:
 
 
 def cartoon_front_prompt(look: Look, unit: Front) -> str:
-    """A front in the tunnels' cartoon, naming only what its plan has."""
+    """A front underground, naming only what its plan has."""
     extras = ["a flat roof", "small windows lit from inside"]
     parts = ["the walls", "the roof", "every window"]
     if unit.door is not None:
         extras += ["a glass door", "a glowing neon medical cross pictogram over the door"]
         parts += ["the glass door", "the small round wall light"]
     ground = "grey" if backdrop(unit) == GREY else "white"
-    return cartoon(
-        f"Redraw image 1 as the front of {look.look}, with {', '.join(extras)}, hand-drawn in "
-        "the cartoon style: thick scratchy dark ink outlines around every shape, flat colours "
-        "with simple soft shading, and a little wear. Keep every shape exactly where it is, with "
-        f"the same outlines and colours: {', '.join(parts)}. Seen straight from the front, a "
-        f"flat elevation with no perspective, on a plain {ground} background. No people."
+    return in_style(
+        f"Redraw image 1 as the front of {look.look}, with {', '.join(extras)}, "
+        f"{WORDS[look.style].front}. Keep every shape exactly where it is, with the same "
+        f"outlines and colours: {', '.join(parts)}. Seen straight from the front, a flat "
+        f"elevation with no perspective, on a plain {ground} background. No people.",
+        look.style,
+    )
+
+
+def modern_front_prompt(look: Look, unit: Front) -> str:
+    """A front with today's details, as `fronts.modernised` draws them."""
+    extras = ["big glass windows in slim dark frames with pale roller blinds"]
+    parts = ["the walls", "the flat roof", "every window"]
+    if look.flower_boxes:
+        extras.append("planters full of plants under the upper windows")
+        parts.append("the planters")
+    if any(box[1] > unit.storey for box in unit.window_boxes()):
+        extras.append("air-conditioning units on the wall")
+        parts.append("the air-conditioning units")
+    if unit.shop_boxes():
+        sign = f"{look.pictogram} pictogram" if look.pictogram else "pictogram"
+        extras.append(
+            f"a plain glowing light band over the shopfront, and a glowing neon {sign} in the "
+            "shop window"
+        )
+        parts += ["the light band", "the big shop window", "the neon pictogram"]
+    elif unit.awnings:
+        parts.append("the slim canopies over the windows")
+    if unit.lanterns:
+        extras.append("round red paper lanterns")
+        parts.append("the lanterns")
+    if unit.door is not None:
+        extras.append("a glass door")
+        parts += ["the glass door", "the small round wall light", "the potted plants"]
+    ground = "grey" if backdrop(unit) == GREY else "white"
+    rules = ""
+    if unit.murals and look.mural_words:
+        rules = MURAL_WORDS.format(side=_side(unit))
+    elif unit.murals:
+        rules = " Leave the blank stretches of wall plain, with nothing on them."
+    if unit.door is None:
+        rules += " This part of the building has no door."
+    return in_style(
+        f"Redraw image 1 as the front of {look.look}, a contemporary building with a flat roof, "
+        f"{', '.join(extras)}, {WORDS[look.style].front}. Keep every shape exactly where it is, "
+        f"with the same outlines and colours: {', '.join(parts)}. Seen straight from the front, "
+        f"a flat elevation with no perspective, on a plain {ground} background.{rules} No "
+        "people, no words.",
+        look.style,
     )
 
 
 def front_prompt(look: Look, unit: Front) -> str:
     """The prompt for one unit of a front, naming only what its plan has."""
-    if look.cartoon:
+    if look.style not in SURFACE:
         return cartoon_front_prompt(look, unit)
+    if look.modern:
+        return modern_front_prompt(look, unit)
     roof = (
         "a flat roof with a low parapet"
         if look.roof_shape == "flat"
@@ -1228,14 +1409,14 @@ def front_prompt(look: Look, unit: Front) -> str:
         rules += " This part of the building has no door: only the windows shown."
     elif unit.door is None:
         rules += " It has no door."
-    return styled(
+    return in_style(
         f"Redraw image 1 as the front of {look.look}, with {roof}"
         + (f", {', '.join(extras)}" if extras else "")
-        + ", made of cut paper and card as a papercraft diorama: matt paper with visible fibres, "
-        "cut edges and soft shadows between layers. Keep every shape exactly where it is, with "
-        f"the same outlines and colours: {', '.join(parts)}. Seen straight from the front, a "
-        f"flat elevation with no perspective, on a plain {ground} background.{rules} No people, "
-        "no signs."
+        + f", {WORDS[look.style].front}. Keep every shape exactly where it is, with the same "
+        f"outlines and colours: {', '.join(parts)}. Seen straight from the front, a flat "
+        f"elevation with no perspective, on a plain {ground} background.{rules} No people, no "
+        "signs.",
+        look.style,
     )
 
 
@@ -1247,12 +1428,14 @@ def night_prompt(look: Look, unit: Front) -> str:
         lit += ["the glass door", "the wall lamp"] if look.glass_door else ["the wall lamp"]
     if unit.lanterns:
         lit.append("the paper lanterns")
+    if look.modern and unit.shop_boxes():
+        lit += ["the light band", "the neon pictogram"]
     ground = "grey" if backdrop(unit) == GREY else "white"
-    style, walls = (cartoon, "walls") if look.cartoon else (styled, "paper walls")
-    return style(
-        f"The same picture at night: warm yellow light glows from {', '.join(lit)}, the {walls} "
-        f"are in deep blue shadow, and the background stays plain {ground}. Keep every shape "
-        "exactly where it is, and add nothing."
+    return in_style(
+        f"The same picture at night: warm yellow light glows from {', '.join(lit)}, the "
+        f"{WORDS[look.style].night} are in deep blue shadow, and the background stays plain "
+        f"{ground}. Keep every shape exactly where it is, and add nothing.",
+        look.style,
     )
 
 
@@ -1279,11 +1462,41 @@ def fronts(layout: Layout) -> list[Painting]:
 
 def room_papers(layout: Layout) -> list[Painting]:
     used = sorted({p for floors in papers(layout).values() for p in floors})
-    made = [
-        cartoon_paper(key, PAPERS[key]) if key in CARTOON_PAPERS else paper(key, PAPERS[key])
-        for key in used
-    ]
+    made = [paper(key, PAPERS[key], style=PAPER_STYLES.get(key, "papercraft")) for key in used]
     return [*made, SLAB]
+
+
+def landmark_prompt(spec: Landmark) -> str:
+    return in_style(
+        f"Redraw image 1 as {spec.subject}, {WORDS[spec.style].front}. Keep every shape exactly "
+        "where it is, with the same outlines and colours: every tower, every spire and every "
+        "window. Seen straight from the front, a flat elevation with no perspective, on a plain "
+        "white background. No people.",
+        spec.style,
+    )
+
+
+def landmark_night_prompt(spec: Landmark) -> str:
+    return in_style(
+        "The same picture at night: warm yellow light glows from the lit windows and the red "
+        f"beacons on the spires, the {WORDS[spec.style].night} are in deep blue shadow, and the "
+        "background stays plain white. Keep every shape exactly where it is, and add nothing.",
+        spec.style,
+    )
+
+
+def landmarks(chosen: dict[str, Landmark] | None = None) -> list[Painting]:
+    """Each landmark and its glow map, redrawn from its plan in `skyline.py`."""
+    out = []
+    for name, spec in (LANDMARKS if chosen is None else chosen).items():
+        size = skyline.plan(name).image.size
+        key, refs = f"landmarks/{name}", (spec.ref,)
+        day, night = landmark_prompt(spec), landmark_night_prompt(spec)
+        out.append(Painting(key, "landmark", day, size, refs, spec.height, landmark=name))
+        out.append(
+            Painting(f"glow/{name}", "glow", night, size, (), spec.height, key, landmark=name)
+        )
+    return out
 
 
 def paintings(layout: Layout | None = None) -> list[Painting]:
@@ -1295,11 +1508,20 @@ def paintings(layout: Layout | None = None) -> list[Painting]:
         *SEWER_LAYERS,
         *room_papers(layout),
         *fronts(layout),
+        *landmarks(),
         *items(layout),
     ]
 
 
-PARALLAX = {"sky": 0.04, "far": 0.2, "mid": 0.45, "near": 0.85, "ground": 1.0, "foreground": 1.3}
+PARALLAX = {
+    "sky": 0.04,
+    "city": 0.1,
+    "far": 0.2,
+    "mid": 0.45,
+    "near": 0.85,
+    "ground": 1.0,
+    "foreground": 1.3,
+}
 """How fast each street layer moves with the camera, as the study drew them."""
 
 TIMES = {
@@ -1333,6 +1555,24 @@ the sky, `haze` mixes the far layer that much towards a colour (the mid layer ha
 `glow` scales the glow maps added on top."""
 
 
+def measurements(spec: Item) -> dict:
+    """What the client measures an item's art by, where it has any."""
+    out: dict = {
+        name: value
+        for name, value in (("seat", spec.seat), ("bed", spec.bed), ("light", spec.light))
+        if value is not None
+    }
+    if spec.moulding:
+        out["moulding"] = spec.moulding._asdict()
+    return out
+
+
+def street_layers(street: str) -> dict[str, str]:
+    layers = STREETS[street]
+    names = ("sky", "city", "far", "mid", "near", "ground", "foreground")
+    return {name: f"layers/{key}" for name in names if (key := getattr(layers, name))}
+
+
 def index(layout: Layout | None = None) -> dict:
     """The manifest's lookups by the ids the maps use, each naming pieces by key."""
     layout = layout or load_layout()
@@ -1343,17 +1583,17 @@ def index(layout: Layout | None = None) -> dict:
         furniture[name] = {"piece": key, **({"variants": found} if found else {})}
         if spec.stretch:
             furniture[name]["stretch"] = True
+        furniture[name].update(measurements(spec))
     floors = papers(layout)
+    marks = {
+        name: {"piece": f"landmarks/{name}", "glow": f"glow/{name}", "at": spec.at}
+        for name, spec in sorted(LANDMARKS.items())
+    }
     return {
         "parallax": PARALLAX,
         "times": TIMES,
-        "streets": {
-            street: {
-                name: f"layers/{getattr(STREETS[street], name)}"
-                for name in ("sky", "far", "mid", "near", "ground", "foreground")
-            }
-            for street in sorted(layout.streets)
-        },
+        "streets": {street: street_layers(street) for street in sorted(layout.streets)},
+        **({"landmarks": marks} if marks else {}),
         "grounds": {place: f"layers/{key}" for place, key in GROUNDS.items()},
         "buildings": {
             building: {

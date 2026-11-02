@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from simile.papercraft.fronts import UNIT, WINDOW, Box, Front, Rgb, Roof
 from simile.papercraft.layout import Facade, Layout
+from simile.papercraft.painter import Style
 
 TILE = 1.1
 
@@ -19,6 +20,8 @@ class Street:
     ground: str
     foreground: str
     sky: str = "sky"
+    city: str | None = None
+    """The city's skyline, between the sky and the far layer. Streets underground have none."""
 
 
 STREETS: dict[str, Street] = {
@@ -42,6 +45,25 @@ STREETS: dict[str, Street] = {
         "far-sewer", "mid-sewer", "near-sewer", "ground-sewer", "front-sewer", sky="sewer-vault"
     ),
 }
+UNDERGROUND = frozenset({"metro", "sewers"})
+"""The streets under the village, painted in the cartoon or the grimy cartoon, with no city."""
+
+
+@dataclass(frozen=True)
+class Landmark:
+    """A building drawn once per street behind the city layer, from its plan in `skyline.py`."""
+
+    subject: str
+    height: float
+    """How tall it's drawn, in the street's metres."""
+    at: dict[str, float]
+    """By street, where along it it stands, as a fraction of the street's width."""
+    style: Style = "clean"
+    ref: str = "street"
+
+
+LANDMARKS: dict[str, Landmark] = {}
+"""By plan name in `skyline.PLANS`."""
 GROUNDS = {
     "square": "ground-plaza",
     "park": "ground-park",
@@ -71,12 +93,15 @@ class Look:
     """Ask outright for the mural wall to stay empty, where FLUX fills it otherwise."""
     reseed: int = 0
     """Added to the seed, to paint a rejected front again."""
-    cartoon: bool = False
-    """Painted in the tunnels' cartoon rather than papercraft."""
+    style: Style = "papercraft"
     plants: bool = True
     """A potted plant each side of the door."""
     whole: bool = False
     """Painted in one go however wide, for a front that isn't a terrace."""
+    modern: bool = False
+    """Today's details on the plan and in the prompt: see `fronts.modernised`."""
+    pictogram: str | None = None
+    """What a modern shop window's neon sign shows, such as "coffee cup"."""
 
 
 WOOD: Rgb = (126, 88, 60)
@@ -275,7 +300,7 @@ LOOKS: dict[str, Look] = {
         "flat",
         glass_door=True,
         window=(1.3, 1.1),
-        cartoon=True,
+        style="cartoon",
         plants=False,
         whole=True,
         reseed=1,
@@ -312,8 +337,8 @@ PAPERS = {
     "clinic-tiles": "pale green-white wall tiles in a neat grid with dark grout, a few chipped "
     "tiles and faint stains",
 }
-CARTOON_PAPERS = frozenset({"clinic-tiles"})
-"""Papers painted in the tunnels' cartoon."""
+PAPER_STYLES: dict[str, Style] = {"clinic-tiles": "cartoon"}
+"""Papers in a style other than papercraft."""
 ROOMS: dict[str, tuple[str, ...]] = {
     "living_room": ("living-ochre", "living-blue", "living-green"),
     "bedroom": ("bedroom-rose", "bedroom-sage", "bedroom-lilac"),
@@ -383,6 +408,7 @@ def front(facade: Facade, look: Look) -> Front:
         window=look.window,
         one_shop=look.one_shop,
         unit=width if look.whole else UNIT,
+        modern=look.modern,
     )
 
 

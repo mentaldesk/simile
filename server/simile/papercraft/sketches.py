@@ -405,6 +405,115 @@ def bulkhead(width: float = 3.3, height: float = 7.8, footing: float = 2.2) -> I
     return s.image
 
 
+QUILT: Rgb = (204, 92, 66)
+LINEN: Rgb = (240, 236, 226)
+CUSHION: Rgb = (200, 64, 56)
+MARBLE: Rgb = (232, 230, 224)
+GREEN_IRON: Rgb = (52, 88, 64)
+LANTERN: Rgb = (214, 60, 48)
+GILT: Rgb = (196, 160, 82)
+CANVAS: Rgb = (238, 230, 210)
+
+
+def bed(length: float = 1.57, height: float = 1.05, mattress: float = 0.45) -> Image.Image:
+    """A double bed from the side, its headboard on the left and its mattress's top `mattress`
+    up at its front edge."""
+    s = Sheet(length, height, 300)
+    for x in (0.02, length - 0.1):
+        s.rect(x, 0.0, x + 0.08, 0.2, DARK_WOOD)
+    s.rect(0.0, 0.16, length, 0.28, WOOD, DARK_WOOD)
+    s.rect(0.1, 0.28, length - 0.04, mattress, LINEN)
+    s.rect(0.5, 0.26, length - 0.02, mattress, QUILT)
+    s.ellipse(0.14, mattress - 0.06, 0.5, mattress + 0.12, LINEN)
+    s.rect(0.0, 0.0, 0.1, height, DARK_WOOD)
+    s.rect(length - 0.06, 0.0, length, mattress + 0.08, DARK_WOOD)
+    return s.image
+
+
+def stool(width: float = 0.42, height: float = 0.7, seat: float = 0.567) -> Image.Image:
+    """A bar stool from the front, the front edge of its padded seat `seat` up."""
+    s = Sheet(width, height, 500)
+    s.rect(0.08, 0.0, width - 0.08, 0.04, IRON)
+    s.rect(width / 2 - 0.02, 0.04, width / 2 + 0.02, seat - 0.06, IRON)
+    s.rect(0.06, 0.22, width - 0.06, 0.25, IRON)
+    s.ellipse(0.02, seat - 0.04, width - 0.02, height, CUSHION)
+    s.rect(0.0, seat - 0.08, width, seat, CUSHION, (150, 44, 40))
+    return s.image
+
+
+def bench(width: float = 1.48, height: float = 0.9, seat: float = 0.392) -> Image.Image:
+    """A street bench from the front, the top of its seat `seat` up."""
+    s = Sheet(width, height, 300)
+    for x in (0.12, width - 0.2):
+        s.rect(x, 0.0, x + 0.08, height - 0.05, GREEN_IRON)
+    s.rect(0.0, seat - 0.07, width, seat, WOOD, DARK_WOOD)
+    for y in (seat + 0.16, seat + 0.32, height - 0.08):
+        s.rect(0.04, y, width - 0.04, y + 0.08, WOOD, DARK_WOOD)
+    return s.image
+
+
+def _chair(s: Sheet, x0: float, x1: float, seat: float, back: float, outer: float) -> None:
+    """A chair from the side between `x0` and `x1`, its back on the `outer` x."""
+    s.rect(x0, seat - 0.05, x1, seat, DARK_WOOD)
+    for x in (x0 + 0.02, x1 - 0.06):
+        s.rect(x, 0.0, x + 0.04, seat - 0.05, DARK_WOOD)
+    s.rect(outer - 0.02, seat, outer + 0.02, back, DARK_WOOD)
+    s.rect(outer - 0.03, back - 0.25, outer + 0.03, back - 0.05, DARK_WOOD)
+
+
+def _table_with_chairs(
+    width: float, height: float, seat: float, top: Rgb, leg: Rgb, pedestal: bool, ppm: float
+) -> Image.Image:
+    """A table from the side with a chair at each side facing it, their seats `seat` up."""
+    s = Sheet(width, height, ppm)
+    chair = 0.44
+    _chair(s, 0.0, chair, seat, height, 0.02)
+    _chair(s, width - chair, width, seat, height, width - 0.02)
+    x0, x1 = chair + 0.1, width - chair - 0.1
+    if pedestal:
+        s.rect(width / 2 - 0.04, 0.04, width / 2 + 0.04, 0.72, leg)
+        s.rect(width / 2 - 0.22, 0.0, width / 2 + 0.22, 0.04, leg)
+    else:
+        for x in (x0 + 0.04, x1 - 0.1):
+            s.rect(x, 0.0, x + 0.06, 0.72, leg)
+    s.rect(x0, 0.72, x1, 0.77, top, leg)
+    return s.image
+
+
+def cafe_table(width: float = 1.91, height: float = 0.95, seat: float = 0.442) -> Image.Image:
+    return _table_with_chairs(width, height, seat, MARBLE, IRON, True, 300)
+
+
+def table(width: float = 1.94, height: float = 0.95, seat: float = 0.442) -> Image.Image:
+    return _table_with_chairs(width, height, seat, WOOD, DARK_WOOD, False, 300)
+
+
+def noodle_table(width: float = 1.9, height: float = 1.9, seat: float = 0.483) -> Image.Image:
+    """A square table from the side with a stool each side, their seats `seat` up, under a
+    lantern on a cord from the top edge."""
+    s = Sheet(width, height, 280)
+    stool_w = 0.4
+    for x0 in (0.0, width - stool_w):
+        s.rect(x0, seat - 0.07, x0 + stool_w, seat, CUSHION, (150, 44, 40))
+        for x in (x0 + 0.04, x0 + stool_w - 0.08):
+            s.rect(x, 0.0, x + 0.04, seat - 0.07, DARK_WOOD)
+    x0, x1 = stool_w + 0.15, width - stool_w - 0.15
+    for x in (x0 + 0.04, x1 - 0.1):
+        s.rect(x, 0.0, x + 0.06, 0.72, DARK_WOOD)
+    s.rect(x0, 0.72, x1, 0.77, WOOD, DARK_WOOD)
+    s.rect(width / 2 - 0.01, 1.55, width / 2 + 0.01, height, IRON)
+    s.ellipse(width / 2 - 0.2, 1.15, width / 2 + 0.2, 1.57, LANTERN)
+    return s.image
+
+
+def picture_frame(width: float = 0.75, height: float = 0.9, moulding: float = 0.1) -> Image.Image:
+    """An empty frame from the front, its moulding `moulding` wide all round its canvas."""
+    s = Sheet(width, height, 400, GREY)
+    s.rect(0.0, 0.0, width, height, GILT, DARK_WOOD)
+    s.rect(moulding, moulding, width - moulding, height - moulding, CANVAS, DARK_WOOD)
+    return s.image
+
+
 SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "stairs": stairs,
     "ladder": ladder,
@@ -427,4 +536,11 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "fridge": fridge,
     "shipping_container": shipping_container,
     "bulkhead": bulkhead,
+    "bed": bed,
+    "stool": stool,
+    "bench": bench,
+    "cafe_table": cafe_table,
+    "noodle_table": noodle_table,
+    "table": table,
+    "picture_frame": picture_frame,
 }
