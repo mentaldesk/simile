@@ -12,6 +12,10 @@ export const DOLL_M = 2.04;
 /** The pavement's far edge, above the feet line. */
 export const GROUND_LIFT_M = 0.35;
 export const FURNITURE_DROP_M = 0.06;
+
+/** A ground strip's top, so the far edge of its walking surface is `GROUND_LIFT_M` above the feet line at `feet`. */
+export const groundTop = (feet: number, piece: Pick<Piece, 'surface'>): number =>
+  feet - (GROUND_LIFT_M + (piece.surface ?? 0)) * PPM;
 export const STRETCH_FILL = 0.96;
 export const STRETCH_CAP = 0.15;
 /** WebGL's widest texture on most GPUs, for a renderer that doesn't say. */

@@ -21,6 +21,7 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 | `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
+| `city=sketch` | A city and the Apex towers on every street above ground, plain silhouettes drawn in code, for a manifest that has none yet. |
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
 or PageUp jumps (`jump.ts`, below). E takes the door or street way you're on, whatever else is in reach. It
@@ -48,10 +49,17 @@ Everything is in world px at the scenery's own scale, 120 px a metre, so a tile 
 piece draws at scale 1. The camera shows the street 19 m tall (`camera.ts`), follows the player along
 it, and rises to the top floor or drops to Banyan Row's river.
 
-- **The street** (`street-view.ts`): the sky, far, mid, near and foreground layers repeated across
-  the view at the manifest's parallax, the ground strips under the map's ground (the square, the park
-  and the promenade too), ledges, steps and ladders from the `climbable` layer, each building's front
-  with its glow map and murals, and the furniture.
+- **The street** (`street-view.ts`): the sky, city, far, mid, near and foreground layers repeated
+  across the view at the manifest's parallax, the ground strips under the map's ground (the square,
+  the park and the promenade too), ledges, steps and ladders from the `climbable` layer, each
+  building's front with its glow map and murals, and the furniture, with a light at the `light`
+  height of any piece the manifest gives one (the street lamp's `LAMP_HEAD_M` without). A ground
+  strip's top is `GROUND_LIFT_M` plus its `surface` above the feet line.
+- **The city** (`street-view.ts`): a street with a `city` layer draws it between the sky and the far
+  layer (`LAYER_PLACES.city`), at `parallax.city` (0.1 without), and each landmark it's listed
+  under, such as the Apex towers, once, standing on the city's bottom edge at the same parallax: in
+  the middle of the view when the view's centre is at its `at`. Neither is ever drawn under the
+  village.
 - **Dollhouses** (`house.ts`): every building with floors has its floors drawn in place behind its
   front, each from its own map: the back wall in its room paper, windows, picture frames with their
   paintings, furniture, stairs, ladders, the lift shaft and cars, and the slabs. The front door is
@@ -62,16 +70,20 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the posts are drawn in code (`textures.ts`).
 - **Residents and the player** (`side-doll.ts`) are drawn as their painted figures, each step of a
   cycle's frame worked out once and kept (`poses.ts`), and tinted with the light where they are.
-  In bed they lie on the mattress, `BED_M` up as measured from the bed's art, centred on the piece
+  Seats are the manifest's `seat` up, or `SEAT_M`'s without.
+  In bed they lie on the mattress, the manifest's `bed` or `BED_M` up, centred on the piece
   by their `bed` point. Lying down takes `LIE_SECONDS` (0.8 s), eased: they sit on the bed's edge,
   then lie back into the middle of it; getting up plays it backwards. `Drawn.bed` says how far
   into bed a figure is, `settle` steps it and `inBed` draws it, for the player's rest too.
 - **Light** (`light.ts`): the manifest's four times of day, blended across each change, give a tint
-  for each layer's depth (distant layers take some of the sky's colour, the foreground falls
-  darker), haze on the far and mid layers, the glow maps added at night and 55% in the evening, and
+  for each layer's depth (distant layers take some of the sky's colour, the city most, and the
+  foreground falls darker), haze on the city (`CITY_HAZE` times the far layer's), far and mid
+  layers and the landmarks, the glow maps added at night and 55% in the evening, and
   lamplit rooms after dark. Under the village (a street with `underground`, and its floors) it's
   always early afternoon's light with the glow maps at 55% (`lightBelow`), whatever the time.
 - **Shadows** are made at runtime from each picture's alpha, blurred and offset (`textures.ts`).
+  `SHADOW_LOOK` scales their opacity and moves them on, for art that wants a lighter or a nearer
+  shadow; as it is, it changes nothing.
 - **Blood** (`blood.ts`, drawn by `blood-view.ts`): each hit the player takes (`ui/hurt.ts`'s
   `hurts`) bursts four to six drops from their chest, a bat's to a bot's, a little bigger the harder the hit
   (`BLOOD`). They fly up and away from what hit them, fall, settle on the ground if they reach it,

@@ -14,7 +14,9 @@ export const INSIDE: Record<TimeName, Rgb> = {
   night: [0.85, 0.76, 0.62],
 };
 
-export const SKY_SHARE: Partial<Record<LayerName, number>> = { far: 0.5, mid: 0.25 };
+export const SKY_SHARE: Partial<Record<LayerName, number>> = { city: 0.65, far: 0.5, mid: 0.25 };
+/** The city's haze, as a share of the far layer's. */
+export const CITY_HAZE = 1.5;
 export const FOREGROUND_SHADE = 0.55;
 
 export type Light = {
@@ -85,6 +87,7 @@ export function layerTint(light: Light, layer: LayerName, out: Rgb): Rgb {
 }
 
 export function hazeOf(light: Light, layer: LayerName): number {
+  if (layer === 'city') return Math.min(1, light.hazeAmount * CITY_HAZE);
   if (layer === 'far') return light.hazeAmount;
   if (layer === 'mid') return light.hazeAmount / 2;
   return 0;

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Frame, Wall } from '../net';
-import { LAYER_PLACES, layerCopies, streetCentreY, type Copies, type Point } from './camera';
+import { LAYER_PLACES, landmarkX, layerCopies, parallaxY, streetCentreY, type Copies, type Point } from './camera';
 import { DEPTH } from './depths';
 import { dropShadow, furnitureKey, placeDerived, placeFurniture, placeParts, tileAlong, Tints, type TintGroup } from './draw';
 import { House } from './house';
@@ -10,8 +10,8 @@ import {
   FURNITURE_DROP_M,
   frontPlacement,
   furniturePlacement,
-  GROUND_LIFT_M,
   groundRuns,
+  groundTop,
   ledges,
   muralRect,
   PPM,
@@ -23,10 +23,10 @@ import {
   xOf,
   type Rect,
 } from './layout';
-import { colour, hazeOf, overflow, type Light } from './light';
+import { colour, hazeOf, layerTint, overflow, type Light } from './light';
 import type { Placed, SideMap, Village } from './maps';
 import { climbRuns } from './runs';
-import type { LayerName, SceneryManifest } from './scenery';
+import type { LayerName, Rgb, SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
 
 const LIFT_M = 1.2;
@@ -36,7 +36,10 @@ const GROUND_BEYOND_M = 40;
 const GROUND_DEPTH_M = 40;
 const FOREGROUND_SCALE = 1.4;
 const FOREGROUND_BLUR = 6;
-const LAMP_HEAD_M = 3.35;
+/** The street lamp's, for a manifest that doesn't say. */
+export const LAMP_HEAD_M = 3.35;
+/** A city layer without one in the manifest's parallax. */
+export const CITY_PARALLAX = 0.1;
 const LAMP_LIGHT_M = 3.6;
 const BLOOM = 0.8;
 const LADDER_ABOVE_M = 0.6;
@@ -52,13 +55,17 @@ type Layer = {
   parallax: number;
   scale: number;
   baseY: number;
-  group: TintGroup;
+  /** The city's tint is its own. */
+  group?: TintGroup;
   depth: number;
+  hazeDepth: number;
   images: Image[];
   /** Haze over the far and mid layers, or the sky's additive top-up. */
   extra: Image[];
   extraOn: boolean;
 };
+
+type Landmark = { x: number; image: Image; haze: Image; glows: Image[] };
 
 type Front = {
   building: Placed;
@@ -94,6 +101,11 @@ export class StreetView {
   private readonly byName = new Map<string, Front>();
   private readonly rides = new Map<House, number>();
   private readonly lamps: Image[] = [];
+  private readonly landmarks: Landmark[] = [];
+  private readonly cityBaseY: number;
+  private readonly cityParallax: number;
+  private readonly rgb: Rgb = [1, 1, 1];
+  private cityTint = 0xffffff;
   private readonly props: { x: number; images: Image[] }[] = [];
   private readonly owned: Phaser.GameObjects.GameObject[] = [];
   private readonly copies: Copies = { first: 0, count: 0, y: 0 };
@@ -109,7 +121,10 @@ export class StreetView {
     this.feet = streetRow(map) * TILE;
     this.lowest = Math.max(...groundRuns(map, content.scenery).map(({ row }) => row)) * TILE;
     this.width = map.width * TILE;
+    this.cityBaseY = this.feet + LAYER_PLACES.city.bottom * PPM;
+    this.cityParallax = content.scenery.parallax.city ?? CITY_PARALLAX;
     this.buildLayers();
+    this.buildLandmarks();
     this.buildGround();
     this.buildClimbs();
     for (const building of map.buildings) this.buildFront(building, content.village);
@@ -119,7 +134,7 @@ export class StreetView {
 
   static pieces(content: Content, map: SideMap): string[] {
     const { scenery: manifest, village } = content;
-    const layers = manifest.streets[map.id] ?? {};
+    const layers = StreetView.layersOf(manifest, map);
     const buildings = map.buildings.flatMap(({ name }) => {
       const entry = manifest.buildings[name];
       const floors = entry && village.floors(name).length > 0 ? House.pieces(manifest, name, village) : [];
@@ -128,8 +143,22 @@ export class StreetView {
     const furniture = map.furniture.map((item) => furnitureKey(manifest, item, map.id));
     const grounds = groundRuns(map, manifest).map(({ key }) => key);
     const climbs = [manifest.platforms.steps, manifest.platforms.ladder, manifest.platforms.ledge];
-    return [...new Set([...Object.values(layers), ...buildings, ...furniture, ...grounds, ...climbs])].filter(
-      (key): key is string => !!key && !!manifest.pieces[key],
+    const landmarks = StreetView.landmarksOf(manifest, map).flatMap(({ piece, glow }) => [piece, glow]);
+    const all = [...Object.values(layers), ...buildings, ...furniture, ...grounds, ...climbs, ...landmarks];
+    return [...new Set(all)].filter((key): key is string => !!key && !!manifest.pieces[key]?.file);
+  }
+
+  /** Its layers, with no city under the village. */
+  static layersOf(manifest: SceneryManifest, map: SideMap): Partial<SceneryManifest['streets'][string]> {
+    const layers = manifest.streets[map.id] ?? {};
+    return map.underground ? { ...layers, city: undefined } : layers;
+  }
+
+  /** The landmarks standing along it, each with where. */
+  static landmarksOf(manifest: SceneryManifest, map: SideMap) {
+    if (map.underground) return [];
+    return Object.values(manifest.landmarks ?? {}).flatMap(({ piece, glow, at }) =>
+      at[map.id] === undefined || !manifest.pieces[piece] ? [] : [{ piece, glow, at: at[map.id] }],
     );
   }
 
@@ -175,6 +204,7 @@ export class StreetView {
     this.view.centre.y = worldView.centerY;
     const streetY = streetCentreY(this.feet, worldView);
     for (const layer of this.layers) this.place(layer, worldView, streetY);
+    this.placeLandmarks(streetY);
     const step = dt / OPEN_SECONDS;
     let moved = false;
     for (const front of this.fronts) {
@@ -251,7 +281,16 @@ export class StreetView {
   private light(light: Light): void {
     this.tints.apply(light);
     this.glow = light.glow;
+    this.cityTint = colour(layerTint(light, 'city', this.rgb));
+    const cityHaze = colour(light.haze);
+    const cityHazeAmount = hazeOf(light, 'city');
+    for (const { image, haze, glows } of this.landmarks) {
+      image.setTint(this.cityTint);
+      haze.setTintFill(cityHaze).setAlpha(cityHazeAmount);
+      glows.forEach((glow, i) => glow.setAlpha(light.glow * (i === 0 ? 1 : BLOOM)).setVisible(light.glow > 0));
+    }
     for (const layer of this.layers) {
+      if (!layer.group) for (const image of layer.images) image.setTint(this.cityTint);
       if (layer.name === 'sky') {
         const extra = overflow(light.sky);
         layer.extraOn = extra > 0;
@@ -283,10 +322,10 @@ export class StreetView {
   }
 
   private copy(layer: Layer): void {
-    const { texture, frame, depth } = layer;
+    const { texture, frame, depth, hazeDepth } = layer;
     const image = this.own(this.scene.add.image(0, 0, texture, frame.frame).setOrigin(0, 1).setDepth(depth));
-    layer.images.push(this.tints.add(layer.group, image));
-    const extra = this.own(this.scene.add.image(0, 0, texture, frame.frame).setOrigin(0, 1).setDepth(depth + 1));
+    layer.images.push(layer.group ? this.tints.add(layer.group, image) : image.setTint(this.cityTint));
+    const extra = this.own(this.scene.add.image(0, 0, texture, frame.frame).setOrigin(0, 1).setDepth(hazeDepth));
     if (layer.name === 'sky') extra.setBlendMode(Phaser.BlendModes.ADD).setTint(0);
     else extra.setTintFill(0).setAlpha(0);
     layer.extra.push(extra);
@@ -294,19 +333,19 @@ export class StreetView {
 
   private buildLayers(): void {
     const { manifest, map } = this;
-    const keys = manifest.streets[map.id];
-    if (!keys) return;
+    const keys = StreetView.layersOf(manifest, map);
     const depths: Partial<Record<LayerName, number>> = {
       sky: DEPTH.sky,
+      city: DEPTH.city,
       far: DEPTH.far,
       mid: DEPTH.mid,
       near: DEPTH.near,
       foreground: DEPTH.foreground,
     };
-    for (const name of ['sky', 'far', 'mid', 'near', 'foreground'] as const) {
+    for (const name of ['sky', 'city', 'far', 'mid', 'near', 'foreground'] as const) {
       const key = keys[name];
-      const piece = manifest.pieces[key];
-      if (!piece) continue;
+      const piece = key ? manifest.pieces[key] : undefined;
+      if (!key || !piece) continue;
       const place = name === 'sky' ? { bottom: 0 } : LAYER_PLACES[name];
       const metres = name === 'foreground' ? piece.height * FOREGROUND_SCALE : (place.height ?? piece.height);
       const source = name === 'foreground' ? this.textures.blurred(key, FOREGROUND_BLUR).name : key;
@@ -315,15 +354,51 @@ export class StreetView {
         name,
         texture: this.textures.key(source),
         frame: { frame: tile.frame, width: tile.width, height: piece.size[1] },
-        parallax: manifest.parallax[name],
+        parallax: name === 'city' ? this.cityParallax : manifest.parallax[name],
         scale: (metres * PPM) / piece.size[1],
         baseY: (name === 'foreground' ? this.lowest : this.feet) + place.bottom * PPM,
-        group: name,
+        group: name === 'city' ? undefined : name,
         depth: depths[name]!,
+        hazeDepth: name === 'city' ? DEPTH.cityHaze : depths[name]! + 1,
         images: [],
         extra: [],
-        extraOn: name === 'far' || name === 'mid',
+        extraOn: name === 'city' || name === 'far' || name === 'mid',
       });
+    }
+  }
+
+  /** Once along the street, at the city's parallax, standing on the city's bottom edge. */
+  private buildLandmarks(): void {
+    const { manifest, map, scene, textures } = this;
+    for (const { piece: key, glow, at } of StreetView.landmarksOf(manifest, map)) {
+      const piece = manifest.pieces[key];
+      const anchor = piece.anchor ?? [0.5, 1];
+      const scale = (piece.height * PPM) / piece.size[1];
+      const source = { width: piece.size[0], height: piece.size[1] };
+      const image = this.own(scene.add.image(0, 0, textures.key(key)).setOrigin(...anchor).setScale(scale));
+      const haze = this.own(scene.add.image(0, 0, textures.key(key)).setOrigin(...anchor).setScale(scale));
+      image.setDepth(DEPTH.landmark).setTint(this.cityTint);
+      haze.setDepth(DEPTH.landmarkHaze).setTintFill(0).setAlpha(0);
+      const glows = manifest.pieces[glow]
+        ? [textures.light(glow, 0.5), textures.light(glow, 0.25, 8)].map((derived) =>
+            this.own(placeDerived(scene, derived, source, anchor, 0, 0, scale))
+              .setBlendMode(Phaser.BlendModes.ADD)
+              .setDepth(DEPTH.landmarkGlow)
+              .setVisible(false),
+          )
+        : [];
+      this.landmarks.push({ x: at * this.width, image, haze, glows });
+    }
+  }
+
+  private placeLandmarks(streetY: number): void {
+    const { centre } = this.view;
+    const y = parallaxY(this.cityParallax, this.cityBaseY, centre.y, streetY);
+    for (const { x, image, haze, glows } of this.landmarks) {
+      const at = landmarkX(x, this.cityParallax, centre.x);
+      image.setPosition(at, y);
+      haze.setPosition(at, y);
+      for (const glow of glows) glow.setPosition(at, y);
     }
   }
 
@@ -338,7 +413,7 @@ export class StreetView {
       const piece = manifest.pieces[run.key];
       if (!piece) continue;
       const scale = (piece.height * PPM) / piece.size[1];
-      const top = run.row * TILE - GROUND_LIFT_M * PPM;
+      const top = groundTop(run.row * TILE, piece);
       const [x0, x1] = [run.x0 * TILE, run.x1 * TILE];
       const tile = textures.tileFrame(run.key);
       for (const image of tileAlong(scene, textures.key(run.key), tile, x0, x1, top, scale)) {
@@ -421,8 +496,9 @@ export class StreetView {
     for (const shadow of shadows) this.own(shadow.setDepth(DEPTH.streetShadow));
     for (const image of images) this.tints.add('ground', this.own(image.setDepth(DEPTH.streetFurniture)));
     this.props.push({ x: place.x, images: [...images, ...shadows] });
-    if (item.name === 'lamp') {
-      const lamp = scene.add.image(place.x, place.y - LAMP_HEAD_M * PPM, textures.lamp());
+    const head = manifest.furniture[item.name]?.light ?? (item.name === 'lamp' ? LAMP_HEAD_M : undefined);
+    if (head !== undefined) {
+      const lamp = scene.add.image(place.x, place.y - head * PPM, textures.lamp());
       lamp.setScale((LAMP_LIGHT_M * PPM) / 256).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.lampGlow);
       this.lamps.push(this.own(lamp.setVisible(false)));
     }

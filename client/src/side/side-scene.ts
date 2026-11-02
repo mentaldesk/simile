@@ -435,8 +435,9 @@ export class SideScene extends Phaser.Scene {
     const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
     figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
     const [mx, my] = map ? [at.x - map.offset.x, at.y - map.offset.y] : [0, 0];
-    const seat = map ? seatHeight(map, mx, my) : 0;
-    const bed = map && drawn.bed > 0 ? bedAt(map, mx, my) : undefined;
+    const { furniture } = this.content!.scenery;
+    const seat = map ? seatHeight(map, mx, my, furniture) : 0;
+    const bed = map && drawn.bed > 0 ? bedAt(map, mx, my, furniture) : undefined;
     figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat, bed);
     const below = feetOf(ground);
     figure.contact.setPosition(figure.x, below).setAlpha(contactAlpha((below - figure.feet) / PPM));
