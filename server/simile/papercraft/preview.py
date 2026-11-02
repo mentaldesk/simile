@@ -143,18 +143,20 @@ def contact_sheets() -> dict[str, Image.Image]:
         cells = [(k.split("/", 1)[1], piece(k)) for k in groups.get(group, [])]
         sheets[group] = grid(cells, (380, 260) if wide else (240, 240), 5 if wide else 7)
     night = manifest()["times"]["night"]["tint"]
-    fronts = []
-    for key in groups.get("fronts", []):
-        day = piece(key)
-        lit = Canvas(day.size, (0, 0, 0, 0))
-        lit.over(tint(day, night), 0, 0)
-        lit.add(piece(key.replace("fronts/", "glow/")), 0, 0, 1.0)
-        lit.image.putalpha(day.getchannel("A"))
-        pair = Image.new("RGBA", (day.width * 2 + 40, day.height), (0, 0, 0, 0))
-        pair.paste(day, (0, 0))
-        pair.paste(lit.image, (day.width + 40, 0))
-        fronts.append((key.split("/")[1], pair))
-    sheets["fronts"] = grid(fronts, (640, 420), 3)
+    for group in ("fronts", "landmarks"):
+        pairs = []
+        for key in groups.get(group, []):
+            day = piece(key)
+            lit = Canvas(day.size, (0, 0, 0, 0))
+            lit.over(tint(day, night), 0, 0)
+            lit.add(piece(key.replace(f"{group}/", "glow/")), 0, 0, 1.0)
+            lit.image.putalpha(day.getchannel("A"))
+            pair = Image.new("RGBA", (day.width * 2 + 40, day.height), (0, 0, 0, 0))
+            pair.paste(day, (0, 0))
+            pair.paste(lit.image, (day.width + 40, 0))
+            pairs.append((key.split("/")[1], pair))
+        if pairs or group == "fronts":
+            sheets[group] = grid(pairs, (640, 420), 3)
     return sheets
 
 
@@ -227,34 +229,49 @@ def read_views(directory: Path = STREET_DIR) -> dict[str, MapView]:
 
 
 SCENE_PPM = 40
+RETINA_PPM = 80
+"""Pixels a metre the client draws the street at on a retina screen."""
+CITY_PARALLAX = 0.1
+"""What a client uses for the city layer without `parallax.city`."""
 
 
-def street_scene(view: MapView, when: str, x0: float = 0, width: int | None = None) -> Image.Image:
-    """`view`'s street from tile `x0`, `width` px wide, at `SCENE_PPM`."""
+def street_scene(
+    view: MapView, when: str, x0: float = 0, width: int | None = None, ppm: float = SCENE_PPM
+) -> Image.Image:
+    """`view`'s street from tile `x0`, `width` px wide, at `ppm`."""
     m = manifest()
     t = m["times"][when]
-    tile = TILE * SCENE_PPM
+    s = ppm / SCENE_PPM
+    tall = round(H * s)
+    tile = TILE * ppm
     width = width or round(view.width * tile - x0 * tile)
     ground_row = Counter(view.ground(x) for x in range(view.width)).most_common(1)[0][0]
     camera = x0 * tile
-    canvas = Canvas((width, H))
+    canvas = Canvas((width, tall))
+
+    def put(image, x, y, anchor=(0.5, 1.0), offset=(7, 5), opacity=0.38, blur=6.0):
+        shift = (offset[0] * s, offset[1] * s) if offset else None
+        return canvas.put(image, x, y, anchor, shift, opacity, blur * s)
+
     lowest = max(view.ground(x) for x in range(view.width))
-    ground_y = H - 150 - (lowest - ground_row) * tile
+    ground_y = tall - 150 * s - (lowest - ground_row) * tile
     origin = ground_y - ground_row * tile
     layers = m["streets"][view.id]
     sky = piece(layers["sky"])
-    sky = sky.resize((round(sky.width * H / sky.height), H), Image.Resampling.LANCZOS)
+    sky = sky.resize((round(sky.width * tall / sky.height), tall), Image.Resampling.LANCZOS)
     canvas.over(tint(repeat(sky, width, round(camera * 0.04)), t["sky"]), 0, 0)
     amount, *colour = t["haze"]
+    if "city" in layers:
+        city(canvas, view, layers["city"], camera, width, ground_y - 300 * s, ppm, t)
     for name, height, lift, fog in (("far", 230, 300, 1.0), ("mid", 250, 110, 0.6)):
         image = piece(layers[name])
-        image = image.resize((round(image.width * height / image.height), height))
+        image = image.resize((round(image.width * height * s / image.height), round(height * s)))
         offset = round(camera * m["parallax"][name])
         strip = tint(haze(repeat(image, width, offset), amount * fog, colour), t["tint"])
-        canvas.put(strip, 0, ground_y - lift, (0, 1), (4, 3), 0.25)
-    near = at(layers["near"], SCENE_PPM)
+        put(strip, 0, ground_y - lift * s, (0, 1), (4, 3), 0.25)
+    near = at(layers["near"], ppm)
     offset = round(camera * m["parallax"]["near"])
-    canvas.put(tint(repeat(near, width, offset), t["tint"]), 0, ground_y + 4, (0, 1), (5, 3), 0.3)
+    put(tint(repeat(near, width, offset), t["tint"]), 0, ground_y + 4 * s, (0, 1), (5, 3), 0.3)
     places = {p.name: p for p in view.locations}
 
     def ground_key(x: int) -> str:
@@ -272,8 +289,8 @@ def street_scene(view: MapView, when: str, x0: float = 0, width: int | None = No
         end = x
         while end < view.width and ground_key(end) == key and view.ground(end) == row:
             end += 1
-        top = origin + row * tile - 14
-        strip = at(key, SCENE_PPM, max(1.0, (H - top) / SCENE_PPM))
+        top = origin + row * tile - 14 * s
+        strip = at(key, ppm, max(1.0, (tall - top) / ppm))
         span = round((end - x) * tile)
         canvas.over(tint(repeat(strip, span), t["tint"]), x * tile - camera, top)
         x = end
@@ -283,44 +300,39 @@ def street_scene(view: MapView, when: str, x0: float = 0, width: int | None = No
         for x in xs[1:]:
             runs[-1].append(x) if x == runs[-1][-1] + 1 else runs.append([x])
         for run in runs:
-            ledge = at("platforms/ledge", SCENE_PPM)
+            ledge = at("platforms/ledge", ppm)
             ledge = ledge.resize((round(len(run) * tile), ledge.height))
-            canvas.put(tint(ledge, t["tint"]), run[0] * tile - camera, origin + y * tile, (0, 0))
+            put(tint(ledge, t["tint"]), run[0] * tile - camera, origin + y * tile, (0, 0))
     steps = sorted(c for c, kind in view.climbable.items() if kind == "stairs")
     if steps:
-        (x0, y0), (x1, y1) = steps[0], steps[-1]
-        image = at("platforms/steps", SCENE_PPM, (abs(y1 - y0) + 2) * TILE)
-        image = image.resize((round((abs(x1 - x0) + 2) * tile), image.height))
-        if (x1 - x0) * (y1 - y0) > 0:
+        (sx0, sy0), (sx1, sy1) = steps[0], steps[-1]
+        image = at("platforms/steps", ppm, (abs(sy1 - sy0) + 2) * TILE)
+        image = image.resize((round((abs(sx1 - sx0) + 2) * tile), image.height))
+        if (sx1 - sx0) * (sy1 - sy0) > 0:
             image = ImageOps.mirror(image)
-        bottom = origin + (max(y0, y1) + 2) * tile
-        canvas.put(
-            tint(image, t["tint"]),
-            ((x0 + x1) / 2 + 0.5) * tile - camera,
-            bottom,
-            offset=None,
-        )
+        bottom = origin + (max(sy0, sy1) + 2) * tile
+        put(tint(image, t["tint"]), ((sx0 + sx1) / 2 + 0.5) * tile - camera, bottom, offset=None)
     for (x, y), kind in sorted(view.climbable.items()):
         if kind == "ladder":
-            image = at("platforms/ladder", SCENE_PPM, TILE * 1.2)
-            canvas.put(tint(image, t["tint"]), (x + 0.5) * tile - camera, origin + (y + 1) * tile)
+            image = at("platforms/ladder", ppm, TILE * 1.2)
+            put(tint(image, t["tint"]), (x + 0.5) * tile - camera, origin + (y + 1) * tile)
     for b in sorted(view.buildings, key=lambda b: b.x):
         key = m["buildings"][b.name]["front"]
         e = entry(key)
-        image = at(key, SCENE_PPM)
+        image = at(key, ppm)
         middle = (b.x + b.w / 2) * tile - camera
         bottom = origin + (b.y + b.h) * tile
-        left, top = canvas.put(tint(image, t["tint"]), middle, bottom + 3, e["anchor"], (9, 6), 0.3)
+        left, top = put(tint(image, t["tint"]), middle, bottom + 3 * s, e["anchor"], (9, 6), 0.3)
         if t["glow"] > 0:
-            glow = at(m["buildings"][b.name]["glow"], SCENE_PPM)
+            glow = at(m["buildings"][b.name]["glow"], ppm)
             canvas.add(glow, left, top, t["glow"])
-            canvas.add(glow.filter(ImageFilter.GaussianBlur(10)), left, top, t["glow"] * 0.8)
+            canvas.add(glow.filter(ImageFilter.GaussianBlur(10 * s)), left, top, t["glow"] * 0.8)
     for p in view.furniture:
         if p.name not in m["furniture"]:
             continue
-        image = furnish(p, SCENE_PPM)
+        image = furnish(p, ppm)
         bottom = origin + (p.y + p.h) * tile
-        canvas.put(tint(image, t["tint"]), (p.x + p.w / 2) * tile - camera, bottom + 4)
+        put(tint(image, t["tint"]), (p.x + p.w / 2) * tile - camera, bottom + 4 * s)
         if p.name == "lamp" and t["glow"] > 0:
             glow = Image.new("RGB", (round(tile * 4), round(tile * 4)), (0, 0, 0))
             ring = (glow.width / 4, glow.height / 4, glow.width * 3 / 4, glow.height * 3 / 4)
@@ -328,11 +340,45 @@ def street_scene(view: MapView, when: str, x0: float = 0, width: int | None = No
             glow = glow.filter(ImageFilter.GaussianBlur(tile / 2))
             cx, cy = (p.x + 0.5) * tile - camera, bottom - image.height - glow.height / 2
             canvas.add(glow, cx - glow.width / 2, cy, t["glow"])
-    front = at(layers["foreground"], SCENE_PPM * 1.4).filter(ImageFilter.GaussianBlur(3))
+    front = at(layers["foreground"], ppm * 1.4).filter(ImageFilter.GaussianBlur(3 * s))
     shade = [c * 0.55 for c in t["tint"]]
     offset = round(camera * m["parallax"]["foreground"])
-    canvas.put(tint(repeat(front, width, offset), shade), 0, H + 70, (0, 1), None)
+    canvas.put(tint(repeat(front, width, offset), shade), 0, tall + 70 * s, (0, 1), None)
     return canvas.image.convert("RGB")
+
+
+def city(
+    canvas: Canvas,
+    view: MapView,
+    key: str,
+    camera: float,
+    width: int,
+    bottom: float,
+    ppm: float,
+    t: dict,
+) -> None:
+    """The city layer with its bottom edge at `bottom`, and behind it each landmark this street
+    has, both tinted and hazed as the far layer is."""
+    m = manifest()
+    parallax = m["parallax"].get("city", CITY_PARALLAX)
+    amount, *colour = t["haze"]
+
+    def far(image: Image.Image) -> Image.Image:
+        return tint(haze(image, amount, colour), t["tint"])
+
+    for mark in m.get("landmarks", {}).values():
+        if view.id not in mark["at"]:
+            continue
+        image, e = at(mark["piece"], ppm), entry(mark["piece"])
+        street_x = mark["at"][view.id] * view.width * TILE * ppm
+        centre = camera + width / 2
+        x = width / 2 + (street_x - centre) * parallax
+        left, top = canvas.put(far(image), x, bottom, e["anchor"], None)
+        if t["glow"] > 0:
+            canvas.add(at(mark["glow"], ppm), left, top, t["glow"])
+    image = at(key, ppm)
+    strip = far(repeat(image, width, round(camera * parallax)))
+    canvas.put(strip, 0, bottom, (0, 1), None)
 
 
 def wall(key: str, size: tuple[int, int], ppm: float) -> Image.Image:
@@ -354,9 +400,12 @@ def wall(key: str, size: tuple[int, int], ppm: float) -> Image.Image:
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
 
 
-def dollhouse(views: dict[str, MapView], building: str, when: str = "afternoon") -> Image.Image:
+def dollhouse(
+    views: dict[str, MapView], building: str, when: str = "afternoon", scale: float = 1.0
+) -> Image.Image:
     """`building` with its front lifted off: each floor's back wall, slab and furniture from its
-    own map, stairs and lifts between them, and its roof, in front of its street."""
+    own map, stairs and lifts between them, and its roof, in front of its street, `scale` times
+    the size."""
     m = manifest()
     t = m["times"][when]
     entry_ = m["buildings"][building]
@@ -367,15 +416,16 @@ def dollhouse(views: dict[str, MapView], building: str, when: str = "afternoon")
         key=lambda v: v.props["floor"],
     )
     rows = facade.h + 3
-    ppm = min(W * 0.8 / (facade.w * TILE), H * 0.84 / (rows * TILE))
+    wide, tall = round(W * scale), round(H * scale)
+    ppm = min(wide * 0.8 / (facade.w * TILE), tall * 0.84 / (rows * TILE))
     tile = TILE * ppm
-    x_left = (W - facade.w * tile) / 2
-    ground_y = H - 60
+    x_left = (wide - facade.w * tile) / 2
+    ground_y = tall - 60 * scale
     span = W / (TILE * SCENE_PPM)
     x0 = min(max(0, facade.x + facade.w / 2 - span / 2), max(0, street.width - span))
-    backdrop = street_scene(street, when, x0, W)
-    canvas = Canvas((W, H))
-    canvas.over(backdrop.convert("RGBA").filter(ImageFilter.GaussianBlur(3)), 0, 0)
+    backdrop = street_scene(street, when, x0, wide, SCENE_PPM * scale)
+    canvas = Canvas((wide, tall))
+    canvas.over(backdrop.convert("RGBA").filter(ImageFilter.GaussianBlur(3 * scale)), 0, 0)
     inside = (1.0, 1.0, 1.0) if when != "night" else (0.85, 0.76, 0.62)
 
     def y_of(view: MapView, row: float) -> float:
@@ -461,15 +511,17 @@ def dollhouse(views: dict[str, MapView], building: str, when: str = "afternoon")
     return canvas.image.convert("RGB")
 
 
-def times_grid(view: MapView, x0: float) -> Image.Image:
-    out = Image.new("RGB", (W, H))
+def times_grid(view: MapView, x0: float, ppm: float = SCENE_PPM) -> Image.Image:
+    wide, tall = round(W * ppm / SCENE_PPM), round(H * ppm / SCENE_PPM)
+    out = Image.new("RGB", (wide, tall))
     for i, when in enumerate(TIMES):
-        frame = street_scene(view, when, x0, W).resize((W // 2, H // 2), Image.Resampling.LANCZOS)
-        out.paste(frame, ((i % 2) * W // 2, (i // 2) * H // 2))
+        frame = street_scene(view, when, x0, wide, ppm)
+        frame = frame.resize((wide // 2, tall // 2), Image.Resampling.LANCZOS)
+        out.paste(frame, ((i % 2) * wide // 2, (i // 2) * tall // 2))
     return out
 
 
-def preview(out: Path, maps: Path = STREET_DIR) -> list[Path]:
+def preview(out: Path, maps: Path = STREET_DIR, ppm: float = RETINA_PPM) -> list[Path]:
     out.mkdir(parents=True, exist_ok=True)
     written = []
 
@@ -483,11 +535,12 @@ def preview(out: Path, maps: Path = STREET_DIR) -> list[Path]:
     views = read_views(maps)
     for street in manifest()["streets"]:
         view = views[street]
-        save(street_scene(view, "afternoon"), f"street-{street}")
-        save(street_scene(view, "night"), f"street-{street}-night")
-        save(times_grid(view, 0), f"times-{street}")
+        save(street_scene(view, "afternoon", ppm=ppm), f"street-{street}")
+        save(street_scene(view, "night", ppm=ppm), f"street-{street}-night")
+        save(times_grid(view, 0, ppm), f"times-{street}")
+    scale = ppm / SCENE_PPM
     for building, b in manifest()["buildings"].items():
         if b["floors"]:
-            save(dollhouse(views, building), f"dollhouse-{building}")
-            save(dollhouse(views, building, "night"), f"dollhouse-{building}-night")
+            save(dollhouse(views, building, scale=scale), f"dollhouse-{building}")
+            save(dollhouse(views, building, "night", scale), f"dollhouse-{building}-night")
     return written

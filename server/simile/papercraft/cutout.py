@@ -190,3 +190,22 @@ def skyline(mask: Image.Image) -> Image.Image:
     bottom = np.where(solid.any(axis=0), m.shape[0] - 1 - solid[::-1].argmax(axis=0), -1)
     inside = (rows >= top) & (rows <= bottom)
     return Image.fromarray((np.where(inside, 1.0, m) * 255).astype(np.uint8))
+
+
+def banded(mask: Image.Image, slack: float = 0.04) -> tuple[Image.Image, tuple[int, int]]:
+    """A ground strip's mask made solid across its own band, from the band's usual top row to its
+    usual bottom one, and the columns where the painting fills that band. A slab keyed away with
+    the backdrop comes back, and the sloped ends of a slab painted in perspective are cut off."""
+    m = np.asarray(mask, dtype=np.uint8)
+    solid = m > 128
+    h = solid.shape[0]
+    painted = solid.any(axis=0)
+    top = np.where(painted, solid.argmax(axis=0), h)
+    bottom = np.where(painted, h - 1 - solid[::-1].argmax(axis=0), -1)
+    band_top, band_bottom = int(np.median(top[painted])), int(np.median(bottom[painted]))
+    reach = round(slack * h)
+    full = np.flatnonzero((top <= band_top + reach) & (bottom >= band_bottom - reach))
+    x0, x1 = int(full[0]), int(full[-1]) + 1
+    out = m.copy()
+    out[band_top : band_bottom + 1, x0:x1] = 255
+    return Image.fromarray(out), (x0, x1)

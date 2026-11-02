@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
 
-from simile.papercraft import cutout, fronts, sketches
+from simile.papercraft import cutout, fronts, sketches, skyline
 from simile.papercraft.catalogue import Painting, index, paintings
 from simile.papercraft.fronts import EAVES, Front, Plan, draw, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
@@ -45,6 +45,7 @@ QUALITY = {
     "ground": 82,
     "paper": 80,
     "glow": 80,
+    "landmark": 85,
 }
 
 type Mask = Callable[[Image.Image], Image.Image]
@@ -103,6 +104,11 @@ def _sketch(name: str) -> Image.Image:
     return SKETCHES[name]()
 
 
+def _units(piece: Painting) -> bool:
+    """Whether `piece` is a front or a front's glow map, painted a unit at a time."""
+    return piece.kind == "front" or (piece.kind == "glow" and not piece.landmark)
+
+
 @dataclass
 class Report:
     painted: dict[str, float] = field(default_factory=dict)
@@ -147,7 +153,7 @@ class Build:
     def paint_hash(self, piece: Painting, unit: int | None = None) -> str:
         """The hash of what a painting is made from. A front or glow map is painted a unit at a
         time, and its own hash covers every unit's."""
-        if piece.kind in ("front", "glow") and unit is None:
+        if _units(piece) and unit is None:
             count = len(self.units(piece))
             return digest(*(self.paint_hash(piece, i) for i in range(count)))
         prompt = self.prompt(piece, unit)
@@ -158,6 +164,8 @@ class Build:
             inputs += [unit, fronts.PLAN, _fields(unit_front)]
         if piece.sketch:
             inputs += [piece.sketch, _sketch_source(piece.sketch)]
+        if piece.kind == "landmark" and piece.landmark:
+            inputs += [piece.landmark, skyline.PLAN, skyline.params(piece.landmark)]
         if piece.base:
             inputs.append(self.paint_hash(self.pieces[piece.base], unit))
         return digest(*inputs)
@@ -166,7 +174,7 @@ class Build:
         inputs: list[object] = [PIPELINE, PPM, piece.kind, piece.height, self.paint_hash(piece)]
         if piece.cut:
             inputs.append(list(piece.cut))
-        if piece.kind in ("front", "glow"):
+        if _units(piece):
             inputs += [fronts.PLAN, _fields(self.front(piece))]
         return digest(*inputs)
 
@@ -174,8 +182,10 @@ class Build:
         return piece.prompts[unit] if unit is not None and piece.prompts else piece.prompt
 
     def size(self, piece: Painting, unit: int | None = None) -> tuple[int, int]:
-        if piece.kind in ("front", "glow"):
+        if _units(piece):
             return self.units(piece)[unit or 0][1].image.size
+        if piece.landmark:
+            return skyline.plan(piece.landmark).image.size
         return piece.size
 
     def raw_path(self, piece: Painting, unit: int | None = None) -> Path:
@@ -183,7 +193,7 @@ class Build:
 
     def jobs(self, piece: Painting) -> list[int | None]:
         """The paintings a piece is made from: one per unit for a front or glow map."""
-        if piece.kind in ("front", "glow"):
+        if _units(piece):
             return list(range(len(self.units(piece))))
         return [None]
 
@@ -268,6 +278,8 @@ class Build:
         images = []
         if piece.kind == "front":
             images.append(self.units(piece)[unit or 0][1].image)
+        if piece.kind == "landmark" and piece.landmark:
+            images.append(skyline.plan(piece.landmark).image)
         if piece.sketch:
             images.append(_sketch(piece.sketch))
         if piece.base:
@@ -279,10 +291,14 @@ class Build:
     def finish(self, piece: Painting) -> dict:
         """Cut, scale and save `piece` from its painting, and its manifest entry."""
         entry: dict = {"kind": piece.kind}
-        if piece.kind in ("front", "glow"):
+        if _units(piece):
             image, extra = self.finish_front(piece)
             entry.update(extra)
             height = image.height / PPM
+        elif piece.landmark:
+            image, extra = self.finish_landmark(piece)
+            entry.update(extra)
+            height = piece.height or image.height / PPM
         else:
             raw = self.raw(piece)
             if piece.kind == "paper":
@@ -298,7 +314,12 @@ class Build:
                     mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
                 if piece.kind != "strip":
                     mask = cutout.skyline(mask)
-                image = tileable(trim_rows(cutout.unmix(raw, mask)))
+                if "banded" in piece.cut:
+                    mask, (x0, x1) = cutout.banded(mask)
+                    image = cutout.unmix(raw, mask).crop((x0, 0, x1, raw.height))
+                else:
+                    image = cutout.unmix(raw, mask)
+                image = tileable(trim_rows(image))
                 height = piece.height or image.height / PPM
             else:
                 if piece.sketch and "outline" in piece.cut:
@@ -358,6 +379,20 @@ class Build:
         extra = {"anchor": anchor, "width": round(f.width, 3), "eaves": round(f.wall_height, 3)}
         return image, extra
 
+    def finish_landmark(self, piece: Painting) -> tuple[Image.Image, dict]:
+        """A landmark cut on its plan's outline, or its glow map, at its painted size, cropped
+        to its plan with its foot's middle as its anchor."""
+        plan = skyline.plan(piece.landmark or "")
+        if piece.kind == "glow":
+            image = glow_map(self.raw(self.pieces[piece.base or ""]), self.raw(piece), plan)
+        else:
+            raw = self.raw(piece)
+            mask = outline_mask(raw, silhouette(plan), round(0.012 * raw.width) | 1, 5)
+            image = cutout.unmix(raw, mask, top_backdrop(raw))
+        box = landmark_box(plan)
+        anchor = [0.5, round((plan.ground - box[1]) / (box[3] - box[1]), 4)]
+        return image.crop(box), {"anchor": anchor}
+
     def write_manifest(self, pieces: dict) -> None:
         manifest = {"version": 1, "ppm": PPM, **index(self.layout), "pieces": pieces}
         text = json.dumps(manifest, indent=1) + "\n"
@@ -376,6 +411,22 @@ def front_box(plan: Plan, f: Front) -> tuple[float, float, float, float]:
         max(0, plan.ground - (f.total_height + 0.3) * plan.ppm),
         min(plan.image.width, plan.left + f.width * plan.ppm + side),
         min(plan.image.height, plan.ground + 0.12 * plan.ppm),
+    )
+
+
+def landmark_box(plan: Plan) -> tuple[int, int, int, int]:
+    """What's kept of a landmark's painting: its plan's outline, a little wider, centred on its
+    middle, down to just under its ground line."""
+    shape = np.asarray(plan.shape) > 0
+    xs, ys = np.nonzero(shape.any(axis=0))[0], np.nonzero(shape.any(axis=1))[0]
+    pad = round(0.02 * plan.image.width)
+    half = round(max(plan.left - xs[0], xs[-1] + 1 - plan.left)) + pad
+    middle = round(plan.left)
+    return (
+        max(0, middle - half),
+        max(0, int(ys[0]) - pad),
+        min(plan.image.width, middle + half),
+        min(plan.image.height, round(plan.ground) + pad),
     )
 
 

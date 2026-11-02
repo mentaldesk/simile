@@ -3,6 +3,7 @@
  "ppm": 120,
  "parallax": {
   "sky": 0.04,
+  "city": 0.1,
   "far": 0.2,
   "mid": 0.45,
   "near": 0.85,
@@ -354,7 +355,8 @@
    "piece": "furniture/bed",
    "variants": {
     "blue": "furniture/bed-blue"
-   }
+   },
+   "bed": 0.45
   },
   "wardrobe": {
    "piece": "furniture/wardrobe"
@@ -386,7 +388,8 @@
    "stretch": true
   },
   "cafe_table": {
-   "piece": "furniture/cafe_table"
+   "piece": "furniture/cafe_table",
+   "seat": 0.442
   },
   "stove": {
    "piece": "furniture/stove"
@@ -402,10 +405,12 @@
    "piece": "furniture/stool",
    "variants": {
     "teal": "furniture/stool-teal"
-   }
+   },
+   "seat": 0.567
   },
   "noodle_table": {
-   "piece": "furniture/noodle_table"
+   "piece": "furniture/noodle_table",
+   "seat": 0.483
   },
   "laser_cutter": {
    "piece": "furniture/laser_cutter"
@@ -438,7 +443,8 @@
    "piece": "furniture/plinth"
   },
   "bench": {
-   "piece": "furniture/bench"
+   "piece": "furniture/bench",
+   "seat": 0.392
   },
   "news_terminal": {
    "piece": "furniture/news_terminal"
@@ -447,7 +453,8 @@
    "piece": "furniture/fountain"
   },
   "lamp": {
-   "piece": "furniture/lamp"
+   "piece": "furniture/lamp",
+   "light": 3.35
   },
   "tree": {
    "piece": "furniture/tree"
@@ -574,7 +581,13 @@
    "piece": "furniture/washbasin"
   },
   "picture_frame": {
-   "piece": "furniture/picture_frame"
+   "piece": "furniture/picture_frame",
+   "moulding": {
+    "left": 13,
+    "right": 11,
+    "top": 18,
+    "bottom": 14
+   }
   },
   "banyan_tree": {
    "piece": "furniture/banyan_tree"

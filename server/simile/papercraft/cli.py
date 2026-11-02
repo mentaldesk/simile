@@ -63,11 +63,14 @@ def register(app: typer.Typer) -> None:
         maps: Annotated[
             Path | None, typer.Option(help="Side-view maps to compose, if not content/street/.")
         ] = None,
+        ppm: Annotated[
+            float, typer.Option(help="Pixels a metre to draw the streets at: a retina screen's.")
+        ] = 80,
     ) -> None:
         """Contact sheets of every papercraft piece, and streets and dollhouses composed from
         them on the side-view maps at each time of day, for looking at."""
         from simile.papercraft.layout import STREET_DIR
         from simile.papercraft.preview import preview
 
-        for path in preview(out, maps or STREET_DIR):
+        for path in preview(out, maps or STREET_DIR, ppm):
             typer.echo(path)
