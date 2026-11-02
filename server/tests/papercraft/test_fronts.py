@@ -1,6 +1,9 @@
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
+from simile.papercraft.build import _fields
 from simile.papercraft.fronts import GREY, UNIT, Box, Front, backdrop, draw, unit_plans, units
 from simile.papercraft.layout import Facade, Mural, load_layout
 from simile.papercraft.village import LOOKS, STREETS, TILE, front
@@ -95,6 +98,27 @@ def test_a_white_building_is_drawn_on_grey() -> None:
     assert backdrop(FRONTS["gallery"]) == GREY
     assert draw(FRONTS["gallery"]).image.getpixel((0, 0)) == GREY
     assert backdrop(FRONTS["coffee_shop"]) != GREY
+
+
+def test_a_front_is_drawn_as_today_unless_it_is_modern() -> None:
+    f = FRONTS["coffee_shop"]
+    plain, modern = draw(f), draw(replace(f, modern=True))
+
+    assert "modern" not in _fields(f)
+    assert not np.array_equal(np.asarray(modern.image), np.asarray(plain.image))
+    assert (np.asarray(modern.shape)[np.asarray(plain.shape) > 0] > 0).all()
+
+
+def test_a_modern_shop_window_lights_its_pictogram_and_its_band() -> None:
+    f = replace(FRONTS["coffee_shop"], modern=True)
+    plain, modern = draw(replace(f, modern=False)), draw(f)
+    x0, _, x1, y1 = f.shop_boxes()[0]
+    band_y = round(modern.ground - (y1 + 0.32) * modern.ppm)
+    band_x = round(modern.left + (x0 + x1) / 2 * modern.ppm)
+
+    assert np.asarray(modern.glow).sum() > np.asarray(plain.glow).sum()
+    assert np.asarray(modern.glow)[band_y, band_x] == 255
+    assert np.asarray(plain.glow)[band_y, band_x] == 0
 
 
 def test_every_building_and_street_on_the_maps_has_a_look() -> None:
