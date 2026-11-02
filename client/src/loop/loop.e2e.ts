@@ -126,12 +126,17 @@ async function openClinic(page: Page): Promise<void> {
   await until(page, async () => (await shown(page, 'section.clinic')) !== null, 3, 'E opening the clinic');
 }
 
-/** Chooses the clinic's deal starting `label` with the arrows, and Enter twice, since it can't be undone. */
+/** Chooses the clinic's row named `label` with the arrows, in its column, and Enter twice, since it can't be undone. */
 async function deal(page: Page, label: string, done: (at: Seen) => boolean): Promise<void> {
-  const labels = () => page.$$eval('section.clinic li', (items) => items.map((item) => [item.textContent ?? '', item.classList.contains('clinic-selected')] as const));
-  const index = (await labels()).findIndex(([text]) => text.startsWith(label));
-  if (index === -1) throw new Error(`the clinic offers no ${label}: ${JSON.stringify(await labels())}`);
-  for (let tries = 0; !(await labels())[index][1]; tries++) {
+  const rows = () =>
+    page.$$eval('section.clinic li', (items) =>
+      items.map((item) => [item.querySelector('.clinic-name')?.textContent ?? '', item.classList.contains('clinic-selected'), !!item.closest('.clinic-yours')] as const),
+    );
+  const index = (await rows()).findIndex(([text]) => text === label);
+  if (index === -1) throw new Error(`the clinic offers no ${label}: ${JSON.stringify(await rows())}`);
+  await page.keyboard.press((await rows())[index][2] ? 'ArrowLeft' : 'ArrowRight');
+  await run(page, 50);
+  for (let tries = 0; !(await rows())[index][1]; tries++) {
     if (tries > 30) throw new Error(`couldn't choose ${label}`);
     await page.keyboard.press('ArrowDown');
     await run(page, 50);
@@ -195,7 +200,7 @@ const kidney: Beat = async (page, saved, shot) => {
   await take(page, 'e', CLINIC, 'into the clinic');
   await openClinic(page);
   await shot('the clinic');
-  await deal(page, 'Sell a kidney', (at) => at.money === saved.money + 100 && at.body.left_kidney === 'sold');
+  await deal(page, 'A kidney', (at) => at.money === saved.money + 100 && at.body.left_kidney === 'sold');
   await shot('the kidney sold');
 };
 
