@@ -259,6 +259,37 @@ USABLES = (
 )
 """Things the side view draws for the player to use where no furniture does."""
 
+TRADES = (
+    Icon(
+        "talk",
+        "a single round white cartoon speech bubble with a thick black outline, a short pointed "
+        "tail at its bottom left, and three black dots in its middle.",
+    ),
+    Icon(
+        "sell_everything",
+        "a small heap of scavenged goods: a coil of copper wire, a rusty steel plate, a green "
+        "circuit board and a few shiny brass coins piled together.",
+    ),
+    Icon(
+        "patch_up",
+        "a single sticking plaster bandage lying diagonally: a tan fabric strip with rounded "
+        "ends, a white gauze pad in its middle and rows of tiny holes.",
+    ),
+    Icon(
+        "treat_rat_bite",
+        "a single human hand seen from the back, light brown skin, its fingers together, with a "
+        "clean white gauze dressing wrapped round the side of the palm and a small red spot of "
+        "blood soaking through it.",
+    ),
+    Icon(
+        "treat_infection",
+        "a single medical syringe lying diagonally: a clear glass barrel with black measuring "
+        "lines, half full of bright green medicine, a white plunger at one end and a thin steel "
+        "needle at the other.",
+    ),
+)
+"""The trade screen's rows that aren't a thing, by `iconOf` in `client/src/ui/clinic-panel.ts`."""
+
 UNKNOWN = Icon(
     "unknown_item",
     "a small battered brown cardboard box tied up with string, a big black question mark "
@@ -266,5 +297,5 @@ UNKNOWN = Icon(
 )
 
 ICONS: dict[str, Icon] = {
-    icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, *USABLES, UNKNOWN)
+    icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, *USABLES, *TRADES, UNKNOWN)
 }

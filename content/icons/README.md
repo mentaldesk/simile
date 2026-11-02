@@ -69,6 +69,17 @@ The side view draws what the player can use where no furniture does (`client/src
 
 A pile is drawn as its first item's icon.
 
+## The trade screen's
+
+The trade screen draws a row that isn't a thing with one of these (`iconOf` in
+`client/src/ui/clinic-panel.ts`).
+
+| Icons | What they are |
+|---|---|
+| `talk` | Talking to the doctor: a speech bubble. |
+| `sell_everything` | Selling everything they'd take: a heap of salvage and coins. |
+| `patch_up`, `treat_<effect>` | The doctor's treatments: a plaster, a dressed bitten hand, a syringe. |
+
 ## Adding icons
 
 Add an `Icon` to `server/simile/icons/catalogue.py`, in a tuple of its own if it starts a new set,

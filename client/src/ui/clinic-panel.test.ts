@@ -276,7 +276,7 @@ describe('ClinicPanel', () => {
     expect(selected()).toBe('Copper wire');
     expect(chosen()).toBe('Sell one: Copper wirePays 6');
     expect(document.querySelector('.clinic-yours li .clinic-icon img')).not.toBeNull();
-    expect(document.querySelector('.clinic-theirs li .clinic-icon')!.classList.contains('clinic-blank')).toBe(true);
+    expect(document.querySelector('.clinic-theirs li .clinic-icon img')).not.toBeNull();
   });
 
   it('moves between the columns on ← and →, and within one on ↑ and ↓, past talking first', () => {

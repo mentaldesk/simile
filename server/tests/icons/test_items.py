@@ -1,6 +1,6 @@
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy.config import DEFAULT_CONFIG as ECONOMY
-from simile.icons.catalogue import ICONS, ITEMS, UNKNOWN
+from simile.icons.catalogue import ICONS, ITEMS, TRADES, UNKNOWN
 from simile.player.config import DEFAULT_CONFIG as PLAYER
 from simile.schema import lamp
 from simile.story.lens import LENS
@@ -45,3 +45,8 @@ def test_every_item_the_server_defines_has_a_picture() -> None:
 def test_the_items_pictures_cover_every_item_and_one_for_any_without() -> None:
     assert every_item() <= {icon.id for icon in ITEMS}
     assert UNKNOWN.id not in every_item()
+
+
+def test_the_trade_screen_has_a_picture_for_talking_selling_everything_and_each_treatment() -> None:
+    treatments = {"patch_up"} | {f"treat_{effect.value}" for effect in CLINIC.cures}
+    assert {icon.id for icon in TRADES} == {"talk", "sell_everything"} | treatments
