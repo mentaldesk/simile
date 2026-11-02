@@ -65,5 +65,5 @@ export function layerCopies(
 export const parallaxY = (parallax: number, baseY: number, centreY: number, streetY: number): number =>
   baseY + (centreY - streetY) * (1 - Math.min(parallax, 1));
 
-/** In the middle of the view when its centre is `at` along the street, wherever the view's centre is. */
+/** Drawn in the middle of the view when the view's centre is at `at`. */
 export const landmarkX = (at: number, parallax: number, centreX: number): number => at + (centreX - at) * (1 - parallax);
