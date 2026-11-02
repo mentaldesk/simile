@@ -23,6 +23,8 @@ Money moves between residents, the player (`PLAYER`) and `OUTSIDE`, the world be
 | To the player | Salvage (`salvage`) | When they sell salvage or a part to a buyer (S6, P5) |
 | Out, from the player | Buying back (`purchase`) | When they buy back a part they sold (P5) |
 | To the player | Money they find (`found`) | When they pick up a secret's cash (S6) |
+| Out, from the player | Left in a pile (`dropped`) | When they collapse with money, to `PILES` (P67) |
+| To the player | Picked up from a pile (`recovered`) | When they pick up a pile they left, from `PILES` (P67) |
 
 A shop is run by whoever works there on `takings`: Mirela at the Daily Grind and Odalys at the noodle
 bar. They take what customers pay and pay the supplies out of it, so they earn their takings less
@@ -46,11 +48,14 @@ I3 saves each entry as it's made, and D1's report shows where the money went dur
 
 The player isn't a resident, so their money isn't in `money`, B1's hooks or what residents hold:
 to the residents' books they're outside the village, and what they pay a keeper comes in. But every
-movement of their money is in the ledger, so `ledger.net(PLAYER)` is always what they've gained
-since it opened. Their money is `Player.money` (`simile.player`), which joins the economy as
-`Economy.player` once the server is running, and `pay` moves it for `PLAYER`. Unlike a resident's,
-it never goes below nothing: `pay` raises `ValueError` and records nothing for more than they hold,
-so check they can pay first.
+movement of their money is in the ledger, so `ledger.net(PLAYER)` is always the change in what
+they hold since it opened. Money they leave in a pile when they collapse goes to `PILES`, which is
+neither a resident nor outside the village, and comes back from it when they pick the pile up. So
+`net(PLAYER) + net(PILES)` is what they've gained, money lying in their piles included, and picking
+up every pile they left since the ledger opened puts `net(PLAYER)` back where it was. Their money
+is `Player.money` (`simile.player`), which joins the economy as `Economy.player` once the server is
+running, and `pay` moves it for `PLAYER`. Unlike a resident's, it never goes below nothing: `pay`
+raises `ValueError` and records nothing for more than they hold, so check they can pay first.
 
 - **Meals.** `buy(PLAYER, shop, price)`, as for a resident: the keeper takes it and pays the
   supplies.
@@ -64,6 +69,9 @@ so check they can pay first.
   battery, which recipes use up and the sewers' finds hold. See *Buying back* in `simile.player`'s
   README. Each part is worth less than the fitting it goes into.
 - **Money they find.** `find(amount, pickup)`, as `found` from `OUTSIDE`.
+- **Piles.** `drop(amount)` when they collapse, as `dropped` to `PILES`, and `recover(amount)`
+  when they pick up a pile they left, as `recovered` from it. A pile left before the ledger opened,
+  as after a restore, comes back as `recovered` all the same, so `net(PILES)` goes below nothing.
 
 | Salvage | Price |
 |---|--:|

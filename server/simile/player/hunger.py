@@ -113,6 +113,8 @@ class Hunger:
             pile = Pile(at=ground(self.movement, at), items=dropped, money=money)
             self.player.left = [*self.player.left, pile]
             self.player.items = kept
+            if self.economy is not None:
+                self.economy.drop(money)
             self.player.money = 0.0
         self.player.effects = []
         home = self._waking()

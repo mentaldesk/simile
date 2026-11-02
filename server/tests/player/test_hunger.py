@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
-from simile.economy import PLAYER, Batch, Kind
+from simile.economy import PILES, PLAYER, Batch, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -282,6 +282,11 @@ def test_their_money_is_left_with_what_they_carried_and_every_effect_clears() ->
     assert village.player.left == [
         Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE], money=31.5)
     ]
+    dropped = village.economy.ledger.entries
+    assert [(e.kind, e.amount, e.payer, e.payee) for e in dropped] == [
+        (Kind.DROPPED, 31.5, PLAYER, PILES)
+    ]
+    assert village.economy.ledger.gap(village.economy.money) == 0
 
 
 def test_money_alone_is_left_in_a_pile_of_its_own() -> None:
