@@ -345,6 +345,46 @@
       ],
       "hash": "83fa774a1e8c1c16"
     },
+    "talk": {
+      "file": "talk.webp",
+      "size": [
+        260,
+        248
+      ],
+      "hash": "1613150258ba7dc7"
+    },
+    "sell_everything": {
+      "file": "sell_everything.webp",
+      "size": [
+        260,
+        178
+      ],
+      "hash": "81c5f8de392a668b"
+    },
+    "patch_up": {
+      "file": "patch_up.webp",
+      "size": [
+        260,
+        254
+      ],
+      "hash": "3ad1d851a249be49"
+    },
+    "treat_rat_bite": {
+      "file": "treat_rat_bite.webp",
+      "size": [
+        193,
+        260
+      ],
+      "hash": "1acd9ba389a248fa"
+    },
+    "treat_infection": {
+      "file": "treat_infection.webp",
+      "size": [
+        260,
+        209
+      ],
+      "hash": "9e82c580a8b37dd3"
+    },
     "unknown_item": {
       "file": "unknown_item.webp",
       "size": [
