@@ -987,7 +987,7 @@ export interface PickUpMessage {
 export interface SellMessage {
   type: 'sell';
   /**
-   * One thing they carry, by its `id`, or null for everything they carry that the buyer buys.
+   * One thing they carry, by its `id`, or null for everything they carry that the buyer buys except the lamp, which is only sold on its own.
    */
   item: string | null;
 }
