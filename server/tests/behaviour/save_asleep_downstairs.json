@@ -1,0 +1,89 @@
+{
+  "now": "2026-01-03T02:41:00Z",
+  "npcs": {
+    "desmond": {
+      "position": {"x": 3, "y": 2},
+      "map": "house_5_floor_0",
+      "activity": "sleep",
+      "target": "house_5",
+      "needs": {
+        "social": 0.31,
+        "curiosity": 0.42,
+        "rest": 0.36,
+        "news": 0.28,
+        "inspiration": 0.2,
+        "hunger": 0.41,
+        "boredom": 0.1,
+        "relaxation": 0.22,
+        "exercise": 0.3,
+        "finances": 0.0
+      },
+      "since": "2026-01-02T22:47:00Z",
+      "until": "2026-01-03T07:05:00Z",
+      "cooldowns": {}
+    },
+    "henrietta": {
+      "position": {"x": 3, "y": 2},
+      "map": "house_4_floor_0",
+      "activity": "sleep",
+      "target": "house_4",
+      "needs": {
+        "social": 0.25,
+        "curiosity": 0.3,
+        "rest": 0.4,
+        "news": 0.2,
+        "inspiration": 0.6,
+        "hunger": 0.38,
+        "boredom": 0.05,
+        "relaxation": 0.3,
+        "exercise": 0.45,
+        "finances": 0.0
+      },
+      "since": "2026-01-02T22:31:00Z",
+      "until": "2026-01-03T06:52:00Z",
+      "cooldowns": {}
+    },
+    "kofi": {
+      "position": {"x": 3, "y": 2},
+      "map": "house_6_floor_0",
+      "activity": "sleep",
+      "target": "house_6",
+      "needs": {
+        "social": 0.4,
+        "curiosity": 0.35,
+        "rest": 0.33,
+        "news": 0.3,
+        "inspiration": 0.1,
+        "hunger": 0.44,
+        "boredom": 0.12,
+        "relaxation": 0.18,
+        "exercise": 0.27,
+        "finances": 0.0
+      },
+      "since": "2026-01-02T23:02:00Z",
+      "until": "2026-01-03T08:10:00Z",
+      "cooldowns": {}
+    },
+    "marguerite": {
+      "position": {"x": 3, "y": 2},
+      "map": "house_1_floor_1",
+      "activity": "sleep",
+      "target": "house_1",
+      "needs": {
+        "social": 0.2,
+        "curiosity": 0.25,
+        "rest": 0.3,
+        "news": 0.35,
+        "inspiration": 0.15,
+        "hunger": 0.4,
+        "boredom": 0.08,
+        "relaxation": 0.25,
+        "exercise": 0.35,
+        "finances": 0.0
+      },
+      "since": "2026-01-02T22:15:00Z",
+      "until": "2026-01-03T06:40:00Z",
+      "cooldowns": {}
+    }
+  }
+}

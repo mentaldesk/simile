@@ -526,7 +526,8 @@ class Behaviour:
         """Put the NPC back to what they were doing when saved, after the clock has been set:
         their walk stops, and with no `until` (they were walking or talking) they decide again
         on the next think. A stay that's already over is dropped rather than finished, and a shift
-        already under way waits until the stay is over. Everyone's needs rise from now."""
+        already under way waits until the stay is over. Anyone asleep goes to bed. Everyone's
+        needs rise from now."""
         mind = self.minds[npc]
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -546,6 +547,13 @@ class Behaviour:
         mind.look = self._first_look(mind) if mind.finishes else None
         self._needs_at = self.clock.now
         self._publish(mind)
+        if goal.activity is Activity.SLEEP and (mind.finishes or until is None):
+            self._back_to_bed(mind)
+
+    def _back_to_bed(self, mind: Mind) -> None:
+        """Restored asleep: home to bed, still waking at `until` if they have one."""
+        mind.resettling = mind.finishes
+        self._walk(mind, mind.goal.target)
 
     def hold(self, npc: Id, target: Target, goal: Goal) -> None:
         """Walk them to `target` and keep them there with `goal`, making no decisions and out of
@@ -1402,6 +1410,8 @@ class Behaviour:
         return timedelta(minutes=self.rng.uniform(*bounds))
 
     def _publish(self, mind: Mind) -> None:
+        goal = mind.goal
+        self.movement.intend(mind.npc.id, purpose_of(goal.activity.value, goal.target))
         self.bus.publish(GoalChosen(mind.npc.id, mind.goal.activity.value, mind.goal.target))
 
 
