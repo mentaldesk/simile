@@ -72,7 +72,7 @@ from simile.schema import (
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
 from simile.voicing.distance import between
-from simile.world.map import MapKind
+from simile.world.map import MapKind, SpotKind
 from simile.world.movement import Movement, Outcome, Point, Target, Walk, inside
 from simile.world.paths import nearby
 from simile.world.spots import choose as choose_spot
@@ -526,7 +526,8 @@ class Behaviour:
         """Put the NPC back to what they were doing when saved, after the clock has been set:
         their walk stops, and with no `until` (they were walking or talking) they decide again
         on the next think. A stay that's already over is dropped rather than finished, and a shift
-        already under way waits until the stay is over. Everyone's needs rise from now."""
+        already under way waits until the stay is over. Anyone asleep goes to bed. Everyone's
+        needs rise from now."""
         mind = self.minds[npc]
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -546,6 +547,21 @@ class Behaviour:
         mind.look = self._first_look(mind) if mind.finishes else None
         self._needs_at = self.clock.now
         self._publish(mind)
+        if goal.activity is Activity.SLEEP and (mind.finishes or until is None):
+            self._back_to_bed(mind)
+
+    def _back_to_bed(self, mind: Mind) -> None:
+        """Restored asleep: off to a free bed in their home, still waking at `until`, or there
+        to sleep if they were on their way."""
+        spot = self.movement.on_spot(mind.npc.id)
+        on_bed = spot is not None and spot.kind is SpotKind.BED
+        bed = None if on_bed else self._another_spot(mind)
+        if mind.finishes:
+            if bed is not None:
+                mind.resettling = True
+                self._walk(mind, bed)
+        else:
+            self._walk(mind, bed or (None if on_bed else mind.goal.target))
 
     def hold(self, npc: Id, target: Target, goal: Goal) -> None:
         """Walk them to `target` and keep them there with `goal`, making no decisions and out of

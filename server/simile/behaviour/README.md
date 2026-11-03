@@ -261,7 +261,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `working(npc)` | Whether they're at their workplace working: there for work, or held there with a goal at it. |
 | `savings(npc)` | Their savings target, in money. |
 | `unease(npc)` | The `unease` hook's answer, clamped to 0 to 1, or 0 if it fails. B2 reads it too. |
-| `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
+| `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Anyone asleep off their bed walks to a free one in their home, still waking at `until`. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
 | `inspire(memory)` | Raises the owner's inspiration for a new memory, within the caps, and returns by how much. The lifespan hands it every memory stored. |
