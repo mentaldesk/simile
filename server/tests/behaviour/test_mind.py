@@ -353,9 +353,7 @@ def test_a_nudge_left_at_bedtime_is_dropped_with_the_new_goal() -> None:
 
 def test_seekers_ask_to_talk_and_both_pause_when_accepted() -> None:
     requests: list[tuple[str, str]] = []
-    village = Village(
-        [ANA, BEN], start=at(11), config=keen(A.SEEK), placed={"ben": "park"}
-    )
+    village = Village([ANA, BEN], start=at(11), config=keen(A.SEEK), placed={"ben": "park"})
 
     def accept(a: str, b: str) -> bool:
         requests.append((a, b))
