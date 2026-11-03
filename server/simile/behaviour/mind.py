@@ -72,7 +72,7 @@ from simile.schema import (
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
 from simile.voicing.distance import between
-from simile.world.map import MapKind, SpotKind
+from simile.world.map import MapKind
 from simile.world.movement import Movement, Outcome, Point, Target, Walk, inside
 from simile.world.paths import nearby
 from simile.world.spots import choose as choose_spot
@@ -551,17 +551,9 @@ class Behaviour:
             self._back_to_bed(mind)
 
     def _back_to_bed(self, mind: Mind) -> None:
-        """Restored asleep: off to a free bed in their home, still waking at `until`, or there
-        to sleep if they were on their way."""
-        spot = self.movement.on_spot(mind.npc.id)
-        on_bed = spot is not None and spot.kind is SpotKind.BED
-        bed = None if on_bed else self._another_spot(mind)
-        if mind.finishes:
-            if bed is not None:
-                mind.resettling = True
-                self._walk(mind, bed)
-        else:
-            self._walk(mind, bed or (None if on_bed else mind.goal.target))
+        """Restored asleep: home to bed, still waking at `until` if they have one."""
+        mind.resettling = mind.finishes
+        self._walk(mind, mind.goal.target)
 
     def hold(self, npc: Id, target: Target, goal: Goal) -> None:
         """Walk them to `target` and keep them there with `goal`, making no decisions and out of
@@ -1418,6 +1410,8 @@ class Behaviour:
         return timedelta(minutes=self.rng.uniform(*bounds))
 
     def _publish(self, mind: Mind) -> None:
+        goal = mind.goal
+        self.movement.intend(mind.npc.id, purpose_of(goal.activity.value, goal.target))
         self.bus.publish(GoalChosen(mind.npc.id, mind.goal.activity.value, mind.goal.target))
 
 

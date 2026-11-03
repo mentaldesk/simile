@@ -31,7 +31,7 @@ from simile.schema import (
 )
 from simile.sim import STEP, Clock, EntityMoved, FakeWallClock, World
 from simile.world import Movement, Outcome, Point
-from simile.world.map import WALKING_SPEED, load_maps, with_every_location
+from simile.world.map import WALKING_SPEED, SpotKind, load_maps, with_every_location
 from simile.world.movement import inside
 
 MAPS = load_maps()
@@ -354,7 +354,7 @@ def test_a_nudge_left_at_bedtime_is_dropped_with_the_new_goal() -> None:
 def test_seekers_ask_to_talk_and_both_pause_when_accepted() -> None:
     requests: list[tuple[str, str]] = []
     village = Village(
-        [ANA, BEN], start=at(11), config=keen(A.SEEK), placed={"ana": "square", "ben": "park"}
+        [ANA, BEN], start=at(11), config=keen(A.SEEK), placed={"ben": "park"}
     )
 
     def accept(a: str, b: str) -> bool:
@@ -628,22 +628,21 @@ def test_trips_inside_go_through_the_door_and_take_as_long_as_the_walk(activity:
     place = TOWN.location(activity.value)
     here = village.movement.position("ana")
     assert walk.outcome is Outcome.ARRIVED
-    assert here.map == place.map and inside(place, here)
+    assert inside(place, here)
     assert door_into(place.id) in zip(spots, spots[1:], strict=False)
     elapsed = (village.clock.now - left).total_seconds()
     assert elapsed == pytest.approx(walk.distance / WALKING_SPEED, abs=2 * STEP)
 
 
-def test_residents_who_choose_the_coffee_shop_end_up_at_the_counter_inside() -> None:
+def test_residents_who_choose_the_coffee_shop_take_a_bar_stool_or_seat_inside() -> None:
     village = Village([ANA, BEN, CAL], config=keen(A.COFFEE_SHOP))
     minds = village.behaviour.minds.values()
     village.run_until(lambda: all(m.goal.activity is A.COFFEE_SHOP and not m.walk for m in minds))
 
-    cafe = MAPS["coffee_shop_floor_0"]
-    [stand] = next(i for i in cafe.interactables if i.id == "coffee_shop_counter").stand
-    spots = [village.movement.position(npc.id) for npc in (ANA, BEN, CAL)]
-    assert Point(stand.x, stand.y, cafe.id) in spots
-    assert all(inside(cafe.location("coffee_shop"), spot) for spot in spots)
+    cafe = TOWN.location("coffee_shop")
+    spots = [village.movement.on_spot(npc.id) for npc in (ANA, BEN, CAL)]
+    assert all(spot is not None and spot.kind in (SpotKind.BAR, SpotKind.SEAT) for spot in spots)
+    assert all(inside(cafe, village.movement.position(npc.id)) for npc in (ANA, BEN, CAL))
 
 
 def test_a_wander_from_inside_goes_out_near_the_door() -> None:

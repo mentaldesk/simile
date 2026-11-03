@@ -2,12 +2,12 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from simile.behaviour import Activity, Behaviour, Goal
+from simile.behaviour import Activity, Behaviour, Goal, GoalChosen
 from simile.npc import load_npcs
 from simile.persistence import SavedWorld, restore
 from simile.schema import Npc, Pose, Tile
 from simile.sim import Clock, FakeWallClock, World
-from simile.world import Movement
+from simile.world import Movement, Point
 from simile.world.map import SpotKind, load_maps, with_every_location
 from simile.world.movement import inside
 
@@ -18,16 +18,23 @@ SAVE = SavedWorld.model_validate_json(
     (Path(__file__).parent / "save_asleep_downstairs.json").read_text()
 )
 DOWNSTAIRS = ("desmond", "henrietta", "kofi")
+MORNING = datetime(2026, 1, 1, 10, tzinfo=UTC)
 
 
 class Village:
-    def __init__(self, npcs: list[Npc] = NPCS) -> None:
-        self.world = World(Clock(datetime(2026, 1, 1, 10, tzinfo=UTC)), FakeWallClock())
+    def __init__(self, npcs: list[Npc] = NPCS, start: datetime = MORNING) -> None:
+        self.world = World(Clock(start), FakeWallClock())
         self.movement = Movement(MAPS, self.world.bus)
         self.behaviour = Behaviour(self.world.clock, self.world.bus, self.movement, npcs, seed=0)
         self.world.loop.register(self.behaviour)
         self.world.loop.register(self.movement)
+        self.woke: dict[str, datetime] = {}
+        self.world.bus.subscribe(GoalChosen, self._on_goal)
         self.behaviour.start()
+
+    def _on_goal(self, event: GoalChosen) -> None:
+        if event.activity != Activity.SLEEP.value:
+            self.woke.setdefault(event.npc, self.world.clock.now)
 
     def run(self, duration: timedelta) -> None:
         asyncio.run(self.world.loop.run(duration))
@@ -56,8 +63,20 @@ def test_residents_asleep_downstairs_when_a_save_loads_go_up_to_bed() -> None:
         assert village.in_bed(npc), npc
         assert (mind.goal, mind.until) == (Goal(Activity.SLEEP, saved.target), saved.until)
 
-    village.run(min(s.until for s in SAVE.npcs.values()) - village.world.clock.now)
-    assert all(village.in_bed(npc) for npc in SAVE.npcs)
+    village.woke.clear()
+    for npc, saved in sorted(SAVE.npcs.items(), key=lambda item: item[1].until):
+        village.run(saved.until - timedelta(minutes=1) - village.world.clock.now)
+        assert village.in_bed(npc) and npc not in village.woke, npc
+    village.run(timedelta(minutes=10))
+    assert all(village.woke[npc] >= saved.until for npc, saved in SAVE.npcs.items())
+
+
+def test_a_fresh_start_at_night_puts_residents_in_bed() -> None:
+    village = Village(start=datetime(2026, 1, 3, 2, 45, tzinfo=UTC))
+
+    village.run(timedelta(minutes=10))
+
+    assert all(village.in_bed(npc.id) for npc in NPCS)
 
 
 def test_a_resident_saved_in_bed_loads_lying_down() -> None:
@@ -65,7 +84,7 @@ def test_a_resident_saved_in_bed_loads_lying_down() -> None:
 
     restore(SAVE, village.behaviour)
 
-    assert village.behaviour.minds["marguerite"].walk is None
+    assert village.movement.position("marguerite") == Point(3, 2, "house_1_floor_1")
     assert village.in_bed("marguerite")
 
 

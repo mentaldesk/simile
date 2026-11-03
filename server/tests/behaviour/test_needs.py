@@ -202,6 +202,7 @@ def test_a_meal_under_way_is_finished_when_the_place_stops_serving() -> None:
 
 def test_they_wake_hungry_but_not_lonely() -> None:
     village = Village([ANA], hour=3)
+    village.run(minutes=5)
     before = village.behaviour.needs("ana")
 
     village.run(minutes=60)
