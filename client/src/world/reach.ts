@@ -38,7 +38,7 @@ export type Reachables = {
   bed?: () => MapTile | undefined;
 };
 
-/** From the residents' earliest bedtime until 06:00, when a rest sleeps until morning. */
+/** When a rest sleeps until morning: from 21:00, the earliest bedtime any resident can have, as the server's `NIGHT_STARTS`, until 06:00. */
 export const NIGHT = { from: 21, until: 6 };
 
 export function atNight(hour: number): boolean {

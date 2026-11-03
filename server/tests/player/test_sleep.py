@@ -6,11 +6,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from simile.behaviour.config import DEFAULT_CONFIG as DEFAULT_BEHAVIOUR
 from simile.behaviour.config import Activity
 from simile.llm import LLMClient
 from simile.llm.provider import Request, Usage
 from simile.player.health import DEFAULT_HEALTH, Health
-from simile.player.sleep import DEFAULT_SLEEP, Sleep
+from simile.player.sleep import DEFAULT_SLEEP, NIGHT_STARTS, Sleep
 from simile.schema import PLAYER_ID, Effect, EffectKind, Player
 from simile.sim import Clock, ConversationStarted, FakeWallClock, World
 from simile.world import Movement, Point
@@ -190,12 +191,8 @@ def test_in_the_daytime_a_rest_at_full_health_or_infected_is_ignored(hours: floa
     assert not infected.health.rest(True)
 
 
-def test_night_starts_at_the_residents_earliest_bedtime() -> None:
-    sleeper = Sleeper(21.5)
-    sleeper.sleep.bedtime = lambda: 22.0
-
-    assert not sleeper.sleep.night()
-    assert not sleeper.health.rest(True)
+def test_night_starts_at_the_earliest_bedtime_any_resident_can_have() -> None:
+    assert NIGHT_STARTS == DEFAULT_BEHAVIOUR.bedtime_range[0] == 21.0
 
 
 def test_a_daytime_rest_heals_and_ends_at_full_health_without_a_skip() -> None:
@@ -239,6 +236,8 @@ class Counting:
 
 @dataclass
 class Slept:
+    skipping: bool
+    """Whether the clock skipped once they'd lain down."""
     real: float
     """Real seconds from the rest until they were up."""
     speed: float
@@ -254,7 +253,7 @@ class Slept:
     """Each resident still asleep, by the hour they wake."""
 
 
-async def sleep_in_the_village(start: datetime) -> Slept:
+async def sleep_in_the_village(start: datetime, health: float = 0.4, morning: bool = True) -> Slept:
     from simile.app import create_app
     from simile.behaviour.mind import create_behaviour
     from simile.conversation import create_engine
@@ -280,14 +279,18 @@ async def sleep_in_the_village(start: datetime) -> Slept:
         player.join(app.state.health.home_bed())
         await player.wait(1)
         me = player_of(app)
-        me.health = 0.4
+        me.health = health
         vitals = (me.hunger, me.power)
         player.send(RestMessage(on=True))
         wall = world.loop.wall.now()
-        while world.clock.time_of_day < 7 or world.clock.skipping:
+        while world.loop.wall.now() - wall < DEFAULT_HEALTH.lie_down + 0.1:
+            await world.loop.run(timedelta(seconds=world.loop.dt()))
+        skipping = world.clock.skipping
+        while morning and (world.clock.time_of_day < 7 or world.clock.skipping):
             await world.loop.run(timedelta(seconds=world.loop.dt()))
         minds = app.state.behaviour.minds
         return Slept(
+            skipping=skipping,
             real=world.loop.wall.now() - wall,
             speed=world.clock.speed,
             resting=app.state.health.resting(),
@@ -316,3 +319,15 @@ def test_a_headless_rest_at_the_camp_bed_at_a_quarter_to_three_sleeps_until_seve
     assert slept.started == []
     assert [call for call in slept.calls if call < slept.first_up] == []
     assert all(wake > 6.9 for wake in slept.asleep.values())
+
+
+def test_a_headless_rest_at_full_health_at_nine_sharp_skips() -> None:
+    with pytest.MonkeyPatch.context() as env:
+        env.setenv("SIMILE_LLM", "fake")
+        env.setenv("SIMILE_NEWS", "0")
+        env.setenv("SIMILE_DB", ":memory:")
+        slept = asyncio.run(sleep_in_the_village(at(NIGHT_STARTS), health=1, morning=False))
+
+    assert slept.skipping
+    assert slept.resting
+    assert slept.speed == SPEED

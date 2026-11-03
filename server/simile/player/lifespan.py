@@ -61,13 +61,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         night=lambda: sleep.night(),
     )
 
-    def bedtime() -> float | None:
-        return min((mind.bedtime for mind in behaviour.minds.values()), default=None)
-
     def awake() -> bool:
         return bool(in_game) and not health.sleeping()
 
-    sleep = Sleep(health, world.clock, bedtime=bedtime, playing=lambda: bool(in_game))
+    sleep = Sleep(health, world.clock, playing=lambda: bool(in_game))
     hunger = Hunger(
         player,
         movement,

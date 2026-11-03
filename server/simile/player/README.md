@@ -79,14 +79,15 @@ to hurt and bite the player: they look it up when they do, not at startup.
   up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
   the bed doesn't lie them down again. Waking there from a collapse, they rest at once, with no
   `lie_down`.
-- **Sleeping until morning** (`sleep.py`, P79). At night, from the residents' earliest bedtime
-  until `night_ends` (06:00), a rest is accepted at full health or infected too, and goes on until
-  `morning` (07:00) rather than ending at full health or when an infection sets in. Once they've
-  lain down, `Sleep` runs the clock at `speed` (3600x, an hour a real second) with `clock.skip`,
-  so 02:45 to 07:00 takes about four real seconds. Health still comes back, unless they're
-  infected, and hunger and power hold for the whole rest. At 07:00 the clock goes back to its
-  speed and they get up. Moving off the bed, getting up, collapsing or the client leaving ends it early, and the clock
-  goes back at once. Waking in bed from a collapse at night doesn't sleep until morning.
+- **Sleeping until morning** (`sleep.py`, P79). At night, from `night_starts` (21:00, the
+  earliest bedtime any resident can have, as the client's `NIGHT.from`) until `night_ends`
+  (06:00), a rest is accepted at full health or infected too, and goes on until `morning` (07:00)
+  rather than ending at full health or when an infection sets in. Once they've lain down, `Sleep`
+  runs the clock at `speed` (3600x, an hour a real second) with `clock.skip`, so 02:45 to 07:00
+  takes about four real seconds. Health still comes back, unless they're infected, and hunger and
+  power hold for the whole rest. At 07:00 the clock goes back to its speed and they get up. Moving
+  off the bed, getting up, collapsing or the client leaving ends it early, and the clock goes back
+  at once. Waking in bed from a collapse at night doesn't sleep until morning.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
