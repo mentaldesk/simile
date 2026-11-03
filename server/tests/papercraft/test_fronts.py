@@ -94,14 +94,16 @@ def test_a_plans_outline_covers_its_walls_and_roof(building: str) -> None:
     assert not shape[2, 2]
 
 
-def test_a_white_building_is_drawn_on_grey() -> None:
+def test_a_pale_building_is_drawn_on_grey() -> None:
     assert backdrop(FRONTS["gallery"]) == GREY
     assert draw(FRONTS["gallery"]).image.getpixel((0, 0)) == GREY
-    assert backdrop(FRONTS["coffee_shop"]) != GREY
+    assert backdrop(FRONTS["coffee_shop"]) == GREY
+    assert backdrop(FRONTS["maker_space"]) != GREY
+    assert backdrop(FRONTS["clinic"]) != GREY
 
 
 def test_a_front_is_drawn_as_today_unless_it_is_modern() -> None:
-    f = FRONTS["coffee_shop"]
+    f = replace(FRONTS["coffee_shop"], modern=False)
     plain, modern = draw(f), draw(replace(f, modern=True))
 
     assert "modern" not in _fields(f)

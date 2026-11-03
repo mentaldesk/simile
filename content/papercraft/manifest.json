@@ -638,7 +638,7 @@
    ],
    "width": 6.6,
    "eaves": 3.3,
-   "hash": "2401bf6e1ceb5eb08eb1"
+   "hash": "d670679bc9064bf9e96d"
   },
   "fronts/clinic": {
    "file": "fronts/clinic.webp",
@@ -670,23 +670,23 @@
    ],
    "width": 7.7,
    "eaves": 12.1,
-   "hash": "0b0ade4a4fa59f5d3c37"
+   "hash": "7880cee19f6baf15397e"
   },
   "fronts/coffee_shop": {
    "file": "fronts/coffee_shop.webp",
    "size": [
-    2785,
-    1730
+    2783,
+    1569
    ],
-   "height": 14.417,
+   "height": 13.075,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9917
+    0.9908
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "55b3d3c41d21f56ecbb2"
+   "hash": "cf350e21c8de04826bc5"
   },
   "fronts/corner_shop": {
    "file": "fronts/corner_shop.webp",
@@ -702,7 +702,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "6304f4f34a0e439941e8"
+   "hash": "2890137627b0702ae8be"
   },
   "fronts/gallery": {
    "file": "fronts/gallery.webp",
@@ -718,7 +718,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "6d04fce1d59fe4a4dc8e"
+   "hash": "6266ca2112f7acaa4a18"
   },
   "fronts/garden_flats": {
    "file": "fronts/garden_flats.webp",
@@ -734,167 +734,167 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "b139f6fcfe87d9228ac7"
+   "hash": "2d3c2c32104042385f64"
   },
   "fronts/house_1": {
    "file": "fronts/house_1.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "55f716a76d3f0b9e69b0"
+   "hash": "1fd3fc31036a56c27baa"
   },
   "fronts/house_10": {
    "file": "fronts/house_10.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d039d0f2abf0764244d6"
+   "hash": "43e00352b6bd104e1edd"
   },
   "fronts/house_2": {
    "file": "fronts/house_2.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "9b13ee25f36f94a66b16"
+   "hash": "29ae74f4d5f3fbd85234"
   },
   "fronts/house_3": {
    "file": "fronts/house_3.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "5fed89fc30d9f42fbd79"
+   "hash": "ce87a07390bffb5217bb"
   },
   "fronts/house_4": {
    "file": "fronts/house_4.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "27580a95c460b04fb120"
+   "hash": "9a4739854820e0617d6f"
   },
   "fronts/house_5": {
    "file": "fronts/house_5.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "b17cd4f99614fc63aeb6"
+   "hash": "6af62038908a8770fb3f"
   },
   "fronts/house_6": {
    "file": "fronts/house_6.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "e396969daf4361abbce2"
+   "hash": "90e1fe8485dff3a88601"
   },
   "fronts/house_7": {
    "file": "fronts/house_7.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "72ca893eeed7648fd4b3"
+   "hash": "907797402f302ecc355f"
   },
   "fronts/house_8": {
    "file": "fronts/house_8.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "5812b53d04260e7cf8f0"
+   "hash": "4598b81c18d5f464cd93"
   },
   "fronts/house_9": {
    "file": "fronts/house_9.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "03b9383272829fa250c2"
+   "hash": "402b71f0a9c9410d4194"
   },
   "fronts/laundry": {
    "file": "fronts/laundry.webp",
@@ -910,7 +910,7 @@
    ],
    "width": 6.6,
    "eaves": 7.7,
-   "hash": "2751664abf13ac675e2a"
+   "hash": "258845a0bec2ed84c6a2"
   },
   "fronts/maker_space": {
    "file": "fronts/maker_space.webp",
@@ -926,23 +926,23 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "346d543914ccb0e7539e"
+   "hash": "0b01373c1e875f58d344"
   },
   "fronts/noodle_bar": {
    "file": "fronts/noodle_bar.webp",
    "size": [
-    2389,
-    1155
+    2387,
+    1040
    ],
-   "height": 9.625,
+   "height": 8.667,
    "kind": "front",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "b899faf82170b7ab07cd"
+   "hash": "5b53d969cb2739bddc00"
   },
   "fronts/print_works": {
    "file": "fronts/print_works.webp",
@@ -958,7 +958,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "cdcb5f306bc64158418d"
+   "hash": "ab103ab696f4b87bf4e4"
   },
   "fronts/tea_house": {
    "file": "fronts/tea_house.webp",
@@ -974,7 +974,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "c9c2eb01fca2a693d09c"
+   "hash": "85e31172fc33228a5d4a"
   },
   "fronts/tower": {
    "file": "fronts/tower.webp",
@@ -990,7 +990,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "eb41b9f0d8d690c0a728"
+   "hash": "13f49381a4f6112abbdd"
   },
   "furniture/armchair": {
    "file": "furniture/armchair.webp",
@@ -1513,7 +1513,7 @@
   "furniture/metro_entrance": {
    "file": "furniture/metro_entrance.webp",
    "size": [
-    191,
+    148,
     276
    ],
    "height": 2.3,
@@ -1522,7 +1522,7 @@
     0.5,
     1.0
    ],
-   "hash": "b4e4743385530a3809ef"
+   "hash": "e03c872b28fc7df0c8d1"
   },
   "furniture/metro_steps": {
    "file": "furniture/metro_steps.webp",
@@ -2056,7 +2056,7 @@
    ],
    "width": 6.6,
    "eaves": 3.3,
-   "hash": "5d3d5ca5a160e01b32d6"
+   "hash": "97ce601d203de32cab30"
   },
   "glow/clinic": {
    "file": "glow/clinic.webp",
@@ -2088,23 +2088,23 @@
    ],
    "width": 7.7,
    "eaves": 12.1,
-   "hash": "6e42beb39002af5118ac"
+   "hash": "89ecde0f7d0eaf09c554"
   },
   "glow/coffee_shop": {
    "file": "glow/coffee_shop.webp",
    "size": [
-    2785,
-    1730
+    2783,
+    1569
    ],
-   "height": 14.417,
+   "height": 13.075,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9917
+    0.9908
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "56530ad2139d3988ea9a"
+   "hash": "dcc836bc4323cc33ca5f"
   },
   "glow/corner_shop": {
    "file": "glow/corner_shop.webp",
@@ -2120,7 +2120,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "9d54e07da8308fed28a8"
+   "hash": "e8c5f22d5b4291ec8b70"
   },
   "glow/gallery": {
    "file": "glow/gallery.webp",
@@ -2136,7 +2136,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "652f1e31f698eabafed0"
+   "hash": "9fac2f391493db17af79"
   },
   "glow/garden_flats": {
    "file": "glow/garden_flats.webp",
@@ -2152,167 +2152,167 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "950191784ae80b33b9aa"
+   "hash": "1126d539845437221730"
   },
   "glow/house_1": {
    "file": "glow/house_1.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "6633da0058c0809301ba"
+   "hash": "3f15d0adf7625aab018f"
   },
   "glow/house_10": {
    "file": "glow/house_10.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "2f33c60dd9a1519f380b"
+   "hash": "a54a0d624c77e3509abb"
   },
   "glow/house_2": {
    "file": "glow/house_2.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "318a919a118bf3c86fb7"
+   "hash": "da16a21fe2e615300308"
   },
   "glow/house_3": {
    "file": "glow/house_3.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "66989e646c02547897dc"
+   "hash": "06700cb74b1f30202408"
   },
   "glow/house_4": {
    "file": "glow/house_4.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d673f20bf4ec01f88273"
+   "hash": "a798b70ec959c95e7942"
   },
   "glow/house_5": {
    "file": "glow/house_5.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "50dc18ab4d66c31ab3e2"
+   "hash": "36eeef688593faef67e2"
   },
   "glow/house_6": {
    "file": "glow/house_6.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "4246059dc27f825dd851"
+   "hash": "ee1d99f373e184f4ead2"
   },
   "glow/house_7": {
    "file": "glow/house_7.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "b51a066bd1f5bd50743c"
+   "hash": "d1643460a18594b200b1"
   },
   "glow/house_8": {
    "file": "glow/house_8.webp",
    "size": [
-    1067,
-    1202
+    1068,
+    1040
    ],
-   "height": 10.017,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.988
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "f236edc5104df2ace8e0"
+   "hash": "6e2b80749bd145453cf6"
   },
   "glow/house_9": {
    "file": "glow/house_9.webp",
    "size": [
     1068,
-    1154
+    1040
    ],
-   "height": 9.617,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "fbb789878e9329690d02"
+   "hash": "25653e1ae8918152632f"
   },
   "glow/laundry": {
    "file": "glow/laundry.webp",
@@ -2328,7 +2328,7 @@
    ],
    "width": 6.6,
    "eaves": 7.7,
-   "hash": "3b68f3ed82b57f47d2f6"
+   "hash": "59a36004ff197e4c7459"
   },
   "glow/maker_space": {
    "file": "glow/maker_space.webp",
@@ -2344,23 +2344,23 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "6fdf48d9c76ed305c00d"
+   "hash": "94f9f05ccdddc0bfb662"
   },
   "glow/noodle_bar": {
    "file": "glow/noodle_bar.webp",
    "size": [
-    2389,
-    1155
+    2387,
+    1040
    ],
-   "height": 9.625,
+   "height": 8.667,
    "kind": "glow",
    "anchor": [
     0.5,
-    0.9875
+    0.9862
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "76ecc6df5a25b354775e"
+   "hash": "eb7f43e2371d8b87681b"
   },
   "glow/print_works": {
    "file": "glow/print_works.webp",
@@ -2376,7 +2376,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "aad9fb43206c3ce75a99"
+   "hash": "118d585383f4ae3ef451"
   },
   "glow/tea_house": {
    "file": "glow/tea_house.webp",
@@ -2392,7 +2392,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "ba23ae3f11899b18aa01"
+   "hash": "ba362cf7fda563f7efe3"
   },
   "glow/tower": {
    "file": "glow/tower.webp",
@@ -2408,7 +2408,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "ed88c19a902c883540b3"
+   "hash": "25cc964d80542abdee7e"
   },
   "layers/far-hills": {
    "file": "layers/far-hills.webp",

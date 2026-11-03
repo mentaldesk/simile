@@ -166,6 +166,16 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 house, rooftops, furniture and characters. The build reads them from here, never from `docs/`.
 [`references/cartoon/`](references/cartoon/) holds #329's revised cartoon references, street and
 interior (0.47 MB), for the tunnels.
+[`references/clean/`](references/clean/) holds the village's comic references, street and interior
+(0.38 MB): line B from #554's study, the tunnels' scratchy line kept clean.
+
+## The village in the comic style
+
+The village is being repainted in the comic style (#549): the tunnels' scratchy ink line without
+their dirt (`painter.CLEAN`), painted from `references/clean/`. Every village front's `Look` is
+`clean` with `modern=True`, so its plan and prompt carry today's details (`fronts.modernised`),
+and Banyan Row's metro entrance is clean like the street. A front paler than the white backdrop
+allows (its RGB summing past 575) is painted on grey.
 
 ## The tunnels
 

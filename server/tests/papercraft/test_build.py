@@ -193,6 +193,29 @@ def test_a_partial_run_paints_only_what_it_was_asked_for(build: Build) -> None:
     assert report.written == ["glow/coffee_shop"]
 
 
+def test_a_reseeded_unit_repaints_only_that_unit_and_its_night(build: Build) -> None:
+    build.run(log=lambda _: None)
+    changed = [
+        replace(p, reseeds=(p.unit_reseed(0), p.unit_reseed(1) + 1))
+        if p.key == "fronts/coffee_shop"
+        else p
+        for p in PIECES
+    ]
+    rebuild = Build(
+        changed,
+        content=build.content,
+        cache_dir=build.cache,
+        painter=FakePainter,
+        mask=fake_mask,
+        key=fake_mask,
+        layout=LAYOUT,
+    )
+
+    report = rebuild.run(log=lambda _: None)
+
+    assert set(report.painted) == {"fronts/coffee_shop#1", "glow/coffee_shop#1"}
+
+
 def test_the_glow_map_is_dark_away_from_the_windows_and_lamps(build: Build) -> None:
     build.run(log=lambda _: None)
     glow = np.asarray(Image.open(build.content / "glow/coffee_shop.webp").convert("L"))

@@ -59,7 +59,7 @@ class Landmark:
     at: dict[str, float]
     """By street, where along it it stands, as a fraction of the street's width."""
     style: Style = "clean"
-    ref: str = "street"
+    ref: str = "clean/street"
 
 
 LANDMARKS: dict[str, Landmark] = {}
@@ -93,6 +93,8 @@ class Look:
     """Ask outright for the mural wall to stay empty, where FLUX fills it otherwise."""
     reseed: int = 0
     """Added to the seed, to paint a rejected front again."""
+    reseeds: tuple[int, ...] = ()
+    """Added to each unit's seed, by unit, to paint one rejected unit again."""
     style: Style = "papercraft"
     plants: bool = True
     """A potted plant each side of the door."""
@@ -104,192 +106,129 @@ class Look:
     """What a modern shop window's neon sign shows, such as "coffee cup"."""
 
 
-WOOD: Rgb = (126, 88, 60)
-CREAM: Rgb = (240, 232, 214)
 TERRACOTTA: Rgb = (184, 96, 70)
 SLATE: Rgb = (104, 112, 124)
 CLAY: Rgb = (150, 108, 86)
-BOXES: Rgb = (150, 100, 70)
+
+DARK: Rgb = (52, 56, 62)
+ROOF: Rgb = (96, 100, 108)
+PLANTERS: Rgb = (72, 76, 84)
+PANES = (1.6, 1.4)
+
+
+def modern(look: str, wall: Rgb, **kw) -> Look:
+    """A village front in the comic style, with today's details."""
+    kw = {"trim": DARK, "roof": ROOF, "glass_door": True, "window": PANES, **kw}
+    return Look(look, wall, roof_shape="flat", style="clean", modern=True, **kw)
+
 
 LOOKS: dict[str, Look] = {
-    "house_1": Look(
-        "a two-storey family house of dusty pink plaster",
-        (214, 156, 158),
-        WOOD,
-        TERRACOTTA,
-        shutters=(120, 140, 110),
-        flower_boxes=BOXES,
+    "house_1": modern(
+        "a two-storey family townhouse of dusty pink render", (214, 156, 158), flower_boxes=PLANTERS
     ),
-    "house_2": Look(
-        "a two-storey townhouse of pale blue plaster",
-        (160, 190, 210),
-        CREAM,
-        SLATE,
-        "hip",
-        flower_boxes=(170, 110, 80),
+    "house_2": modern(
+        "a two-storey townhouse of pale blue render", (160, 190, 210), flower_boxes=PLANTERS
     ),
-    "house_3": Look(
-        "a two-storey family house of soft mint plaster",
-        (176, 210, 186),
-        WOOD,
-        TERRACOTTA,
-        shutters=(206, 186, 150),
-        flower_boxes=BOXES,
+    "house_3": modern("a two-storey family house of soft mint render", (176, 210, 186)),
+    "house_4": modern(
+        "a two-storey house of mustard-yellow render", (220, 184, 98), flower_boxes=PLANTERS
     ),
-    "house_4": Look(
-        "a two-storey house of mustard-yellow plaster",
-        (220, 184, 98),
-        CREAM,
-        SLATE,
-        "hip",
-        shutters=(90, 110, 130),
-    ),
-    "house_5": Look(
-        "a two-storey house of navy-blue painted wooden boards",
+    "house_5": modern(
+        "a two-storey house clad in navy-blue painted timber boards",
         (70, 86, 124),
-        CREAM,
-        TERRACOTTA,
-        shutters=CREAM,
-        flower_boxes=(160, 110, 80),
+        trim=(38, 40, 44),
+        flower_boxes=PLANTERS,
     ),
-    "house_6": Look(
-        "a two-storey house of peach plaster",
-        (236, 178, 146),
-        WOOD,
-        TERRACOTTA,
-        shutters=(110, 140, 120),
+    "house_6": modern("a two-storey house of peach render", (236, 178, 146)),
+    "house_7": modern(
+        "a two-storey house of lavender render", (184, 168, 206), flower_boxes=PLANTERS
     ),
-    "house_7": Look(
-        "a two-storey house of lavender plaster",
-        (184, 168, 206),
-        CREAM,
-        SLATE,
-        "hip",
-        flower_boxes=BOXES,
+    "house_8": modern(
+        "a two-storey house of sage-green render", (164, 184, 150), flower_boxes=PLANTERS
     ),
-    "house_8": Look(
-        "a two-storey house of sage-green plaster",
-        (164, 184, 150),
-        WOOD,
-        TERRACOTTA,
-        shutters=(206, 186, 150),
-        flower_boxes=BOXES,
-    ),
-    "house_9": Look(
-        "a two-storey house of deep teal painted wooden boards",
+    "house_9": modern(
+        "a two-storey house clad in deep teal painted timber boards",
         (60, 116, 118),
-        CREAM,
-        SLATE,
-        "hip",
-        shutters=CREAM,
+        trim=(38, 40, 44),
     ),
-    "house_10": Look(
-        "a two-storey house of pale butter-yellow plaster",
-        (238, 220, 160),
-        WOOD,
-        TERRACOTTA,
-        shutters=(120, 140, 110),
+    "house_10": modern(
+        "a two-storey house of pale butter-yellow render", (238, 220, 160), mural_words=True
     ),
-    "noodle_bar": Look(
-        "a two-storey noodle bar of warm ochre plaster",
+    "noodle_bar": modern(
+        "a two-storey noodle shop clad in warm ochre tiles",
         (210, 160, 96),
-        (124, 72, 52),
-        CLAY,
-        "hip",
-        shop=(196, 72, 60),
+        shop=(214, 64, 56),
         lanterns=6,
+        pictogram="noodle bowl",
     ),
-    "corner_shop": Look(
-        "a three-storey corner grocery shop of lemon plaster",
-        (232, 214, 140),
-        (70, 110, 150),
-        SLATE,
-        "flat",
-        shop=(74, 120, 168),
-        glass_door=True,
+    "corner_shop": modern(
+        "a three-storey corner convenience store of pale grey concrete",
+        (190, 194, 198),
+        shop=(246, 132, 60),
+        mural_words=True,
+        pictogram="shopping basket",
     ),
-    "coffee_shop": Look(
-        "a three-storey corner cafe of cream plaster",
-        (236, 222, 186),
-        (110, 78, 56),
-        (150, 112, 90),
-        shutters=(132, 96, 66),
-        shop=(120, 170, 140),
-        glass_door=True,
+    "coffee_shop": modern(
+        "a three-storey corner coffee shop clad in pale mint glazed tiles",
+        (186, 214, 204),
+        shop=(70, 196, 176),
+        flower_boxes=PLANTERS,
         one_shop=True,
-        reseed=2,
+        mural_words=True,
+        pictogram="coffee cup",
+        reseeds=(1, 3),
     ),
-    "maker_space": Look(
-        "a three-storey converted brick workshop with big steel-framed windows",
-        (168, 92, 74),
-        (70, 74, 78),
-        (90, 94, 100),
-        "flat",
-        shop=(60, 120, 120),
-        glass_door=True,
+    "maker_space": modern(
+        "a three-storey maker space in a converted factory of charcoal-painted brick with big "
+        "black steel-framed windows",
+        (104, 108, 116),
+        trim=(38, 40, 44),
+        roof=(80, 84, 90),
+        shop=(246, 204, 64),
+        flower_boxes=(56, 60, 66),
+        window=(1.8, 1.6),
+        pictogram="gear",
     ),
-    "tower": Look(
-        "an old three-storey tower of pale grey concrete with plain blank walls and no "
-        "windows, and a small service door",
+    "tower": modern(
+        "an old three-storey tower of pale grey concrete with plain blank walls, and a small "
+        "service door",
         (200, 198, 190),
-        (120, 124, 128),
-        SLATE,
-        "flat",
-        glass_door=True,
         mural_words=True,
-        reseed=4,
     ),
-    "garden_flats": Look(
-        "a three-storey block of garden flats of cream plaster",
+    "garden_flats": modern(
+        "a three-storey block of garden flats of cream render",
         (232, 220, 196),
-        (110, 120, 100),
-        CLAY,
-        "flat",
-        shutters=(110, 140, 110),
-        flower_boxes=BOXES,
+        flower_boxes=PLANTERS,
         mural_words=True,
     ),
-    "gallery": Look(
-        "a three-storey art gallery of white plaster with tall windows",
+    "gallery": modern(
+        "a three-storey art gallery of white render with tall windows",
         (238, 236, 230),
-        (90, 90, 96),
-        (150, 150, 150),
-        "flat",
-        glass_door=True,
+        window=(1.4, 2.0),
     ),
-    "bakery": Look(
-        "a one-storey corner bakery of warm apricot plaster with a flat roof",
+    "bakery": modern(
+        "a one-storey corner bakery of warm apricot render",
         (234, 178, 132),
-        CREAM,
-        TERRACOTTA,
-        "flat",
-        shop=(176, 96, 70),
-        glass_door=True,
+        shop=(214, 120, 70),
+        pictogram="bread loaf",
     ),
-    "print_works": Look(
-        "a two-storey old print works of red-brown brick with a flat roof and steel-framed windows",
+    "print_works": modern(
+        "a two-storey old print works of red-brown brick with big steel-framed windows",
         (156, 88, 70),
-        (70, 74, 78),
-        SLATE,
-        "flat",
+        trim=(38, 40, 44),
+        window=(1.8, 1.6),
     ),
-    "tea_house": Look(
-        "a two-storey tea house of pale jade-green painted wooden boards with a flat roof",
+    "tea_house": modern(
+        "a two-storey tea house clad in pale jade-green painted timber boards",
         (156, 196, 166),
-        (124, 72, 52),
-        CLAY,
-        "flat",
-        shutters=(124, 72, 52),
         lanterns=3,
     ),
-    "laundry": Look(
-        "a two-storey laundry of pale sky-blue plaster with a flat roof",
+    "laundry": modern(
+        "a two-storey laundry of pale sky-blue render",
         (172, 202, 222),
-        CREAM,
-        SLATE,
-        "flat",
         shop=(80, 120, 168),
-        flower_boxes=BOXES,
+        flower_boxes=PLANTERS,
+        pictogram="washing machine",
     ),
     "clinic": Look(
         "a small back-alley clinic built into an old metro station office of cracked pale "
@@ -305,14 +244,10 @@ LOOKS: dict[str, Look] = {
         whole=True,
         reseed=1,
     ),
-    "clock_house": Look(
-        "a three-storey townhouse of pale sandstone with a flat roof",
+    "clock_house": modern(
+        "a three-storey townhouse of pale sandstone",
         (216, 204, 180),
-        (110, 100, 90),
-        CLAY,
-        "flat",
-        shutters=(90, 110, 130),
-        flower_boxes=BOXES,
+        flower_boxes=PLANTERS,
     ),
 }
 
