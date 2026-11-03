@@ -24,7 +24,6 @@ TEMPLATE = load_npcs()[0]
 GROUND = "coffee_shop_floor_0"
 TILL = MapTile(map=GROUND, x=3, y=2)
 STAND = Point(6, 2, GROUND)
-UPSTAIRS = Point(15, 2, GROUND)
 
 
 def make_npc(id: str, home: str, **values: float) -> Npc:

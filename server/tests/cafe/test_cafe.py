@@ -5,10 +5,11 @@ from simile.cafe.cafe import Phase
 from simile.cafe.config import DEFAULT_CONFIG as CAFE_CONFIG
 from simile.cafe.events import GaveUp, Ordered, Served
 from simile.cafe.orders import Exchange, Said
-from simile.schema import Aspect, Npc
+from simile.schema import Aspect, Npc, Pose
 from simile.sim import ConversationEnded, ConversationStarted, LineSpoken
 from simile.social import meet
 from simile.world import Point
+from simile.world.map import SpotKind
 
 from .conftest import (
     ANA,
@@ -17,7 +18,6 @@ from .conftest import (
     CAL,
     DAY,
     GROUND,
-    UPSTAIRS,
     Village,
     keen,
     make_npc,
@@ -55,12 +55,14 @@ async def test_the_barista_finishes_at_closing_time() -> None:
     assert village.behaviour.minds["bea"].held is None or village.cafe.going_home is not None
 
 
-async def test_off_shift_the_barista_sleeps_at_the_stairs_not_at_the_counter() -> None:
+async def test_off_shift_the_barista_sleeps_in_her_bed_upstairs_not_at_the_counter() -> None:
     village = Village(start=DAY.replace(hour=23, minute=30))
 
     await village.run(minutes=3)
 
-    assert village.at("bea") == UPSTAIRS
+    bed = village.movement.on_spot("bea")
+    assert bed is not None and (bed.map, bed.kind) == ("coffee_shop_floor_2", SpotKind.BED)
+    assert village.movement.posture("bea")[0] is Pose.SLEEPING
     assert village.behaviour.goal("bea").activity is Activity.SLEEP
     assert not village.behaviour.minds["bea"].held
 
