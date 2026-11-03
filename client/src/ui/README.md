@@ -140,8 +140,8 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   it." While `player_state` says they're `resting` in their bed at home, which heals them as fast
   as a plug charges, it says "Resting. Your health comes back." until they're full. The character
   screen shows health and each effect in full.
-- **Resting.** At their bed, while they're hurt, not infected and not resting already (`restsAt` in
-  [`world/reach.ts`](../world/reach.ts)), a line says "Press E to rest." and E sends `rest {on:
+- **Resting.** At their bed, while they're not resting already and, in the daytime, hurt and not
+  infected (`restsAt` in [`world/reach.ts`](../world/reach.ts), night being 21:00 to 06:00), a line says "Press E to rest." and E sends `rest {on:
   true}`. While they rest, E, or a move key or Space (`getsUp`), sends `rest {on: false}`. The figure
   stays standing on the bed.
 

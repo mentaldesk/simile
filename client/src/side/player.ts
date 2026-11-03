@@ -53,6 +53,29 @@ type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
 type Climb = Exclude<Way, { kind: 'door' }>;
 
+/** Faster than any world is played at: the server's sleep skipping the night, at 3600x. */
+export const SKIP_SPEED = 600;
+/** How dark the screen goes while the night skips. */
+export const SLEEP_DIM = 0.65;
+/** Seconds the screen takes to dim, or to brighten again. */
+export const DIM_SECONDS = 0.6;
+
+/** Whether the night is skipping while they sleep through it, by the clock's speed. */
+export function sleepingThrough(resting: boolean | undefined, speed: number): boolean {
+  return !!resting && speed >= SKIP_SPEED;
+}
+
+/** Steps the screen's `dim` towards `SLEEP_DIM` while sleeping through, or back to 0. */
+export function dimmed(dim: number, sleeping: boolean, dt: number): number {
+  const step = (SLEEP_DIM * dt) / DIM_SECONDS;
+  return sleeping ? Math.min(dim + step, SLEEP_DIM) : Math.max(dim - step, 0);
+}
+
+/** The clock's hands, in turns from twelve, at `hour`. */
+export function hands(hour: number): { hour: number; minute: number } {
+  return { hour: (hour % 12) / 12, minute: hour % 1 };
+}
+
 /** How far into bed they're sat on its edge, centred on their cell. */
 const SEATED = 0.5;
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);

@@ -17,6 +17,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.machines import Machines
     from simile.player.pickups import Pickups, claimers_of
     from simile.player.power import Power
+    from simile.player.sleep import Sleep
     from simile.player.sync import PlayerSync, recipes_of
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
@@ -57,14 +58,23 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.clock,
         playing=lambda: bool(in_game),
         collapse=lambda: hunger.collapse(Vital.HEALTH),
+        night=lambda: sleep.night(),
     )
+
+    def bedtime() -> float | None:
+        return min((mind.bedtime for mind in behaviour.minds.values()), default=None)
+
+    def awake() -> bool:
+        return bool(in_game) and not health.sleeping()
+
+    sleep = Sleep(health, world.clock, bedtime=bedtime, playing=lambda: bool(in_game))
     hunger = Hunger(
         player,
         movement,
         world.clock,
         supply=lambda goal, need: behaviour.hooks.supply(goal, need),
         economy=economy,
-        playing=lambda: bool(in_game),
+        playing=awake,
         collapsed=collapsed,
         bed=health.home_bed,
     )
@@ -90,7 +100,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         player,
         world.clock,
         charging=lamp.charging,
-        playing=lambda: bool(in_game),
+        playing=awake,
         collapse=lambda: hunger.collapse(Vital.POWER),
     )
     investigation = investigation_of(app)
@@ -137,6 +147,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.loop.register(lamp),
         world.loop.register(power),
         world.loop.register(health),
+        world.loop.register(sleep),
         world.loop.register(finds),
         world.loop.register(sync),
         hub.subscribe(PlayerMoveMessage, in_game.moved),
@@ -151,6 +162,8 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     yield
     for stop in reversed(stops):
         stop()
+    if sleep.skipping:
+        world.clock.resume()
     claimers_of(app).remove(finds.claim)
     claimers_of(app).remove(machines.claim)
     del app.state.health

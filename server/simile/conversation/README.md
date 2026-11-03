@@ -18,7 +18,8 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   looking for. `accept_score(a, b)` is that score. Anyone already talking is declined, and so is
   anything beyond `max_conversations` (2) conversations between NPCs. The player's doesn't count:
   I1's `max_voiced` already caps how many are voiced. Requests involving the player go to
-  `engine.player_request` (see below).
+  `engine.player_request` (see below). While the clock skips the night as the player sleeps
+  (`clock.skipping`, P79), every request is declined, so the skip starts no LLM calls.
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` opens. On the next tick the engine asks for the script.
 - **The plan.** What would have decided engagement turn by turn plans the scene instead. Each side

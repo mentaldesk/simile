@@ -26,7 +26,7 @@ import { emptyLight, lightAt, lightBelow, UNDERGROUND } from './light';
 import { cellOf, type Link, type Village } from './maps';
 import type { Drawn } from './motion';
 import type { Crossing } from './runs';
-import { SidePlayer, type Controls, type MapPosition } from './player';
+import { dimmed, hands, SidePlayer, sleepingThrough, SLEEP_DIM, type Controls, type MapPosition } from './player';
 import { jumpOf } from './jump';
 import { fitted } from '../dolls/bionics';
 import { drawSockets } from './plugs';
@@ -58,6 +58,9 @@ const NAME_M = 0.45;
 /** Metres up at which a jumping figure's shadow on the ground has faded away. */
 const SHADOW_FADE_M = 6;
 
+/** Screen px across the clock face while the night skips. */
+const SLEEP_CLOCK_PX = 56;
+
 const contactAlpha = (up: number) => Math.max(0, 1 - up / SHADOW_FADE_M);
 
 type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -76,6 +79,9 @@ export class SideScene extends Phaser.Scene {
   private street?: StreetView;
   private dark?: DarkView;
   private sockets: Phaser.GameObjects.Graphics[] = [];
+  private sleep!: Phaser.GameObjects.Graphics;
+  private sleepTime!: Phaser.GameObjects.Text;
+  private dim = 0;
   private player?: SidePlayer;
   private keys!: Keys;
   private readonly figures = new Map<string, Figure>();
@@ -112,6 +118,9 @@ export class SideScene extends Phaser.Scene {
     this.creatures = new CreatureView(this);
     this.blood = new BloodView(this);
     this.usables = new UsableView(this, this.pictures);
+    this.sleep = this.add.graphics().setDepth(DEPTH.fade - 1);
+    this.sleepTime = this.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '18px', color: '#e8ecf4' });
+    this.sleepTime.setOrigin(0.5, 0).setDepth(DEPTH.fade - 1).setVisible(false);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
     const keyboard = this.input.keyboard!;
@@ -153,6 +162,8 @@ export class SideScene extends Phaser.Scene {
       () => this.blood.destroy(),
       () => this.usables.destroy(),
       () => this.pictures.destroy(),
+      () => this.sleep.destroy(),
+      () => this.sleepTime.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
     void this.start();
@@ -240,6 +251,35 @@ export class SideScene extends Phaser.Scene {
     this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
     this.usables.update(content, street, this.passing ? undefined : player.mapPosition, time / 1000);
     this.report(player.mapPosition, time / 1000);
+    this.drawSleep(dt);
+  }
+
+  /** Dims the screen and spins a clock forward while the night skips. */
+  private drawSleep(dt: number): void {
+    this.dim = dimmed(this.dim, sleepingThrough(playerState.latest?.resting, sideClock.speed), dt);
+    const { sleep, sleepTime, view } = this;
+    sleep.clear();
+    sleepTime.setVisible(this.dim > 0);
+    if (this.dim <= 0) return;
+    const scale = 1 / this.cameras.main.zoom;
+    const shown = this.dim / SLEEP_DIM;
+    sleep.fillStyle(0x05070e, this.dim).fillRect(view.x, view.y, view.width, view.height);
+    const radius = (SLEEP_CLOCK_PX / 2) * scale;
+    const x = view.centerX;
+    const y = view.centerY - radius;
+    sleep.lineStyle(2 * scale, 0xe8ecf4, shown).strokeCircle(x, y, radius);
+    const hour = sideClock.hour();
+    const turns = hands(hour);
+    for (const [turn, length] of [
+      [turns.hour, 0.5],
+      [turns.minute, 0.8],
+    ]) {
+      const angle = turn * 2 * Math.PI;
+      sleep.lineBetween(x, y, x + Math.sin(angle) * radius * length, y - Math.cos(angle) * radius * length);
+    }
+    const minutes = Math.floor(hour * 60);
+    const time = `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    sleepTime.setText(time).setPosition(x, y + radius + 6 * scale).setScale(scale).setAlpha(shown);
   }
 
   private report(position: MapPosition, now: number): void {

@@ -73,12 +73,20 @@ to hurt and bite the player: they look it up when they do, not at startup.
   `bed` furniture covers on their home's floor maps (`beds_in`), and `player_state`'s `bed` is the
   one where they stand. The clinic patches them up for money (`simile.clinic`).
 - **Resting.** The client's `rest` lies them down in that bed, unless they're at full health or
-  infected. Once they've lain down, `lie_down` (0.8) real seconds later, it comes back as fast as
+  infected in the daytime. Once they've lain down, `lie_down` (0.8) real seconds later, it comes back as fast as
   a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the sim's speed.
   They rest until they're full, move off the bed, an infection sets in, they collapse or they get
   up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
   the bed doesn't lie them down again. Waking there from a collapse, they rest at once, with no
   `lie_down`.
+- **Sleeping until morning** (`sleep.py`, P79). At night, from the residents' earliest bedtime
+  until `night_ends` (06:00), a rest is accepted at full health or infected too, and goes on until
+  `morning` (07:00) rather than ending at full health or when an infection sets in. Once they've
+  lain down, `Sleep` runs the clock at `speed` (3600x, an hour a real second) with `clock.skip`,
+  so 02:45 to 07:00 takes about four real seconds. Health still comes back, unless they're
+  infected, and hunger and power hold for the whole rest. At 07:00 the clock goes back to its
+  speed and they get up. Moving off the bed, getting up, collapsing or the client leaving ends it early, and the clock
+  goes back at once. Waking in bed from a collapse at night doesn't sleep until morning.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One

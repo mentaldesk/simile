@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from simile.sim import STEP, Clock, FakeWallClock, System, World
-from simile.sim.loop import MAX_LAG
+from simile.sim.loop import MAX_LAG, SKIP_RATE
 
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
 MINUTE = timedelta(minutes=1)
@@ -163,3 +163,18 @@ def test_a_failing_system_stops_the_run() -> None:
 
     with pytest.raises(RuntimeError, match="boom"):
         run_world(1, MINUTE, Broken())
+
+
+def test_while_the_clock_skips_ticks_are_longer_and_at_most_skip_rate_a_real_second() -> None:
+    world, wall = world_at_start()
+    recorder = Recorder(world)
+    world.loop.register(recorder)
+    world.clock.skip(3600)
+    asyncio.run(world.loop.run(timedelta(hours=1)))
+    world.clock.resume()
+    world.loop.tick()
+
+    assert {dt for _, dt in recorder.ticks[:-1]} == {3600 / SKIP_RATE}
+    assert len(recorder.ticks) - 1 == SKIP_RATE
+    assert wall.now() == pytest.approx(1)
+    assert recorder.ticks[-1][1] == STEP

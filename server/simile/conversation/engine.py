@@ -246,6 +246,8 @@ class ConversationEngine:
 
     def request(self, a: Id, b: Id) -> bool:
         """B1's `request_conversation`: `b` accepts or declines `a`, who has walked up to them."""
+        if self.clock.skipping:
+            return False
         if PLAYER_ID in (a, b):
             return self.player_request is not None and self.player_request(a, b)
         if self.talking(a) or self.talking(b):
