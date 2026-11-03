@@ -617,237 +617,263 @@ class Item:
     moulding: Moulding | None = None
 
 
+def clean(
+    subject: str,
+    height: float,
+    size: tuple[int, int] = (640, 640),
+    ref: str = CLEAN_ROOMS,
+    **kw,
+) -> Item:
+    """A village piece in the comic style."""
+    return Item(subject, height, size, ref=ref, style="clean", **kw)
+
+
 STREET = "street"
 FURNITURE: dict[str, Item] = {
-    "kitchen": Item(
-        "a fitted kitchen run, twice as wide as it is tall: blue-painted wooden base cupboards "
-        "under a wooden worktop, with a sink and tap and a little two-ring hob set into the "
-        "worktop. No wall cupboards, nothing above the worktop",
+    "kitchen": clean(
+        "a fitted modern kitchen run of handleless matt white base cupboards under a light oak "
+        "worktop, with a small steel sink and a tap at its very left end, a black hob with a "
+        "small red pan over an oven at its very right end, and plain cupboard doors between "
+        "them. No wall cupboards, nothing above the worktop",
         0.95,
-        (1024, 512),
+        sketch="kitchen",
         stretch=True,
     ),
-    "sofa": Item(
-        "a three-seat sofa upholstered in deep teal velvet with round wooden feet",
+    "sofa": clean(
+        "a low modern three-seat sofa upholstered in soft sage-green fabric with slim black metal "
+        "legs",
         0.85,
         (768, 512),
         variants={
-            "coral": "Recolour the sofa's velvet upholstery to coral red.",
-            "mustard": "Recolour the sofa's velvet upholstery to mustard yellow.",
-            "plum": "Recolour the sofa's velvet upholstery to dark plum purple.",
+            "coral": "Recolour the sofa's fabric upholstery to coral red.",
+            "mustard": "Recolour the sofa's fabric upholstery to mustard yellow.",
+            "plum": "Recolour the sofa's fabric upholstery to dark plum purple.",
         },
     ),
-    "bed": Item(
-        "a double bed seen from the side, with a carved wooden headboard on the left and a "
-        "patchwork quilt in warm reds and oranges",
+    "bed": clean(
+        "a low modern double bed seen from the side, a pale oak frame with a tall padded grey "
+        "headboard on the left, a white pillow, a white duvet and a mustard-yellow throw over "
+        "its foot",
         1.05,
-        (896, 512),
-        side=True,
-        variants={"blue": "Recolour the patchwork quilt to soft blues and greens."},
-        bed=0.45,
+        sketch="bed",
+        variants={"blue": "Recolour the mustard-yellow throw to soft blue."},
+        bed=0.492,
     ),
-    "wardrobe": Item(
-        "a tall wooden wardrobe painted sage green with two doors and brass knobs", 2.0, (512, 768)
+    "wardrobe": clean(
+        "a tall modern wardrobe with two flat handleless doors of pale oak",
+        2.0,
+        (512, 768),
+        grey=True,
     ),
-    "bookshelf": Item(
-        "a tall bookshelf painted pale sage green, full of books with colourful spines and a "
-        "small plant",
+    "bookshelf": clean(
+        "a tall open shelf unit of black metal and pale wood, with books with colourful spines, a "
+        "small plant and a little speaker on it",
         1.9,
         (512, 896),
     ),
-    "table": Item(
-        "a small square wooden kitchen table with a wooden chair at each end, the chairs facing "
-        "the table",
+    "table": clean(
+        "a small square dining table of pale oak on two legs, with a moulded coral-red chair at "
+        "each end, the chairs facing the table",
         0.95,
-        (896, 512),
-        side=True,
+        sketch="table",
         cut=("shadows", "gaps"),
+        seat=0.492,
     ),
-    "plant": Item("a big leafy monstera plant in a terracotta pot", 1.1, (512, 640)),
-    "counter": Item(
-        "a cafe counter with a front of honey-coloured wooden panels, a little brass cash till "
-        "and a glass pastry case with cakes and croissants on top",
+    "plant": clean("a big leafy monstera plant in a white ceramic pot", 1.1, (512, 640), grey=True),
+    "counter": clean(
+        "a modern cafe counter with a front of pale oak slats and a white stone top, with a "
+        "small card reader and a glass pastry case with cakes and croissants on top",
         1.25,
         (1008, 448),
+        grey=True,
         stretch=True,
     ),
-    "espresso_machine": Item(
-        "a big copper and cream espresso machine with two group heads and little cups on top, "
-        "standing on a low cupboard of dark wood",
+    "espresso_machine": clean(
+        "a sleek stainless steel espresso machine with two group heads and little cups on top, "
+        "standing on a low cupboard of pale oak",
         1.55,
         (512, 768),
+        grey=True,
     ),
-    "grinder": Item(
-        "a coffee grinder with a glass hopper full of beans, standing on a low cupboard of dark "
-        "wood with sacks of coffee beside it",
+    "grinder": clean(
+        "a matt black coffee grinder with a glass hopper full of beans, standing on a low "
+        "cupboard of pale oak with sacks of coffee beans beside it",
         1.4,
         (512, 768),
     ),
-    "menu_board": Item(
-        "a wide chalkboard in a wooden frame, hung on a wall, with chalk drawings of coffee "
-        "cups, cakes and leaves and no words at all",
+    "menu_board": clean(
+        "a wide flat black chalkboard in a slim pale oak frame, hung on a wall, with simple "
+        "chalk drawings of a coffee cup, a croissant and leaves and no words at all",
         1.0,
         (1104, 416),
     ),
-    "bar_counter": Item(
-        "a long wooden bar counter seen from the customers' side, three times as wide as it is "
-        "tall: a narrow top of honey-coloured wood, a front of vertical wooden boards and a "
-        "brass foot rail running along the bottom",
+    "bar_counter": clean(
+        "a long bar counter seen from the customers' side, three times as wide as it is tall: "
+        "one long, thin, flat slab of white stone along the top, a front of vertical pale oak "
+        "slats and a slim black foot rail along the bottom",
         1.1,
         (1024, 384),
+        grey=True,
         stretch=True,
     ),
-    "cafe_table": Item(
-        "a small round cafe table with a marble top and a black iron pedestal, with a bentwood "
-        "chair at each side facing the table",
+    "cafe_table": clean(
+        "a small round cafe table with a white top and a slim black metal pedestal, with a "
+        "moulded plywood chair at each side facing the table",
         0.95,
-        (896, 512),
-        side=True,
-        grey=True,
+        sketch="cafe_table",
         cut=("shadows", "gaps"),
-        seat=0.442,
+        seat=0.5,
     ),
-    "stove": Item(
-        f"a big noodle stove of grey card with two burners, two tall stock pots and a wok, "
-        f"and a hood above, {PAPER_CARD}",
+    "stove": clean(
+        "a big noodle stove of brushed steel with two gas burners, two tall stock pots and a "
+        "wok, under a steel extractor hood",
         2.0,
         (768, 768),
+        grey=True,
     ),
-    "kitchen_counter": Item(
-        "a small steel prep counter with a chopping board, a cleaver and bowls of spring "
-        "onions and chillies",
+    "kitchen_counter": clean(
+        "a small steel prep counter with a chopping board, a cleaver and bowls of spring onions "
+        "and chillies",
         1.0,
         (512, 512),
+        grey=True,
     ),
-    "noodle_counter": Item(
-        "a long noodle bar counter of red-lacquered wood with a ledge, bowls, chopsticks in a "
-        "pot and a bottle of chilli oil on top",
+    "noodle_counter": clean(
+        "a long noodle bar counter of red-lacquered wood with a pale wood ledge, bowls, "
+        "chopsticks in a pot and a bottle of chilli oil on top",
         1.05,
         (1376, 336),
         stretch=True,
     ),
-    "stool": Item(
-        f"a knee-high bar stool with a thick round padded seat of red card, a thin stem and a "
-        f"ring footrest, {PAPER_CARD}",
+    "stool": clean(
+        "a knee-high modern bar stool with a thick round padded seat of red fabric, a slim "
+        "black steel stem and a ring footrest",
         0.7,
-        (384, 640),
+        sketch="stool",
         variants={"teal": "Recolour the stool's seat to teal."},
         seat=0.567,
     ),
-    "noodle_table": Item(
-        "a small square wooden table with a red paper lantern on a cord above it and a red "
-        "stool at each side",
+    "noodle_table": clean(
+        "a small square wooden table with a red paper lantern on a cord above it and a "
+        "red-topped wooden stool at each side",
         1.9,
-        (768, 768),
-        side=True,
-        grey=True,
+        sketch="noodle_table",
         cut=("deep shadows", "gaps"),
-        seat=0.483,
+        seat=0.542,
     ),
-    "laser_cutter": Item(
-        "a big laser cutter, a wide boxy cabinet of pale grey card with a tinted orange lid "
-        "and a small control panel",
+    "laser_cutter": clean(
+        "a big modern laser cutter, a wide boxy cabinet of pale grey metal with a tinted orange "
+        "lid and a small blank control panel",
         1.1,
         (768, 640),
+        grey=True,
     ),
-    "printer_3d": Item(
-        "a 3D printer: an open frame of black card on a desk-high stand, with a spool of blue "
+    "printer_3d": clean(
+        "a 3D printer: an open frame of black metal on a desk-high stand, with a spool of blue "
         "filament and a small half-printed boat on its bed",
         1.5,
         (512, 768),
     ),
-    "loom": Item(
-        "a wooden floor loom with colourful warp threads in rainbow stripes and a half-woven cloth",
+    "loom": clean(
+        "a wooden floor loom of pale wood with colourful warp threads in rainbow stripes and a "
+        "half-woven cloth",
         1.6,
         (768, 768),
     ),
-    "sewing_machine": Item(
-        "a vintage sewing machine of mint-green card on a small wooden table with an iron treadle",
+    "sewing_machine": clean(
+        "a white and mint-green sewing machine on a small pale oak table with slim legs",
         1.1,
         (512, 768),
+        grey=True,
     ),
-    "workbench": Item(
-        "a long sturdy wooden workbench with a vice, a few hand tools and a small toolbox on "
-        "top, and a shelf underneath",
+    "workbench": clean(
+        "a long sturdy workbench with a thick pale oak top on black steel legs, with a vice, a "
+        "few hand tools and a small toolbox on top, and a shelf underneath",
         0.95,
         (1280, 352),
         stretch=True,
     ),
-    "rope_bridge": Item(
+    "rope_bridge": clean(
         "a rope bridge: a deck of wooden planks hung from two rope handrails, with a sturdy "
         "wooden post at each end",
         1.25,
-        ref="rooftops",
+        ref=CLEAN_STREET,
         sketch="rope_bridge",
         folder="platforms",
         stretch=True,
         cut=("outline", "shadows", "gaps"),
     ),
-    "pegboard": Item(
-        "a wide pegboard panel hung on a wall, with hammers, saws, pliers and screwdrivers "
-        "hanging on it",
+    "pegboard": clean(
+        "a wide pale wooden pegboard panel hung on a wall, with hammers, saws, pliers and "
+        "screwdrivers hanging on it",
         1.0,
         (1264, 352),
         stretch=True,
     ),
-    "shelf": Item(
-        "a long run of open wooden shelves full of boxes, jars of screws, spools of thread and "
-        "rolls of fabric",
+    "shelf": clean(
+        "a long wall shelf unit, three times as wide as it is tall: three long open shelves of "
+        "pale wood on slim black uprights, holding cardboard boxes, glass jars of screws, spools "
+        "of thread and rolls of fabric. No furniture, no people, no rooms",
         1.6,
-        (944, 480),
+        (1152, 384),
     ),
-    "plinth": Item(
+    "plinth": clean(
         "a tall white plinth with a small bronze sculpture of a smooth round pebble on top",
         1.4,
         (512, 896),
         grey=True,
     ),
-    "bench": Item(
-        "a wooden bench with a backrest and dark green iron legs, seen straight from the front",
+    "bench": clean(
+        "a modern street bench with a backrest, of pale wooden slats on slim dark grey steel "
+        "legs, seen straight from the front",
         0.9,
-        (896, 512),
-        ref=STREET,
-        seat=0.392,
+        ref=CLEAN_STREET,
+        sketch="bench",
+        seat=0.408,
     ),
-    "news_terminal": Item(
-        "a public news kiosk: a slim upright stand of teal-painted metal card with a small "
-        "glowing blank screen and a little roof",
+    "news_terminal": clean(
+        "a public smart kiosk: a slim upright stand of teal-painted metal with a big blank "
+        "glowing screen and a small solar panel on top",
         2.2,
         (512, 1024),
-        ref=STREET,
+        ref=CLEAN_STREET,
+        grey=True,
         cut=("tinted shadows",),
     ),
-    "fountain": Item(
-        "a round stone town fountain with two tiers and water splashing into its basin",
+    "fountain": clean(
+        "a round modern town fountain of pale granite, a little narrower than it is tall, with "
+        "two tiers and water splashing into its basin",
         2.2,
-        (896, 768),
-        ref=STREET,
+        (640, 768),
+        ref=CLEAN_STREET,
+        grey=True,
     ),
-    "lamp": Item(
-        "an old dark green iron street lamp on a tall post",
+    "lamp": clean(
+        "a slim modern street lamp: a tall dark grey steel pole topped by one round frosted "
+        "white glass lamp head, centred on the pole",
         3.6,
         (512, 1024),
-        ref=STREET,
-        light=3.35,
+        ref=CLEAN_STREET,
+        grey=True,
+        light=3.31,
     ),
-    "tree": Item(
-        "a leafy shade tree with a sturdy trunk and a broad round crown of big paper leaves",
+    "tree": clean(
+        "a leafy shade tree with a sturdy trunk and a broad round crown of big leaves",
         6.0,
         (768, 1024),
-        ref=STREET,
+        ref=CLEAN_STREET,
     ),
-    "bush": Item(
+    "bush": clean(
         "a low mound of hibiscus leaves and pink flowers growing straight from the ground, "
         "twice as wide as it is tall, like a little hedge",
         1.0,
         (640, 512),
-        ref=STREET,
+        ref=CLEAN_STREET,
     ),
-    "lift": Item(
-        "a small old-fashioned lift car: a cage of black iron bars with a brass trim, a wooden "
-        "floor and a little lamp on top",
+    "lift": clean(
+        "a small modern lift car: a cage of slim black steel bars with a brushed steel trim, a "
+        "pale oak floor and a little lamp on top",
         2.9,
-        ref="house",
         sketch="lift",
         folder="platforms",
     ),
@@ -1118,122 +1144,127 @@ FURNITURE: dict[str, Item] = {
     ),
 }
 EXTRAS: dict[str, Item] = {
-    "armchair": Item(
-        "an armchair upholstered in mustard-yellow fabric with dark wooden legs",
+    "armchair": clean(
+        "a modern armchair upholstered in mustard-yellow fabric with slim black metal legs",
         0.95,
         variants={
             "sage": "Recolour the armchair's upholstery to sage green.",
             "teal": "Recolour the armchair's upholstery to deep teal.",
         },
     ),
-    "floor_lamp": Item(
-        "a floor lamp, switched off, with a thin brass stand and a pleated cream fabric shade",
+    "floor_lamp": clean(
+        "a modern floor lamp, switched off, with a thin black stand and a round white fabric shade",
         1.6,
         (512, 1024),
+        grey=True,
     ),
-    "bedside_table": Item(
-        "a small wooden bedside table with a little lamp with a round pink shade on it",
+    "bedside_table": clean(
+        "a small pale oak bedside table with a little lamp with a round pink shade on it",
         0.95,
         (512, 768),
+        grey=True,
     ),
-    "fridge": Item("a rounded retro fridge of pale mint card", 1.7, sketch="fridge"),
-    "bathtub": Item(
-        "a clawfoot bathtub of white card with gold paper feet and taps", 0.75, sketch="bathtub"
+    "fridge": clean("a rounded retro fridge in pale mint", 1.7, sketch="fridge"),
+    "bathtub": clean(
+        "a white freestanding bathtub with brass feet and taps", 0.75, sketch="bathtub"
     ),
-    "washbasin": Item(
-        "a pedestal washbasin of white card with a round mirror in a wooden frame above it",
+    "washbasin": clean(
+        "a white pedestal washbasin with a round mirror in a pale wooden frame above it",
         1.8,
         sketch="washbasin",
     ),
-    "picture_frame": Item(
-        "an empty picture frame of gilded wood around a plain cream canvas, hung on a wall, "
-        "seen straight from the front",
+    "picture_frame": clean(
+        "an empty picture frame of pale oak around a plain cream canvas, hung on a wall, seen "
+        "straight from the front",
         0.9,
-        (768, 640),
-        grey=True,
-        moulding=Moulding(13, 11, 18, 14),
+        sketch="picture_frame",
+        moulding=Moulding(14, 15, 13, 14),
     ),
-    "banyan_tree": Item(
-        "a large banyan tree with a thick trunk, spreading branches, a broad crown of big paper "
-        "leaves and hanging aerial roots",
+    "banyan_tree": clean(
+        "a large banyan tree with a thick trunk, spreading branches, a broad crown of big leaves "
+        "and hanging aerial roots",
         11.0,
         (768, 1024),
-        ref=STREET,
+        ref=CLEAN_STREET,
     ),
-    "kapok_tree": Item(
+    "kapok_tree": clean(
         "a tall kapok tree with a straight pale trunk, layered branches and clusters of red "
         "flowers",
         10.0,
         (768, 1024),
-        ref=STREET,
+        ref=CLEAN_STREET,
     ),
-    "palm_tree": Item(
-        "a slender coconut palm tree with a gently curving trunk", 7.0, (512, 1024), ref=STREET
+    "palm_tree": clean(
+        "a slender coconut palm tree with a gently curving trunk",
+        7.0,
+        (512, 1024),
+        ref=CLEAN_STREET,
     ),
-    "bicycle": Item(
-        "an old bicycle with a basket on the front, painted pale blue, its wheels thin rims "
-        "with fine wire spokes and open gaps between them",
+    "bicycle": clean(
+        "a modern city bicycle painted pale blue with a basket on the front, its wheels thin "
+        "rims with fine wire spokes and open gaps between them",
         1.0,
         (896, 576),
         side=True,
         grey=True,
-        ref=STREET,
+        ref=CLEAN_STREET,
         cut=("gaps",),
     ),
-    "bin": Item(
-        f"a round litter bin of muted dark green card with a domed lid and a paper texture, "
-        f"{PAPER_CARD}",
+    "bin": clean(
+        "a round litter bin of dark green metal with a domed lid",
         0.95,
         (384, 640),
-        ref=STREET,
+        ref=CLEAN_STREET,
     ),
 }
 PLATFORMS: dict[str, Item] = {
-    "stairs": Item(
-        "a straight wooden staircase rising one storey to the right, with a handrail on posts",
+    "stairs": clean(
+        "a straight modern staircase of pale oak treads on a black steel frame, rising one "
+        "storey to the right, with a thin black metal handrail",
         5.3,
-        ref="house",
         sketch="stairs",
         folder="platforms",
     ),
-    "ladder": Item(
-        "a tall wooden ladder", 3.6, ref="rooftops", sketch="ladder", folder="platforms"
+    "ladder": clean(
+        "a tall wooden ladder", 3.6, ref=CLEAN_STREET, sketch="ladder", folder="platforms"
     ),
-    "steps": Item(
-        "a short flight of pale stone steps rising to the right",
+    "steps": clean(
+        "a short flight of warm grey stone steps rising to the right, each tread with a darker "
+        "edge",
         2.2,
-        ref="street",
+        ref=CLEAN_STREET,
         sketch="steps",
         folder="platforms",
+        cut=("outline",),
     ),
-    "ledge": Item(
+    "ledge": clean(
         "a long flat wooden walkway of planks on two wooden brackets",
         0.6,
-        ref="rooftops",
+        ref=CLEAN_STREET,
         sketch="ledge",
         folder="platforms",
         cut=("outline", "shadows", "gaps"),
     ),
-    "lift_shaft": Item(
-        "one storey of a lift shaft's black iron frame with a cable down the middle",
+    "lift_shaft": clean(
+        "one storey of an open lift shaft frame of slim black steel posts and diagonal braces "
+        "with a cable down the middle, nothing between the bars but the background",
         4.4,
-        ref="house",
         sketch="lift_shaft",
         folder="platforms",
+        cut=("outline",),
     ),
-    "window": Item(
-        "a window with a wooden frame and cream curtains tied to the sides, seen from inside a "
-        "room",
+    "window": clean(
+        "a modern window with a slim black metal frame, two panes and a pale roller blind half "
+        "down, seen from inside a room",
         1.3,
-        (512, 640),
-        ref="house",
+        sketch="window",
         folder="platforms",
     ),
-    "door": Item(
-        "a plain wooden interior door in its frame",
+    "door": clean(
+        "a plain modern interior door of pale oak in a slim white frame, with a slim black handle",
         2.1,
         (512, 896),
-        ref="house",
+        grey=True,
         folder="platforms",
     ),
 }

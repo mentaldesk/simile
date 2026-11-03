@@ -101,6 +101,13 @@ def test_every_village_front_is_clean_with_todays_details() -> None:
     assert FURNITURE["metro_entrance"].style == "clean"
 
 
+def test_every_village_sprite_is_clean() -> None:
+    village = (set(LAYOUT.furniture) - underground_furniture()) | set(EXTRAS) | set(PLATFORMS)
+    specs = {**FURNITURE, **EXTRAS, **PLATFORMS}
+
+    assert {name for name in village if specs[name].style != "clean"} == set()
+
+
 @pytest.mark.parametrize("key", sorted(set(PIECES) - underground_pieces()))
 def test_no_village_prompt_has_a_grime_word(key: str) -> None:
     piece = PIECES[key]
@@ -141,18 +148,20 @@ def test_every_furniture_piece_fits_its_largest_cells(name: str) -> None:
     assert width <= LAYOUT.furniture[name][0] * TILE + SLACK
 
 
-def test_the_manifest_carries_todays_measurements() -> None:
+def test_the_manifest_carries_the_measurements_of_the_comic_art() -> None:
     furniture = index(LAYOUT)["furniture"]
 
     assert {n: f["seat"] for n, f in furniture.items() if "seat" in f} == {
         "stool": 0.567,
-        "bench": 0.392,
-        "cafe_table": 0.442,
-        "noodle_table": 0.483,
+        "bench": 0.408,
+        "cafe_table": 0.5,
+        "noodle_table": 0.542,
+        "table": 0.492,
     }
-    assert {n: f["bed"] for n, f in furniture.items() if "bed" in f} == {"bed": 0.45}
-    assert {n: f["light"] for n, f in furniture.items() if "light" in f} == {"lamp": 3.35}
-    assert furniture["picture_frame"]["moulding"] == Moulding(13, 11, 18, 14)._asdict()
+    assert {n: f["bed"] for n, f in furniture.items() if "bed" in f} == {"bed": 0.492}
+    assert {n: f["light"] for n, f in furniture.items() if "light" in f} == {"lamp": 3.31}
+    assert furniture["picture_frame"]["moulding"] == Moulding(14, 15, 13, 14)._asdict()
+    assert {n: f for n, f in MANIFEST_JSON["furniture"].items()} == furniture
 
 
 def test_a_street_with_a_city_lists_it_between_the_sky_and_the_far_layer(

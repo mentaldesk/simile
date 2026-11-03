@@ -41,9 +41,10 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
     units without one get windows rather than a shop window, which it boards up. And it fills a
     big blank wall with windows, so the tower's and Garden Flats' prompts ask outright for their
     mural walls to stay empty.
-  - Stairs, the ladder, the ledge, the rope bridge, the lift and the white bathroom fittings and
-    fridge are redrawn from flat sketches the same way (`sketches.py`), so they fit their cells and
-    come out as card.
+  - Stairs, the ladder, the ledge, the rope bridge, the lift, the white bathroom fittings and
+    fridge, the seats, tables and bed, the picture frame, the kitchen and the window are redrawn
+    from flat sketches the same way (`sketches.py`), so they fit their cells and keep their seats,
+    mattress and moulding where the client expects them.
   - A night picture is an edit of its day front, and a colour variant an edit of its item.
 - **Cut out** with IS-Net plus a colour key on the plain backdrop (`cutout.py`). White things are
   painted on grey. Some items also have painted shadow, or backdrop showing between their legs,
@@ -176,6 +177,14 @@ their dirt (`painter.CLEAN`), painted from `references/clean/`. Every village fr
 `clean` with `modern=True`, so its plan and prompt carry today's details (`fronts.modernised`),
 and Banyan Row's metro entrance is clean like the street. A front paler than the white backdrop
 allows (its RGB summing past 575) is painted on grey.
+
+Every village piece of furniture, extra and platform piece is `clean` too (`catalogue.clean`),
+with today's subjects, painted from `references/clean/` and, where it's pale or white, on grey. The
+pieces residents sit or lie on, the picture frame, the kitchen and the window are redrawn from
+sketches (`sketches.py`), so their seats, mattress, moulding and width stay where the client
+expects them. The kitchen's sink and hob are in the ends a stretch keeps, so a long run repeats
+only plain cupboards. The tunnels keep their own pieces, but still climb the village's ladder,
+steps and ledge until they get their own.
 
 ## The tunnels
 
