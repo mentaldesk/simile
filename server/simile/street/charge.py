@@ -15,7 +15,7 @@ type Cell = tuple[int, int]
 WALK = JUMP.run / 2
 """Tiles a second walking: the client's `PLAYER_SPEED`."""
 CLIMB = {DoorKind.LADDER: 1.5, DoorKind.STAIRS: 2.0}
-"""Tiles a second up or down a ladder or a flight: the client's `PLAYER_CLIMB`."""
+"""Tiles a second up or down a ladder or a flight on their own legs: the client's `PLAYER_CLIMB`."""
 LIGHT = DEFAULT_LAMP.light
 REACH = LIGHT
 """Seconds of light a run between plugs takes at most at a walk: all of a charge, so a walker plans
@@ -113,22 +113,25 @@ class Ways:
         return self._next[cell]
 
 
-def seconds(town: Town, a: Cell, b: Cell) -> float:
-    """How long the player takes from `a` to `b`: walking, climbing, or a jump at a walk."""
+def seconds(town: Town, a: Cell, b: Cell, jump: Jump = JUMP) -> float:
+    """How long the player takes from `a` to `b` on `jump`'s legs: walking, climbing, or a jump at
+    a walk."""
     kinds = {town.climb(*a), town.climb(*b)}
     up = abs(b[1] - a[1]) == 1 and abs(b[0] - a[0]) <= 1
     kind = next((k for k in (DoorKind.STAIRS, DoorKind.LADDER) if k in kinds), None)
-    pace = CLIMB[kind] if up and kind is not None else WALK
+    pace = CLIMB[kind] * jump.climb if up and kind is not None else WALK
     return math.dist(a, b) / pace
 
 
-def runs(town: Town, cells: Sequence[Cell], plugs: Collection[Cell]) -> list[float]:
-    """Seconds of light each stretch of `cells` takes, split at every plug they pass: the lamp is
-    on only in the dark."""
+def runs(
+    town: Town, cells: Sequence[Cell], plugs: Collection[Cell], jump: Jump = JUMP
+) -> list[float]:
+    """Seconds of light each stretch of `cells` takes on `jump`'s legs, split at every plug they
+    pass: the lamp is on only in the dark."""
     found, spent = [], 0.0
     for a, b in zip(cells, cells[1:], strict=False):
         if not (town.lit(*a) and town.lit(*b)):
-            spent += seconds(town, a, b)
+            spent += seconds(town, a, b, jump)
         if b in plugs:
             found.append(spent)
             spent = 0.0

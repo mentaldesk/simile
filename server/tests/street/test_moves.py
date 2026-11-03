@@ -7,6 +7,7 @@ import pytest
 
 from simile.schema import Bionic, Body, DoorKind, MapTile
 from simile.sim import Clock, FakeWallClock, World
+from simile.street.charge import CLIMB as CLIMB_PACE
 from simile.street.jump import (
     FEET,
     GRADES,
@@ -359,6 +360,16 @@ def test_the_legs_run_faster_and_the_feet_rise_higher_by_grade() -> None:
     assert JUMP.rows + 2 <= feet[0].rows and feet[0].rows + 2 <= feet[1].rows
 
 
+def test_the_legs_climb_faster_by_grade_as_much_as_they_run_faster_and_the_feet_dont() -> None:
+    table = jump_table()
+
+    assert [jump.climb for jump in LEGS.values()] == [1.5, 2.0, 2.5]
+    for name, jump in KITS.items():
+        assert jump.climb == pytest.approx(jump.run / RUN_SPEED), name
+        assert (table | table["kits"].get(name, {}))["climb"] == jump.climb, name
+    assert JUMP.climb == 1.0 and all(jump.climb == 1.0 for jump in FEET.values())
+
+
 def test_the_legs_and_the_feet_together_jump_on_the_best_of_each() -> None:
     both = jump_of(Body(legs=Bionic.BIONIC_LEGS, feet=Bionic.SPRING_FEET_2))
 
@@ -480,3 +491,24 @@ def test_keeps_a_climb_up_or_down_stairs_all_the_way() -> None:
         t = i / 20
         assert possible(banyan, 53 + t, 15 + t, None), (53 + t, 15 + t)
         assert possible(banyan, 53 + t + 0.01, 15 + t, None), (53 + t + 0.01, 15 + t)
+
+
+@pytest.mark.parametrize("fps", [30, 60, 144])
+@pytest.mark.parametrize("legs", [None, *LEGS])
+def test_keeps_a_climb_up_a_ladder_and_stairs_at_the_pace_of_the_legs(
+    legs: Bionic | None, fps: int
+) -> None:
+    jump = jump_of(Body(legs=legs or "present"))
+    banyan, lychee = STREETS["banyan_row"], STREETS["lychee_lane"]
+    ladder = CLIMB_PACE[DoorKind.LADDER] * jump.climb / fps
+    stairs = CLIMB_PACE[DoorKind.STAIRS] * jump.climb / fps
+    last = (45.0, 15.0)
+    for i in range(math.ceil(3 / ladder) + 1):
+        y = max(15 - i * ladder, 12)
+        assert possible(lychee, 45, y, last, jump), (45, y)
+        last = (45, y)
+    last = (53.0, 15.0)
+    for i in range(math.ceil(3 * math.sqrt(2) / stairs) + 1):
+        t = min(i * stairs / math.sqrt(2), 3)
+        assert possible(banyan, 53 + t, 15 + t, last, jump), (53 + t, 15 + t)
+        last = (53 + t, 15 + t)

@@ -6,7 +6,7 @@ import pytest
 
 from simile.schema import Bionic, InteractableKind
 from simile.street.charge import LIGHT, REACH, Ways, runs, seconds
-from simile.street.jump import FEET, JUMP, Jump
+from simile.street.jump import FEET, JUMP, LEGS, Jump
 from simile.street.metro import (
     ARRIVAL,
     BOTS,
@@ -28,6 +28,8 @@ from simile.street.metro import (
 from simile.street.sewers import GATE_BOX, LANDING, LEVELS, SEWERS, way_in, way_on
 from simile.street.village import GROUND
 from simile.world.map import TownMap, load_maps
+
+from .conftest import side_view
 
 type Cell = tuple[int, int]
 
@@ -181,3 +183,17 @@ def test_the_gate_has_a_junction_box_and_any_more_are_past_it(level: int) -> Non
     assert first[0] < gate.x
     assert all(x >= gate.x + gate.width for x, _ in plugs(town) - {first})
     assert len(plugs(town)) <= 2
+
+
+def test_the_bionic_legs_take_less_light_up_a_ladder_or_stairs_and_as_much_along_a_floor() -> None:
+    town = side_view(
+        "......",
+        "..H../",
+        "..H./.",
+        "######",
+    )
+    rung, stair, step = ((2, 2), (2, 1)), ((4, 2), (5, 1)), ((0, 2), (1, 2))
+    for jump in LEGS.values():
+        assert seconds(town, *rung, jump) == pytest.approx(seconds(town, *rung) / jump.climb)
+        assert seconds(town, *stair, jump) == pytest.approx(seconds(town, *stair) / jump.climb)
+        assert seconds(town, *step, jump) == seconds(town, *step)

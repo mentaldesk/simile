@@ -2,6 +2,7 @@
   "rise": 2.3,
   "rise_seconds": 0.38,
   "run": 5.2,
+  "climb": 1.0,
   "fall_gravity": 1.3,
   "cut": 0.45,
   "hop": 1.5,
@@ -30,6 +31,7 @@
     },
     "bionic_legs": {
       "run": 7.8,
+      "climb": 1.5,
       "cells": 6,
       "reach": 7.874
     },
@@ -37,6 +39,7 @@
       "rise": 4.3,
       "rise_seconds": 0.5195817716118459,
       "run": 7.8,
+      "climb": 1.5,
       "rows": 4,
       "cells": 8,
       "reach": 9.917
@@ -45,12 +48,14 @@
       "rise": 6.3,
       "rise_seconds": 0.6289121041788023,
       "run": 7.8,
+      "climb": 1.5,
       "rows": 6,
       "cells": 9,
       "reach": 11.518
     },
     "bionic_legs_2": {
       "run": 10.4,
+      "climb": 2.0,
       "cells": 8,
       "reach": 10.248
     },
@@ -58,6 +63,7 @@
       "rise": 4.3,
       "rise_seconds": 0.5195817716118459,
       "run": 10.4,
+      "climb": 2.0,
       "rows": 4,
       "cells": 10,
       "reach": 12.973
@@ -66,12 +72,14 @@
       "rise": 6.3,
       "rise_seconds": 0.6289121041788023,
       "run": 10.4,
+      "climb": 2.0,
       "rows": 6,
       "cells": 13,
       "reach": 15.107
     },
     "bionic_legs_3": {
       "run": 13.0,
+      "climb": 2.5,
       "cells": 10,
       "reach": 12.623
     },
@@ -79,6 +87,7 @@
       "rise": 4.3,
       "rise_seconds": 0.5195817716118459,
       "run": 13.0,
+      "climb": 2.5,
       "rows": 4,
       "cells": 13,
       "reach": 16.029
@@ -87,6 +96,7 @@
       "rise": 6.3,
       "rise_seconds": 0.6289121041788023,
       "run": 13.0,
+      "climb": 2.5,
       "rows": 6,
       "cells": 16,
       "reach": 18.697

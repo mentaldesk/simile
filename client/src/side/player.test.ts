@@ -3,6 +3,7 @@ import { playerState, server } from '../net';
 import { MoveThrottle } from '../world/throttle';
 import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 import { village } from './content';
+import { JUMP_TABLE, KIT_TABLES } from './jump';
 import { TILE_M } from './layout';
 import { LIE_SECONDS } from './poses';
 import { RIDE_SPEED, RUN_CYCLE_M, WALK_CYCLE_M } from './motion';
@@ -394,6 +395,59 @@ describe('stairs and ladders on a street', () => {
     const player = at({ x: 46, y: 12, map: 'lychee_lane' });
     hold(player, press({ y: 1 }), 6);
     expect(player.position).toEqual({ x: 45, y: 15 });
+  });
+});
+
+describe('on the bionic legs', () => {
+  const fit = (legs?: string, feet?: string) =>
+    server.dispatch(JSON.stringify({ type: 'player_state', player: { money: 0, items: [], body: { legs: legs ?? 'present', feet: feet ?? 'present' } } }));
+  afterEach(() => {
+    playerState.latest = undefined;
+  });
+
+  const climbs = [
+    { x: 15, y: 2, map: 'coffee_shop_floor_0', way: -1 },
+    { x: 6, y: 2, map: 'maker_space_floor_1', way: -1 },
+    { x: 53, y: 15, map: 'banyan_row', way: 1 },
+    { x: 45, y: 15, map: 'lychee_lane', way: -1 },
+  ] as const;
+
+  /** Seconds on it from the foot or the top to the other end, at `fps`. */
+  function climbSeconds({ way, ...start }: (typeof climbs)[number], fps: number): number {
+    const player = at(start);
+    let frames = 0;
+    for (let started = false; frames < 10_000; ) {
+      player.update(press({ y: way }), 1 / fps);
+      if (player.climbing) started = true;
+      else if (started) break;
+      if (started) frames++;
+    }
+    return (frames + 1) / fps;
+  }
+
+  it.each([30, 60, 144])('climbs stairs and ladders faster by each grade, as much as it runs faster, at %i fps', (fps) => {
+    for (const climb of climbs) {
+      fit();
+      const own = climbSeconds(climb, fps);
+      for (const legs of ['bionic_legs', 'bionic_legs_2', 'bionic_legs_3']) {
+        const { run, climb: pace } = KIT_TABLES.get(legs)!;
+        expect(pace).toBeCloseTo(run / JUMP_TABLE.run, 9);
+        fit(legs);
+        expect(Math.abs(climbSeconds(climb, fps) - own / pace), `${legs} on ${climb.map}`).toBeLessThanOrEqual(2 / fps);
+      }
+    }
+  });
+
+  it('climbs as fast on its own legs as on the spring feet', () => {
+    for (const climb of climbs) {
+      fit();
+      const own = climbSeconds(climb, 60);
+      expect(own, climb.map).toBeGreaterThan(1);
+      for (const feet of ['spring_feet', 'spring_feet_2']) {
+        fit(undefined, feet);
+        expect(climbSeconds(climb, 60), `${feet} on ${climb.map}`).toBe(own);
+      }
+    }
   });
 });
 

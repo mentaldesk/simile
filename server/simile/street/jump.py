@@ -21,6 +21,8 @@ class Jump:
     rise_seconds: float = 0.38
     run: float = RUN_SPEED
     """Tiles a second running, and flying along in a run jump, or walking for a `walking` one."""
+    climb: float = 1.0
+    """Times their own pace up and down stairs and ladders."""
     fall_gravity: float = 1.3
     """Times the gravity rising with Space held, falling or once Space is let go."""
     cut: float = 0.45
@@ -74,12 +76,14 @@ JUMP = Jump()
 
 
 def grade(rise: float = JUMP.rise, run: float = RUN_SPEED) -> Jump:
-    """A grade's jump, rising `rise` tiles under the same gravity, running at `run`."""
+    """A grade's jump, rising `rise` tiles under the same gravity, running at `run` and climbing
+    faster by as much."""
     return replace(
         JUMP,
         rise=rise,
         rise_seconds=JUMP.rise_seconds * math.sqrt(rise / JUMP.rise),
         run=run,
+        climb=run / RUN_SPEED,
     )
 
 
