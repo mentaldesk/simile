@@ -262,7 +262,7 @@ USABLES = (
         "each stamped with a simple ring round its edge, scuffed and a little worn.",
     ),
 )
-"""Things the side view draws for the player to use where no furniture does, and the cash in a pile."""
+"""Things the side view draws for the player to use where no furniture does, and loot's cash."""
 
 TRADES = (
     Icon(
