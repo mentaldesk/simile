@@ -90,7 +90,7 @@ describe('usablesOn', () => {
       ['pile:metro:40,15', expect.objectContaining({ icon: 'unknown_item', x: xOf(40), y: feetOf(15) }), undefined],
       ['pile:metro:50,15', expect.objectContaining({ icon: 'credits', x: xOf(50), y: feetOf(15) }), undefined],
     ]);
-    expect(usables[0].picture).toMatchObject({ height: expect.closeTo(0.45 * PPM), depth: DEPTH.streetFurniture + 0.1 });
+    expect(usables[0].picture).toMatchObject({ height: expect.closeTo(0.65 * PPM), depth: DEPTH.streetFurniture + 0.1 });
   });
 
   it('heaps up to three of what a pile holds round its middle, the first in front', () => {
@@ -100,7 +100,7 @@ describe('usablesOn', () => {
     const heap = byId(on('metro', { piles: [pile] }), 'pile:metro:30,15');
     const sprites = [heap.picture, ...heap.loot!] as IconSprite[];
 
-    expect(sprites.map(({ icon }) => icon)).toEqual(['credits', 'copper_wire', 'lithium_cell']);
+    expect(sprites.map(({ icon }) => icon)).toEqual(['copper_wire', 'lithium_cell', 'servo_motor']);
     expect(sprites.reduce((sum, { x }) => sum + x, 0) / 3).toBeCloseTo(xOf(30));
     expect(sprites[1].x).toBeLessThan(sprites[0].x);
     expect(sprites[2].x).toBeGreaterThan(sprites[0].x);

@@ -6,12 +6,12 @@ const HEAP = 3;
 
 export type Loot = { items?: readonly Item[]; money?: number; teaches?: string };
 
-/** The icons a heap of loot shows, up to three: a schematic for a recipe, coins for cash, then each kind of item. */
+/** The icons a heap of loot shows, up to three: a schematic for a recipe, each kind of item, then coins for cash. */
 export function lootIcons({ items = [], money, teaches }: Loot): string[] {
   const icons = [
     ...(teaches ? ['schematic'] : []),
-    ...(money ? ['credits'] : []),
     ...items.map(({ id }) => (ICONS[id] ? id : 'unknown_item')),
+    ...(money ? ['credits'] : []),
   ];
   return [...new Set(icons)].slice(0, HEAP);
 }

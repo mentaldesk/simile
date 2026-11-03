@@ -256,8 +256,13 @@ USABLES = (
         "white technical line drawings of a small bionic spine part and its wiring, seen from "
         "the front and a little above.",
     ),
+    Icon(
+        "credits",
+        "a short stack of four thick round brass coins, one more coin leaning against the stack, "
+        "each stamped with a simple ring round its edge, scuffed and a little worn.",
+    ),
 )
-"""Things the side view draws for the player to use where no furniture does."""
+"""Things the side view draws for the player to use where no furniture does, and the cash in a pile."""
 
 TRADES = (
     Icon(

@@ -40,9 +40,9 @@ export type UsableState = { searched: readonly string[]; piles: readonly Pile[];
 const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
 /** Metres tall: the heap's first icon, and those behind it. */
-const LOOT_M = { first: 0.45, behind: 0.38 };
+const LOOT_M = { first: 0.65, behind: 0.5 };
 /** Shares of the first icon's height that each one behind it lies off to the side. */
-const HEAP_SHIFTS = [0, -0.4, 0.4];
+const HEAP_SHIFTS = [0, -0.5, 0.5];
 /** Pinned `pinned` metres up the wall, over the player's head. */
 const CLUES: Record<string, { icon: string; m: number; pinned: number }> = {
   aris_notes: { icon: 'aris_notes', m: 0.55, pinned: 2.2 },

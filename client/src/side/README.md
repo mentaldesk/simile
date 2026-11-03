@@ -93,8 +93,8 @@ it, and rises to the top floor or drops to Banyan Row's river.
   straight up.
 - **Loot** (`piles.ts`'s `lootIcons`): what a pile or a searchable holds is drawn as a heap of up
   to three icons from [`content/icons/`](../../../content/icons/README.md), the first in front: a
-  `schematic` for a recipe, `credits` for cash, then each kind of item, or `unknown_item` for one
-  without an icon. A pile in the last `player_state` (salvage, secrets and what the player left)
+  `schematic` for a recipe, each kind of item, or `unknown_item` for one without an icon, then
+  `credits` for cash. A pile in the last `player_state` (salvage, secrets and what the player left)
   lies on the ground; what a searchable holds lies on it until it's searched, and what a jack holds
   only once the datajack can search it.
 - **What E uses** (`usables.ts`, drawn by `usable-view.ts`): every clue, searchable, jack, news

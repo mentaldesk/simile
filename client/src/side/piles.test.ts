@@ -12,14 +12,14 @@ const pile = (map: string, x: number, y: number, money?: number): Pile => ({
 });
 
 describe('lootIcons', () => {
-  it('shows each kind of thing once, a recipe first and cash next, up to three', () => {
+  it('shows each kind of thing once, a recipe first and cash last, up to three', () => {
     expect(lootIcons({ items: [WIRE] })).toEqual(['copper_wire']);
     expect(lootIcons({ money: 20 })).toEqual(['credits']);
-    expect(lootIcons({ items: [WIRE, WIRE, item('lithium_cell')], money: 5 })).toEqual(['credits', 'copper_wire', 'lithium_cell']);
+    expect(lootIcons({ items: [WIRE, WIRE, item('lithium_cell')], money: 5 })).toEqual(['copper_wire', 'lithium_cell', 'credits']);
     expect(lootIcons({ items: [item('servo_motor'), WIRE], teaches: 'datajack', money: 5 })).toEqual([
       'schematic',
-      'credits',
       'servo_motor',
+      'copper_wire',
     ]);
   });
 
