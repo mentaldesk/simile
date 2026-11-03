@@ -11,6 +11,7 @@ import {
   HOP_SECONDS,
   landingRow,
   JUMP_RISE,
+  jumpOf,
   jumpSpeed,
   LADDER_HOP,
   LANDING_SECONDS,
@@ -27,7 +28,7 @@ import { settle } from './poses';
 import { BOUNCE_RISE } from './stomp';
 import { chosen, waysNear, type Press, type Way } from './ways';
 
-/** Tiles a second. */
+/** Tiles a second on their own legs. */
 export const PLAYER_CLIMB: Record<ClimbKind, number> = { stairs: 2, ladder: 1.5 };
 /** Times walking speed, running, along streets and floors and through the air. */
 export const RUN_PACE = 2;
@@ -250,6 +251,11 @@ export class SidePlayer {
     return true;
   }
 
+  /** Times `PLAYER_CLIMB`: faster on the bionic legs the server last said are fitted. */
+  private get climbPace(): number {
+    return jumpOf(playerState.latest?.player.body).climb;
+  }
+
   /** Tiles a second along a street or a floor. */
   get speed(): number {
     return PLAYER_SPEED + (this.runSpeed - PLAYER_SPEED) * this.run;
@@ -419,7 +425,7 @@ export class SidePlayer {
       this.walk(controls, dt);
       return;
     }
-    this.move(on, path, along * PLAYER_CLIMB[kind] * dt);
+    this.move(on, path, along * PLAYER_CLIMB[kind] * this.climbPace * dt);
     pointAlong(path, on.distance, this.position);
     if (along !== 0 && (on.distance <= 0 || on.distance >= path.total) && this.endStanding(path, on.distance)) {
       this.onRun = undefined;
@@ -436,7 +442,7 @@ export class SidePlayer {
       const byX = kind === 'stairs' ? sign(controls.x * rise(path)) : 0;
       along = (controls.y !== 0 ? -controls.y : byX) * towards;
     }
-    const speed = kind === 'lift' ? RIDE_SPEED : PLAYER_CLIMB[kind];
+    const speed = kind === 'lift' ? RIDE_SPEED : PLAYER_CLIMB[kind] * this.climbPace;
     this.move(crossed, path, along * speed * dt);
     if (crossed.distance >= path.total) {
       this.place({ x: across.to.x, y: across.to.y, map: across.to.map });
