@@ -131,6 +131,7 @@ class Health:
         *,
         playing: Callable[[], bool] = lambda: True,
         collapse: Callable[[], None] = lambda: None,
+        night: Callable[[], bool] = lambda: False,
         beds: Collection[Spot] | None = None,
         config: HealthConfig = DEFAULT_HEALTH,
     ) -> None:
@@ -139,6 +140,8 @@ class Health:
         self.clock = clock
         self.playing = playing
         self.collapse = collapse
+        self.night = night
+        """Whether a rest now sleeps until morning, well or infected."""
         self.config = config
         if beds is None:
             home = location(movement, config.home)
@@ -146,6 +149,7 @@ class Health:
         self.beds = frozenset(beds)
         self.lain: Spot | None = None
         self.lying = 0.0
+        self.overnight = False
 
     def tick(self, dt: float) -> None:
         if not self.playing():
@@ -155,13 +159,14 @@ class Health:
         self._infect()
         infection = self.effect(EffectKind.INFECTION)
         if infection is not None:
-            self.lain = None
+            if not self.overnight:
+                self.lain = None
             self.hurt(self.config.infection * infection.strength * hours)
         elif self.player.health < 1:
             self.player.health = min(self.player.health + self.healing(dt), 1.0)
         if self.resting():
             self.lying -= dt / self.clock.speed
-            if self.player.health >= 1:
+            if self.player.health >= 1 and not self.overnight:
                 self.lain = None
 
     def rest(self, on: bool, *, woken: bool = False) -> bool:
@@ -172,10 +177,14 @@ class Health:
             self.lain = None
             return resting
         bed = self.bed()
+        if bed is None or self.resting():
+            return False
+        overnight = not woken and self.night()
         infected = self.effect(EffectKind.INFECTION) is not None
-        if bed is None or self.resting() or self.player.health >= 1 or infected:
+        if not overnight and (self.player.health >= 1 or infected):
             return False
         self.lain, self.lying = bed, 0.0 if woken else self.config.lie_down
+        self.overnight = overnight
         return True
 
     def home_bed(self) -> Spot | None:
@@ -223,7 +232,7 @@ class Health:
 
     def healing(self, dt: float) -> float:
         """How much health comes back in `dt` sim seconds where they stand, if nothing stops it."""
-        if self.resting() and self.lying < 1e-9:
+        if self.lain_down():
             return dt / self.clock.speed / self.config.rest
         rate = self.config.heal_at_home if self.at_home() else self.config.heal
         return rate * dt / HOUR
@@ -234,9 +243,16 @@ class Health:
         spot = None if at is None else spot_of(at)
         return spot if spot in self.beds else None
 
+    def sleeping(self) -> bool:
+        """Whether they're resting through the night, until morning."""
+        return self.overnight and self.resting()
+
+    def lain_down(self) -> bool:
+        return self.resting() and self.lying < 1e-9
+
     def resting(self) -> bool:
         """Whether they're lying in bed, from `rest` until they're full, move off it, are infected,
-        collapse or get up."""
+        collapse or get up. A rest at night goes on until morning, well or infected."""
         if self.lain is not None and self.bed() != self.lain:
             self.lain = None
         return self.lain is not None

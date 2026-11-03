@@ -241,6 +241,17 @@ async def test_concurrent_conversations_are_capped() -> None:
     assert not village.engine.request("dot", "ana")
 
 
+async def test_no_conversation_starts_while_the_clock_skips_the_night() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.engine.clock.skip(3600)
+
+    assert not village.engine.request("ana", "ben")
+    assert village.events == []
+
+    village.engine.clock.resume()
+    assert village.engine.request("ana", "ben")
+
+
 async def test_the_players_conversation_does_not_count_against_the_cap() -> None:
     village = Village(
         npcs=(ANA, BEN, CAL),

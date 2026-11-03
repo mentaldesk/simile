@@ -6,6 +6,8 @@ from simile.sim.clock import Clock, RealWallClock, WallClock
 
 STEP = 0.1
 MAX_LAG = 1.0
+SKIP_RATE = 500.0
+"""The most ticks a real second while the clock skips, each longer to keep up."""
 
 
 class System(Protocol):
@@ -28,16 +30,23 @@ class TickLoop:
 
         return unregister
 
+    def dt(self) -> float:
+        """The next tick's sim seconds: `step`, or longer while the clock skips."""
+        if self.clock.skipping:
+            return max(self.step, self.clock.speed / SKIP_RATE)
+        return self.step
+
     def tick(self) -> None:
-        self.clock.advance(self.step)
+        dt = self.dt()
+        self.clock.advance(dt)
         for system in tuple(self._systems):
-            system.tick(self.step)
+            system.tick(dt)
 
     async def run(self, duration: timedelta | None = None) -> None:
         end = None if duration is None else self.clock.now + duration
         deadline = self.wall.now()
         while not self._stopped and (end is None or self.clock.now < end):
-            deadline = max(deadline, self.wall.now() - MAX_LAG) + self.step / self.clock.speed
+            deadline = max(deadline, self.wall.now() - MAX_LAG) + self.dt() / self.clock.speed
             await self.wall.sleep(max(deadline - self.wall.now(), 0.0))
             if not self._stopped:
                 self.tick()

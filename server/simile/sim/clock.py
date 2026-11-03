@@ -12,6 +12,7 @@ class Clock:
     def __init__(self, start: datetime | None = None, speed: float = 1.0) -> None:
         self.now = start or eight_this_morning()
         self.speed = speed
+        self._resume: float | None = None
 
     @property
     def now(self) -> datetime:
@@ -32,6 +33,21 @@ class Clock:
         if speed <= 0:
             raise ValueError(f"speed must be positive, not {speed}")
         self._speed = speed
+
+    @property
+    def skipping(self) -> bool:
+        """Whether it's running fast from `skip` until `resume`."""
+        return self._resume is not None
+
+    def skip(self, speed: float) -> None:
+        """Runs at `speed` until `resume`, which goes back to the speed before."""
+        resume = self._speed if self._resume is None else self._resume
+        self.speed = speed
+        self._resume = resume
+
+    def resume(self) -> None:
+        if self._resume is not None:
+            self.speed, self._resume = self._resume, None
 
     @property
     def time_of_day(self) -> float:

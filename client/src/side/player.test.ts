@@ -6,7 +6,20 @@ import { village } from './content';
 import { TILE_M } from './layout';
 import { LIE_SECONDS } from './poses';
 import { RIDE_SPEED, RUN_CYCLE_M, WALK_CYCLE_M } from './motion';
-import { PLAYER_CLIMB, RUN_BLEND_SECONDS, RUN_PACE, SidePlayer, type Controls, type MapPosition } from './player';
+import {
+  DIM_SECONDS,
+  dimmed,
+  hands,
+  PLAYER_CLIMB,
+  RUN_BLEND_SECONDS,
+  RUN_PACE,
+  SidePlayer,
+  SKIP_SPEED,
+  SLEEP_DIM,
+  sleepingThrough,
+  type Controls,
+  type MapPosition,
+} from './player';
 
 const idle: Controls = { x: 0, y: 0, use: false, run: false };
 const press = (controls: Partial<Controls>): Controls => ({ ...idle, ...controls });
@@ -455,5 +468,32 @@ describe('resting in bed', () => {
     rests(true);
     woken.update(idle, 1 / 60);
     expect(woken.drawn.bed).toBe(1);
+  });
+});
+
+describe('sleeping through the night', () => {
+  it('is resting while the clock runs at the skip speed', () => {
+    expect(sleepingThrough(true, 3600)).toBe(true);
+    expect(sleepingThrough(true, SKIP_SPEED)).toBe(true);
+    expect(sleepingThrough(true, 1)).toBe(false);
+    expect(sleepingThrough(true, 20)).toBe(false);
+    expect(sleepingThrough(false, 3600)).toBe(false);
+    expect(sleepingThrough(undefined, 3600)).toBe(false);
+  });
+
+  it('dims the screen over DIM_SECONDS and brightens it again', () => {
+    let dim = 0;
+    for (let t = 0; t < DIM_SECONDS / 2 - 1e-9; t += 1 / 60) dim = dimmed(dim, true, 1 / 60);
+    expect(dim).toBeCloseTo(SLEEP_DIM / 2, 2);
+    for (let t = 0; t < DIM_SECONDS; t += 1 / 60) dim = dimmed(dim, true, 1 / 60);
+    expect(dim).toBe(SLEEP_DIM);
+    for (let t = 0; t < DIM_SECONDS + 0.1; t += 1 / 60) dim = dimmed(dim, false, 1 / 60);
+    expect(dim).toBe(0);
+  });
+
+  it('turns the hands with the hour', () => {
+    expect(hands(0)).toEqual({ hour: 0, minute: 0 });
+    expect(hands(2.75)).toEqual({ hour: 2.75 / 12, minute: 0.75 });
+    expect(hands(15.5)).toEqual({ hour: 3.5 / 12, minute: 0.5 });
   });
 });
