@@ -7,13 +7,13 @@ import { PPM } from './layout';
 import { sameItems } from './piles';
 import type { Content, StreetView } from './street-view';
 import type { SideTextures } from './textures';
-import { glowKey, glowing, usablesOn, type Sprite, type Usable } from './usables';
+import { glowKey, glowing, spritesOf, usablesOn, type Sprite, type Usable } from './usables';
 
 const GLOW = { colour: '#fff3b8', px: 7, alpha: 0.75, pulse: 0.2, seconds: 1.6 };
 const TICK = { colour: 0xe8572a, outline: 0x2b2118, m: 0.36, width: 0.055 };
 
 type Shown = { usable: Usable; images: Phaser.GameObjects.Image[]; tick?: Phaser.GameObjects.Graphics };
-type Glow = { image: Phaser.GameObjects.Image; texture: string };
+type Glow = { images: Phaser.GameObjects.Image[]; textures: string[] };
 
 export type DrawnUsable = { id: string; kind: string; map: string; x: number; y: number; shown: boolean; glowing: boolean; searched: boolean; recipe: boolean };
 
@@ -22,7 +22,7 @@ export class UsableView {
   private shown: Shown[] = [];
   private readonly glows = new Map<string, Glow>();
   private glowing?: string;
-  private drawnFor?: { street: StreetView; searched: string; piles: readonly Pile[] };
+  private drawnFor?: { street: StreetView; searched: string; jacked: boolean; piles: readonly Pile[] };
   private readonly scene: Phaser.Scene;
   private readonly textures: SideTextures;
 
@@ -34,13 +34,15 @@ export class UsableView {
   update(content: Content, street: StreetView, player: Position | undefined, seconds: number): void {
     const searched = playerState.latest?.player.searched ?? [];
     const piles = reachables.piles();
+    const jacked = !!reachables.jacked?.();
     const drawn = this.drawnFor;
-    if (drawn?.street !== street || drawn.searched !== searched.join() || !sameItems(drawn.piles, piles)) {
+    const same = drawn?.street === street && drawn.searched === searched.join() && drawn.jacked === jacked;
+    if (!same || !sameItems(drawn.piles, piles)) {
       if (drawn?.street !== street) this.unglow();
       this.clear();
-      const usables = usablesOn(content.village, content.scenery, street.map, { searched, piles, clues });
+      const usables = usablesOn(content.village, content.scenery, street.map, { searched, piles, clues, jacked });
       this.shown = usables.map((usable) => ({ usable, images: [] }));
-      this.drawnFor = { street, searched: searched.join(), piles };
+      this.drawnFor = { street, searched: searched.join(), jacked, piles };
     }
     for (const shown of this.shown) this.show(shown, street);
     this.light(glowing(player, wayPrompts()), street, seconds);
@@ -54,9 +56,9 @@ export class UsableView {
       x: usable.picture.x,
       y: usable.picture.y,
       shown: 'piece' in usable.picture || images.some((image) => image.visible),
-      glowing: this.glowing === glowKey(usable) && !!this.glows.get(glowKey(usable))?.image.visible,
+      glowing: this.glowing === glowKey(usable) && !!this.glows.get(glowKey(usable))?.images[0]?.visible,
       searched: !!tick,
-      recipe: !!usable.recipe,
+      recipe: !!usable.loot?.some(({ icon }) => icon === 'schematic'),
     }));
   }
 
@@ -79,8 +81,9 @@ export class UsableView {
     const visible = !usable.building || street.isOpen(usable.building);
     const tint = street.tints.colours[usable.building ? 'inside' : 'ground'];
     if (!shown.images.length) {
-      const sprites = [usable.picture, usable.recipe].filter((sprite): sprite is Sprite => !!sprite && 'icon' in sprite);
-      const images = sprites.map((sprite) => this.image(sprite));
+      const images = spritesOf(usable)
+        .filter((sprite) => 'icon' in sprite)
+        .map((sprite) => this.image(sprite));
       if (images.every(Boolean)) shown.images = images as Phaser.GameObjects.Image[];
       else images.forEach((image) => image?.destroy());
     }
@@ -126,7 +129,7 @@ export class UsableView {
   private light(id: string | undefined, street: StreetView, seconds: number): void {
     const shown = id ? this.shown.find(({ usable }) => usable.id === id) : undefined;
     const key = shown && glowKey(shown.usable);
-    if (this.glowing !== key) this.glows.get(this.glowing ?? '')?.image.setVisible(false);
+    if (this.glowing !== key) this.glows.get(this.glowing ?? '')?.images.forEach((image) => image.setVisible(false));
     this.glowing = key;
     if (!shown || !key) return;
     let glow = this.glows.get(key);
@@ -136,14 +139,21 @@ export class UsableView {
       this.glows.set(key, glow);
     }
     const visible = !shown.usable.building || street.isOpen(shown.usable.building);
-    glow.image.setVisible(visible).setAlpha(GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2));
+    const alpha = GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2);
+    for (const image of glow.images) image.setVisible(visible).setAlpha(alpha);
   }
 
-  /** An outline of the picture, blurred, just behind it. */
+  /** An outline of each of its pictures, blurred, just behind them all. */
   private glowAround(usable: Usable, key: string): Glow | undefined {
-    const sprite = usable.picture;
-    const source = this.texture(sprite);
-    if (!source) return undefined;
+    const sprites = spritesOf(usable);
+    const sources = sprites.map((sprite) => this.texture(sprite));
+    if (!sources.every(Boolean)) return undefined;
+    const depth = Math.min(...sprites.map(({ depth }) => depth)) - 0.01;
+    const textures = sprites.map((_, i) => `usable-glow:${key}:${i}`);
+    return { images: sprites.map((sprite, i) => this.outline(sprite, sources[i]!, textures[i], depth)), textures };
+  }
+
+  private outline(sprite: Sprite, source: string, texture: string, depth: number): Phaser.GameObjects.Image {
     const image = this.scene.textures.get(source).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     const scale = 'icon' in sprite ? sprite.height / image.height : 1;
     const reach = GLOW.px / scale;
@@ -161,21 +171,19 @@ export class UsableView {
     context.globalCompositeOperation = 'source-in';
     context.fillStyle = GLOW.colour;
     context.fillRect(0, 0, canvas.width, canvas.height);
-    const texture = `usable-glow:${key}`;
     if (this.scene.textures.exists(texture)) this.scene.textures.remove(texture);
     this.scene.textures.addCanvas(texture, canvas);
-    const glow = this.scene.add
+    return this.scene.add
       .image(sprite.x, sprite.y, texture)
       .setOrigin((pad + sprite.originX * image.width) / canvas.width, (pad + sprite.originY * image.height) / canvas.height)
       .setScale(scale)
-      .setDepth(sprite.depth - 0.01);
-    return { image: glow, texture };
+      .setDepth(depth);
   }
 
   private unglow(): void {
-    for (const { image, texture } of this.glows.values()) {
-      image.destroy();
-      this.scene.textures.remove(texture);
+    for (const { images, textures } of this.glows.values()) {
+      images.forEach((image) => image.destroy());
+      textures.forEach((texture) => this.scene.textures.remove(texture));
     }
     this.glows.clear();
     this.glowing = undefined;

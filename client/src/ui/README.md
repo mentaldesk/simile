@@ -175,8 +175,8 @@ The same corner says what E picks up or sells where the player stands, in
   buys, the line says it buys salvage and what they have, and E does what it would without it.
 - While the buyer has a part they sold it to buy back (`buyer.stock`), the line says "Press E to
   see what the scrap trader's stall buys and sells.", and E opens the panel too.
-- The world scene draws a glint over each pile on the street shown and its floors, gold for cash
-  (`side/piles.ts`).
+- The world scene draws each pile on the street shown and its floors as the icons of what it
+  holds (`side/piles.ts`).
 
 ## Trading, and at the clinic
 

@@ -6,7 +6,7 @@ import { scenery, village } from './content';
 import { DEPTH } from './depths';
 import { feetOf, furniturePlacement, PPM, xOf } from './layout';
 import { Village } from './maps';
-import { boxOf, glowing, glowKey, usablesOn, type Usable, type UsableState } from './usables';
+import { boxOf, glowing, glowKey, usablesOn, type IconSprite, type Usable, type UsableState } from './usables';
 
 vi.mock('phaser', () => ({ default: {} }));
 
@@ -35,12 +35,14 @@ describe('usablesOn', () => {
   it("draws the datajack's schematic on Aris's bench until it's searched, then a tick on the bench", () => {
     const bench = byId(street, 'maker_space_floor_0/maker_space_bench');
     expect(bench.picture).toMatchObject({ piece: 'furniture/workbench', stretch: expect.any(Number) });
-    expect(bench.recipe).toMatchObject({ icon: 'schematic', x: xOf(MAKER.offset.x + 5.5), y: bench.picture.y - 0.66 * PPM });
+    expect(bench.loot).toEqual([
+      expect.objectContaining({ icon: 'schematic', x: xOf(MAKER.offset.x + 5.5), y: bench.picture.y - 0.66 * PPM }),
+    ]);
     expect(bench.searched).toBeUndefined();
 
     const searched = byId(on('high_street', { searched: ['maker_space_bench'] }), 'maker_space_floor_0/maker_space_bench');
     const box = boxOf(scenery, searched.picture);
-    expect(searched.recipe).toBeUndefined();
+    expect(searched.loot).toBeUndefined();
     expect(searched.searched).toMatchObject({ x: box.left + box.width / 2, depth: DEPTH.furniture + 0.1 });
     expect(searched.searched!.y).toBeGreaterThan(box.top);
     expect(searched.searched!.y).toBeLessThan(box.top + box.height);
@@ -76,17 +78,47 @@ describe('usablesOn', () => {
     );
   });
 
-  it("draws a pile as its first item's icon on the ground, and leaves cash alone to its glint", () => {
+  it('draws a pile as its icon on the ground, cash as credits, and anything without one as the unknown item', () => {
     const piles: Pile[] = [
       { at: { map: 'metro', x: 30, y: 15 }, items: [WIRE] },
-      { at: { map: 'metro', x: 40, y: 15 }, items: [ODD, WIRE] },
+      { at: { map: 'metro', x: 40, y: 15 }, items: [ODD] },
       { at: { map: 'metro', x: 50, y: 15 }, items: [], money: 20 },
     ];
     const usables = on('metro', { piles }).filter(({ kind }) => kind === 'pile');
-    expect(usables.map(({ id, picture }) => [id, picture])).toEqual([
-      ['pile:metro:30,15', expect.objectContaining({ icon: 'copper_wire', x: xOf(30), y: feetOf(15), originY: 1 })],
-      ['pile:metro:40,15', expect.objectContaining({ icon: 'unknown_item', x: xOf(40), y: feetOf(15) })],
+    expect(usables.map(({ id, picture, loot }) => [id, picture, loot])).toEqual([
+      ['pile:metro:30,15', expect.objectContaining({ icon: 'copper_wire', x: xOf(30), y: feetOf(15), originY: 1 }), undefined],
+      ['pile:metro:40,15', expect.objectContaining({ icon: 'unknown_item', x: xOf(40), y: feetOf(15) }), undefined],
+      ['pile:metro:50,15', expect.objectContaining({ icon: 'credits', x: xOf(50), y: feetOf(15) }), undefined],
     ]);
+    expect(usables[0].picture).toMatchObject({ height: expect.closeTo(0.45 * PPM), depth: DEPTH.streetFurniture + 0.1 });
+  });
+
+  it('heaps up to three of what a pile holds round its middle, the first in front', () => {
+    const LITHIUM: Item = { ...WIRE, id: 'lithium_cell', name: 'Lithium cell' };
+    const SERVO: Item = { ...WIRE, id: 'servo_motor', name: 'Servo motor' };
+    const pile: Pile = { at: { map: 'metro', x: 30, y: 15 }, items: [WIRE, LITHIUM, WIRE, SERVO, ODD], money: 4 };
+    const heap = byId(on('metro', { piles: [pile] }), 'pile:metro:30,15');
+    const sprites = [heap.picture, ...heap.loot!] as IconSprite[];
+
+    expect(sprites.map(({ icon }) => icon)).toEqual(['credits', 'copper_wire', 'lithium_cell']);
+    expect(sprites.reduce((sum, { x }) => sum + x, 0) / 3).toBeCloseTo(xOf(30));
+    expect(sprites[1].x).toBeLessThan(sprites[0].x);
+    expect(sprites[2].x).toBeGreaterThan(sprites[0].x);
+    expect(sprites.slice(1).every(({ depth, height }) => depth < sprites[0].depth && height < sprites[0].height)).toBe(true);
+  });
+
+  it('lays what a searchable holds on it until it is searched', () => {
+    const fridge = byId(on('metro'), 'metro/metro_fridge');
+    expect(fridge.loot?.map(({ icon }) => icon)).toEqual(['copper_wire', 'lithium_cell']);
+    expect(fridge.loot!.every(({ y, depth }) => y < fridge.picture.y && depth > fridge.picture.depth)).toBe(true);
+    expect(byId(on('metro', { searched: ['metro_fridge'] }), 'metro/metro_fridge').loot).toBeUndefined();
+    expect(byId(on('lychee_lane'), 'house_2_floor_1/house_2_bed').loot?.map(({ icon }) => icon)).toEqual(['credits']);
+  });
+
+  it('lays what a jack holds on it only once the datajack can search it', () => {
+    expect(byId(on('metro'), 'metro/metro_signal_desk').loot).toBeUndefined();
+    expect(byId(on('metro', { jacked: true }), 'metro/metro_signal_desk').loot?.map(({ icon }) => icon)).toEqual(['circuit_board']);
+    expect(byId(on('metro', { jacked: true }), 'metro/metro_lift').loot).toBeUndefined();
   });
 
   it("finds a house's stash in the furniture it's hidden in, and ticks it once searched", () => {

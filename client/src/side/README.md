@@ -91,18 +91,19 @@ it, and rises to the top floor or drops to Banyan Row's river.
   `attackerOf`: the nearest creature attacking them within `HIT_FROM_TILES` (3 tiles, across rows
   too) on their map, else the nearest there, never one going down. With none, the drops burst
   straight up.
-- **Things to pick up** (`piles.ts`): a pulsing glint, drawn in code, over each pile in the last
-  `player_state` on the street or its floors, gold for cash: salvage, secrets and what the player
-  left, and each thing still to search (`world/searchables.ts`'s `toSearch`), which stops glinting
-  once it's searched.
+- **Loot** (`piles.ts`'s `lootIcons`): what a pile or a searchable holds is drawn as a heap of up
+  to three icons from [`content/icons/`](../../../content/icons/README.md), the first in front: a
+  `schematic` for a recipe, `credits` for cash, then each kind of item, or `unknown_item` for one
+  without an icon. A pile in the last `player_state` (salvage, secrets and what the player left)
+  lies on the ground; what a searchable holds lies on it until it's searched, and what a jack holds
+  only once the datajack can search it.
 - **What E uses** (`usables.ts`, drawn by `usable-view.ts`): every clue, searchable, jack, news
   terminal and pile on the street or its floors. Searchables, jacks and terminals are the furniture
   the street already draws, and one that no furniture draws is left out. The rest are icons from
   [`content/icons/`](../../../content/icons/README.md): Aris's notes pinned over her bench, out of
-  the player's way, a schematic on a searchable that teaches a recipe until it's searched, and each
-  pile's first item. A clue without a picture of its own isn't drawn. A searched thing gets a
+  the player's way, and the loot above. A clue without a picture of its own isn't drawn. A searched thing gets a
   painted tick. The one E would use where the player stands (`glowing`, as `world/reach.ts`'s
-  `eUse` finds it) gets a pulsing glow round its outline, made in code from its picture; a jack
+  `eUse` finds it) gets a pulsing glow round its outline, made in code from its pictures; a jack
   doesn't without the datajack, and the lift does with it.
 
 Every texture is filtered smoothly, Phaser's default. A picture wider than the GPU's widest texture
