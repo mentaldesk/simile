@@ -35,18 +35,22 @@ module is still setting up or has already shut down.
   a naive datetime raises `ValueError`; any other time zone is converted to UTC.
 - `clock.time_of_day` is the hours since midnight, from 0 up to 24.
 - `clock.speed` is sim seconds per real second. Changing it takes effect from the next tick.
+- `clock.skip(speed)` runs it at `speed` until `clock.resume()`, which goes back to the speed
+  before, and `clock.skipping` says whether it's skipping. P79's sleep skips the night with it.
 - A new clock starts at 08:00 UTC today unless you pass `start`.
 
 ## Tick loop
 
 - `world.loop.register(system)` adds anything with a `tick(dt: float)` method and returns a
-  function that unregisters it. `dt` is in sim seconds and is always `STEP` (0.1). The clock has
-  already advanced when `tick` is called.
+  function that unregisters it. `dt` is in sim seconds and is `STEP` (0.1) except while the clock
+  skips. The clock has already advanced when `tick` is called.
 - Systems tick in the order they registered, which is lifespan order, so alphabetical by module.
   A system registered mid-run ticks from the next tick.
 - `tick` must not block or await. Start an asyncio task for slow work like LLM calls or TTS.
-- The step is fixed. At 10x the loop runs 100 ticks per real second instead of 10, so a run at 10x
-  is the same sequence of ticks as at 1x, only faster. If the host can't keep up, the loop runs
+- While the clock skips, each tick is `clock.speed / SKIP_RATE` sim seconds, or `STEP` if that's
+  longer, so the loop runs at most `SKIP_RATE` (500) ticks a real second whatever the speed.
+- Otherwise the step is fixed. At 10x the loop runs 100 ticks per real second instead of 10, so a
+  run at 10x is the same sequence of ticks as at 1x, only faster. If the host can't keep up, the loop runs
   ticks back to back and the world falls behind real time rather than taking bigger steps. It drops
   any backlog beyond a second.
 - A system that raises stops the loop. `simile serve` logs it; `simile headless` exits with the

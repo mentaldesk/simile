@@ -155,6 +155,10 @@ The Phaser-free halves are tested under vitest.
   `LIE_SECONDS`, moving to its middle as they sit on the edge, and gets up once it doesn't, at full
   health or on a key, by `poses.ts`'s `settle`. No key moves them until they're up. Placed, or after
   a snapshot, while resting already, as on waking in bed after a collapse, they're lying at once.
+- Resting at night, the server skips to morning (`server/simile/player/README.md`). While they
+  rest and the `clock` message's `speed` is `SKIP_SPEED` (600) or more, the scene dims to
+  `SLEEP_DIM` over `DIM_SECONDS` and draws a clock face and the time spinning forward in the middle
+  of the screen. It brightens again once the speed drops back or they get up.
 - Running: a press of Shift turns the walk into a run over `RUN_BLEND_SECONDS`, and another turns it
   back, at up to `runSpeed`, `RUN_PACE` (2) times `PLAYER_SPEED` on their own legs and faster on the
   bionic legs, along streets and floors and through the air. Each press counts once, though Phaser

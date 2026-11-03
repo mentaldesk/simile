@@ -65,3 +65,17 @@ def test_fake_wall_clock_sleeps_instantly() -> None:
     wall.advance(1.5)
 
     assert wall.now() == 6.5
+
+
+def test_a_skip_runs_fast_until_it_resumes_the_speed_before() -> None:
+    clock = Clock(START, speed=2)
+
+    clock.skip(3600)
+    clock.skip(7200)
+    skipping, fast = clock.skipping, clock.speed
+    clock.resume()
+
+    assert (skipping, fast) == (True, 7200)
+    assert (clock.skipping, clock.speed) == (False, 2)
+    clock.resume()
+    assert clock.speed == 2

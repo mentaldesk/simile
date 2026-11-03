@@ -3,6 +3,7 @@ import { server, type Buyer, type Effect, type Pile, type PlayerStateMessage, ty
 import { interactableAt } from './interactables';
 import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
+import { sideClock } from '../side/clock';
 import { SidePlayer } from '../side/player';
 import { prompts } from '../side/ways';
 import { village } from '../side/content';
@@ -212,13 +213,32 @@ describe('the bed', () => {
     ...extra,
   });
 
-  it('rests there while they are hurt, not infected and not resting already', () => {
-    expect(restsAt(state(0.5))).toEqual(bed);
+  const infected = (health: number): PlayerStateMessage => ({ ...state(health), player: { ...state(health).player, effects: [INFECTION] } });
+
+  it('rests there in the daytime while they are hurt, not infected and not resting already', () => {
+    expect(restsAt(state(0.5), 14)).toEqual(bed);
+    expect(restsAt(state(1), 14)).toBeUndefined();
+    expect(restsAt(state(0.5, { resting: true }), 14)).toBeUndefined();
+    expect(restsAt(state(0.5, { bed: undefined }), 14)).toBeUndefined();
+    expect(restsAt(infected(0.5), 14)).toBeUndefined();
+    expect(restsAt(undefined, 14)).toBeUndefined();
+  });
+
+  it('rests there at night well or infected, to sleep until morning', () => {
+    for (const hour of [21, 23.5, 0, 2.75, 5.9]) {
+      expect(restsAt(state(1), hour)).toEqual(bed);
+      expect(restsAt(infected(0.5), hour)).toEqual(bed);
+      expect(restsAt(state(1, { resting: true }), hour)).toBeUndefined();
+      expect(restsAt(state(1, { bed: undefined }), hour)).toBeUndefined();
+    }
+    for (const hour of [6, 6.5, 20.9]) expect(restsAt(state(1), hour)).toBeUndefined();
+  });
+
+  it('takes the hour from the clock', () => {
+    sideClock.set('2026-01-01T02:45:00Z', 1);
+    expect(restsAt(state(1))).toEqual(bed);
+    sideClock.set('2026-01-01T14:00:00Z', 1);
     expect(restsAt(state(1))).toBeUndefined();
-    expect(restsAt(state(0.5, { resting: true }))).toBeUndefined();
-    expect(restsAt(state(0.5, { bed: undefined }))).toBeUndefined();
-    expect(restsAt({ ...state(0.5), player: { ...state(0.5).player, effects: [INFECTION] } })).toBeUndefined();
-    expect(restsAt(undefined)).toBeUndefined();
   });
 
   it('is what E uses where they stand', () => {

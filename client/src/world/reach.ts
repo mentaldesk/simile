@@ -1,6 +1,7 @@
 import { playerState, type Buyer, type MapTile, type Pile, type PlayerStateMessage, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { trades } from './buyers';
+import { sideClock } from '../side/clock';
 import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
 import { jacked, leadsAway } from './jacks';
@@ -37,9 +38,18 @@ export type Reachables = {
   bed?: () => MapTile | undefined;
 };
 
-/** Their bed where they stand, unless they're well, infected or resting already, when the server ignores `rest`. */
-export function restsAt(state: PlayerStateMessage | undefined): MapTile | undefined {
-  if (!state?.bed || state.resting || (state.player.health ?? 1) >= 1) return undefined;
+/** When a rest sleeps until morning: from 21:00, the earliest bedtime any resident can have, as the server's `NIGHT_STARTS`, until 06:00. */
+export const NIGHT = { from: 21, until: 6 };
+
+export function atNight(hour: number): boolean {
+  return hour >= NIGHT.from || hour < NIGHT.until;
+}
+
+/** Their bed where they stand, unless they're resting already, or in the daytime well or infected, when the server ignores `rest`. */
+export function restsAt(state: PlayerStateMessage | undefined, hour = sideClock.hour()): MapTile | undefined {
+  if (!state?.bed || state.resting) return undefined;
+  if (atNight(hour)) return state.bed;
+  if ((state.player.health ?? 1) >= 1) return undefined;
   return state.player.effects?.some(({ kind }) => kind === 'infection') ? undefined : state.bed;
 }
 
