@@ -33,7 +33,7 @@ PIECES = {p.key: p for p in paintings(LAYOUT)}
 MANIFEST_JSON = json.loads((CONTENT / MANIFEST).read_text())
 GRIME = re.compile(
     r"\b(grime|grimy|dirt|dirty|smudges?|smudged|stains?|stained|slime|slimy|rust|rusty|rusted|"
-    r"scuffs?|scuffed|scratchy|worn|wear|damp|filth|filthy|soot|sooty|mouldy|cracked|chipped|"
+    r"scuffs?|scuffed|worn(?! dip pen)|wear|damp|filth|filthy|soot|sooty|mouldy|cracked|chipped|"
     r"battered|dented)\b",
     re.IGNORECASE,
 )
@@ -92,6 +92,13 @@ def test_the_maps_under_the_village_use_some_furniture_of_their_own() -> None:
 @pytest.mark.parametrize("key", sorted(underground_pieces()))
 def test_every_underground_piece_is_cartoon_or_grimy(key: str) -> None:
     assert style_of(key) in ("cartoon", "grimy")
+
+
+def test_every_village_front_is_clean_with_todays_details() -> None:
+    village = {b for b, f in LAYOUT.facades.items() if f.street not in UNDERGROUND}
+
+    assert {b for b in village if LOOKS[b].style != "clean" or not LOOKS[b].modern} == set()
+    assert FURNITURE["metro_entrance"].style == "clean"
 
 
 @pytest.mark.parametrize("key", sorted(set(PIECES) - underground_pieces()))

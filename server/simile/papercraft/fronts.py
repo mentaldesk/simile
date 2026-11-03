@@ -216,8 +216,8 @@ class Plan:
 
 
 def backdrop(front: Front) -> Rgb:
-    """White, or grey behind a white building, since white on white defeats the cut-out."""
-    return GREY if min(front.wall) > 220 else BACKDROP
+    """White, or grey behind a pale building, since pale on white defeats the cut-out."""
+    return GREY if sum(front.wall) > 575 else BACKDROP
 
 
 def plan_ppm(front: Front, pixels: float = 1.2e6, longest: int = 1536) -> float:

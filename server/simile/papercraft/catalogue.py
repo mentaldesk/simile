@@ -76,22 +76,29 @@ GRIMY_REDRAW = (
 TUNNELS = "cartoon/street"
 TUNNEL_ROOMS = "cartoon/interior"
 """The tunnels' references, from #329's revised cartoon."""
-CLEAN_LEAD = "Make a new picture in exactly the clean cartoon style of the reference picture: "
+CLEAN_LEAD = "Make a new picture in exactly the scratchy cartoon style of the reference picture: "
+CLEAN_FINISH = (
+    "thick scratchy, uneven dark ink outlines around every shape, flat colours with simple soft "
+    "shading, everything fresh and new"
+)
 CLEAN_REDRAW = (
-    "Redraw image 1 as {subject}, hand-drawn in the clean cartoon style of image 2: smooth, even "
-    "dark ink outlines around every shape, flat colours with simple soft shading, everything "
-    "fresh and new. Keep every shape exactly where it is, with the same outlines and colours, "
-    "seen exactly from the side with no perspective, on a plain {back} background, and no shadow "
-    "on the background."
+    "Redraw image 1 as {subject}, hand-drawn in the scratchy cartoon style of image 2: "
+    + CLEAN_FINISH
+    + ". Keep every shape exactly where it is, with the same outlines and colours, seen exactly "
+    "from the side with no perspective, on a plain {back} background, and no shadow on the "
+    "background."
 )
 CLEAN_TEXTURE = (
-    "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with smooth, "
-    "even dark lines and flat colours, even light, no objects, no edges."
+    "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with scratchy "
+    "dark ink lines and flat colours, even light, no objects, no edges."
 )
 CLEAN_PAPER_LEAD = (
-    "Make a flat texture in the colours and clean cartoon style of the reference picture, "
+    "Make a flat texture in the colours and scratchy cartoon style of the reference picture, "
     "showing none of its objects: "
 )
+CLEAN_STREET = "clean/street"
+CLEAN_ROOMS = "clean/interior"
+"""The village's comic references, line B from #554's study."""
 GRIMY_TEXTURE = (
     "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with scratchy "
     "dark ink lines and flat colours, heavy grime and damp stains, even light, no objects, no "
@@ -142,12 +149,11 @@ WORDS: dict[Style, Words] = {
         CLEAN_REDRAW,
         CLEAN_PAPER_LEAD,
         CLEAN_TEXTURE,
-        "hand-drawn in the clean cartoon style: smooth, even dark ink outlines around every "
-        "shape, flat colours with simple soft shading, everything fresh and new",
+        "hand-drawn in the scratchy cartoon style: " + CLEAN_FINISH,
         "walls",
         "the ink lines",
-        "street",
-        "house",
+        CLEAN_STREET,
+        CLEAN_ROOMS,
     ),
     "cartoon": Words(
         CARTOON_LEAD,
@@ -174,7 +180,6 @@ WORDS: dict[Style, Words] = {
         TUNNEL_ROOMS,
     ),
 }
-"""The clean style reads the papercraft references until it has its own."""
 SURFACE: frozenset[Style] = frozenset({"papercraft", "clean"})
 
 
@@ -214,10 +219,15 @@ class Painting:
     `banded`, a ground piece made solid across its own band."""
     landmark: str | None = None
     """For a landmark or its glow map, its plan in `skyline.PLANS`."""
+    reseeds: tuple[int, ...] = ()
+    """For a front or glow map, added to each unit's seed, by unit, to paint one unit again."""
 
     @property
     def seed(self) -> int:
         return zlib.crc32((self.base or self.key).encode()) % 10_000 + self.reseed
+
+    def unit_reseed(self, unit: int | None) -> int:
+        return self.reseeds[unit] if unit is not None and unit < len(self.reseeds) else 0
 
 
 def layer(
@@ -842,13 +852,14 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
     ),
     "metro_entrance": Item(
-        "a small narrow old metro station entrance seen straight from the front: a low arched "
-        "canopy of dark green painted iron and glass on two slim iron posts, over a dark doorway "
+        "a small narrow modern metro station entrance, twice as tall as it is wide, seen straight "
+        "from the front: a slim curved canopy of glass on dark grey steel posts over a doorway "
         "where a stairway goes down, with a small round glowing sign showing a simple train "
         "pictogram on top of the canopy",
         2.3,
         (512, 896),
-        ref=STREET,
+        ref=CLEAN_STREET,
+        style="clean",
     ),
     "train_carriage": Item(
         "an abandoned old metro train carriage seen exactly from the side: a long boxy body of "
@@ -1331,12 +1342,14 @@ def cartoon_front_prompt(look: Look, unit: Front) -> str:
 
 def modern_front_prompt(look: Look, unit: Front) -> str:
     """A front with today's details, as `fronts.modernised` draws them."""
-    extras = ["big glass windows in slim dark frames with pale roller blinds"]
-    parts = ["the walls", "the flat roof", "every window"]
-    if look.flower_boxes:
+    windows = unit.window_boxes()
+    upper = any(box[1] > unit.storey for box in windows)
+    extras = ["big glass windows in slim dark frames with pale roller blinds"] if windows else []
+    parts = ["the walls", "the flat roof"] + (["every window"] if windows else [])
+    if look.flower_boxes and upper:
         extras.append("planters full of plants under the upper windows")
         parts.append("the planters")
-    if any(box[1] > unit.storey for box in unit.window_boxes()):
+    if upper:
         extras.append("air-conditioning units on the wall")
         parts.append("the air-conditioning units")
     if unit.shop_boxes():
@@ -1353,7 +1366,9 @@ def modern_front_prompt(look: Look, unit: Front) -> str:
         parts.append("the lanterns")
     if unit.door is not None:
         extras.append("a glass door")
-        parts += ["the glass door", "the small round wall light", "the potted plants"]
+        parts += ["the glass door", "the small round wall light"]
+        if unit.plant_spots():
+            parts.append("the potted plants")
     ground = "grey" if backdrop(unit) == GREY else "white"
     rules = ""
     if unit.murals and look.mural_words:
@@ -1361,12 +1376,19 @@ def modern_front_prompt(look: Look, unit: Front) -> str:
     elif unit.murals:
         rules = " Leave the blank stretches of wall plain, with nothing on them."
     if unit.door is None:
-        rules += " This part of the building has no door."
+        rules += " This part of the building has no door at all: only the windows shown."
+    if unit.door is None and unit.awnings:
+        rules += (
+            " The ground floor's windows are small ordinary windows with plain wall under them "
+            "down to the pavement, not doors."
+        )
+    if not windows:
+        rules += " It has no windows."
+    made = ", ".join(["a contemporary building with a flat roof", *extras, WORDS[look.style].front])
     return in_style(
-        f"Redraw image 1 as the front of {look.look}, a contemporary building with a flat roof, "
-        f"{', '.join(extras)}, {WORDS[look.style].front}. Keep every shape exactly where it is, "
-        f"with the same outlines and colours: {', '.join(parts)}. Seen straight from the front, "
-        f"a flat elevation with no perspective, on a plain {ground} background.{rules} No "
+        f"Redraw image 1 as the front of {look.look}, {made}. Keep every shape exactly where it "
+        f"is, with the same outlines and colours: {', '.join(parts)}. Seen straight from the "
+        f"front, a flat elevation with no perspective, on a plain {ground} background.{rules} No "
         "people, no words.",
         look.style,
     )
@@ -1421,7 +1443,7 @@ def front_prompt(look: Look, unit: Front) -> str:
 
 
 def night_prompt(look: Look, unit: Front) -> str:
-    lit = ["every window"]
+    lit = ["every window"] if unit.window_boxes() else []
     if unit.shop_boxes():
         lit.append("the shop windows")
     if unit.door is not None:
@@ -1452,7 +1474,18 @@ def fronts(layout: Layout) -> list[Painting]:
         nights = tuple(night_prompt(look, unit) for unit in parts)
         out.append(
             Painting(
-                key, "front", days[0], size, (), height, None, building, None, days, look.reseed
+                key,
+                "front",
+                days[0],
+                size,
+                (),
+                height,
+                None,
+                building,
+                None,
+                days,
+                look.reseed,
+                reseeds=look.reseeds,
             )
         )
         glow = f"glow/{building}"

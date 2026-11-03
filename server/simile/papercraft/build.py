@@ -158,6 +158,8 @@ class Build:
             return digest(*(self.paint_hash(piece, i) for i in range(count)))
         prompt = self.prompt(piece, unit)
         inputs: list[object] = [PAINTING, prompt, list(self.size(piece, unit)), piece.seed]
+        if piece.unit_reseed(unit):
+            inputs.append(["reseed", piece.unit_reseed(unit)])
         inputs += [_file_hash(REFERENCES / f"{name}.jpg") for name in piece.refs]
         if piece.kind == "front":
             unit_front = units(self.front(piece))[unit or 0][1]
@@ -226,7 +228,7 @@ class Build:
                 for piece, unit in unpainted:
                     start = time.perf_counter()
                     size = self.size(piece, unit)
-                    seed = piece.seed + (unit or 0)
+                    seed = piece.seed + (unit or 0) + piece.unit_reseed(unit)
                     images = self.images(piece, unit)
                     prompt = self.prompt(piece, unit)
                     picture = painter.paint(prompt, size, seed, images)
