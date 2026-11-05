@@ -66,8 +66,9 @@ The side view draws what the player can use where no furniture does (`client/src
 |---|---|
 | `aris_notes`, `door_frame` | Clues: Aris's notes, pinned over her bench, and the splintered door frame. |
 | `schematic` | A recipe lying on a searchable that teaches it, until it's searched. |
+| `credits` | Cash in a pile or a searchable: a stack of coins. |
 
-A pile is drawn as its first item's icon.
+Loot, in a pile or lying on a searchable, is drawn as a heap of up to three of its icons.
 
 ## The trade screen's
 
