@@ -125,6 +125,8 @@ class WorksReader:
 
     def read(self, npc: Npc) -> None:
         """The best unread work if no article interests `npc` more, and the news's pick as well."""
+        if self.clock.skipping:
+            return
         work, best = self._best(npc)
         llm = self.llm()
         if work is not None and llm is not None and best >= self.news_interest(npc):

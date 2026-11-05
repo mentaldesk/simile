@@ -14,6 +14,7 @@ from simile.news import NewsStore
 from simile.news.analysis import NewsAnalyser, analyse, summarise
 from simile.news.config import NewsConfig
 from simile.schema import CoreValue, NewsItem
+from simile.sim import Clock
 
 NOW = datetime(2026, 3, 14, 9, tzinfo=UTC)
 SUMMARY = (
@@ -267,6 +268,24 @@ async def test_checks_for_new_articles_on_the_sim_loop_without_blocking_it(
     await analyser.task
 
     assert len(fake.requests) == 2
+    assert all(item.analysed for item in store.latest())
+
+
+@pytest.mark.anyio
+async def test_waits_while_the_night_is_skipped(store: NewsStore) -> None:
+    store.add([article(0)])
+    client = LLMClient(FakeProvider([reply()]))
+    clock = Clock(NOW)
+    analyser = NewsAnalyser(store, lambda: client, clock=clock)
+
+    clock.skip(3600)
+    analyser.tick(3600)
+    assert analyser.task is None
+    clock.resume()
+    analyser.tick(0.1)
+    assert analyser.task is not None
+    await analyser.task
+
     assert all(item.analysed for item in store.latest())
 
 

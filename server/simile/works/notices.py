@@ -97,6 +97,8 @@ class Noticeboard:
         self._elapsed += dt
         if self._elapsed >= self.config.notice_check - 1e-9:
             self._elapsed = 0.0
+            if self.clock.skipping:
+                return
             for poster in self.due():
                 self.post(poster)
 

@@ -487,7 +487,7 @@ class Maker:
         and the artist's memory of making it and returns the work, or None if it fails. With
         the `intention` they're keeping, its idea leads the prompt."""
         llm, craft = self.llm(), npc.craft
-        if llm is None or craft is None or npc.id in self.making:
+        if llm is None or craft is None or npc.id in self.making or self.clock.skipping:
             return None
         now = self.clock.now
         making: Coroutine[Any, Any, Work | None]

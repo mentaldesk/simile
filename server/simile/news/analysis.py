@@ -12,6 +12,7 @@ from simile.news.config import DEFAULT_CONFIG, NewsConfig
 from simile.news.feed import shorten
 from simile.news.store import NewsStore
 from simile.schema import CoreValue, NewsItem
+from simile.sim import Clock
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,8 @@ class NewsAnalyser:
     only articles whose feeds carry their text. Every `config.analyse_every` of sim time it looks
     for articles among the newest `config.candidates` that aren't analysed yet. One the provider
     can't analyse is remembered and left unanalysed. While calls keep failing it checks less and
-    less often, and tries the articles that have failed least first."""
+    less often, and tries the articles that have failed least first. It waits while `clock` is
+    skipping."""
 
     def __init__(
         self,
@@ -147,11 +149,13 @@ class NewsAnalyser:
         llm: Callable[[], LLMClient | None],
         *,
         page: Page | None = None,
+        clock: Clock | None = None,
         config: NewsConfig = DEFAULT_CONFIG,
     ) -> None:
         self.store = store
         self.llm = llm
         self.page = page
+        self.clock = clock
         self.config = config
         self.task: asyncio.Task[list[NewsItem]] | None = None
         self.warned = False
@@ -167,7 +171,8 @@ class NewsAnalyser:
 
     def tick(self, dt: float) -> None:
         self.since += dt
-        if self.task is None and self.since >= self.wait:
+        skipping = self.clock is not None and self.clock.skipping
+        if self.task is None and self.since >= self.wait and not skipping:
             self.since = 0.0
             self.task = asyncio.create_task(self._run())
 

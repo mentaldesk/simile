@@ -44,7 +44,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             )
         )
         news_on = os.environ.get("SIMILE_NEWS") != "0"
-        analyser = NewsAnalyser(store, llm, page=article.page if news_on else None)
+        page = article.page if news_on else None
+        analyser = NewsAnalyser(store, llm, page=page, clock=world.clock)
         stack.push_async_callback(analyser.stop)
         stack.callback(world.loop.register(analyser))
         if news_on:

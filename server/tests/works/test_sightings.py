@@ -94,6 +94,23 @@ def test_a_passer_by_reacts_to_a_mural_once(works: WorksStore, memory: MemorySto
     assert work_memories(memory, "mei") == work_memories(memory, "suki") == []
 
 
+def test_nobody_looks_at_a_mural_while_the_night_is_skipped(
+    works: WorksStore, memory: MemoryStore
+) -> None:
+    works.paint(mural("m1", "suki"), "<svg/>", b"")
+    fake = FakeProvider([REACTION])
+    street = passers(works, memory, {"viktor": IN_FRONT}, LLMClient(fake))
+
+    street.clock.skip(3600)
+    asyncio.run(walk_by(street))
+    assert fake.requests == []
+    street.clock.resume()
+    asyncio.run(walk_by(street))
+
+    assert len(fake.requests) == 1
+    assert [m.work_id for m in work_memories(memory, "viktor")] == ["m1"]
+
+
 def test_a_resident_inside_doesnt_see_a_mural_on_their_buildings_front(
     works: WorksStore, memory: MemoryStore
 ) -> None:

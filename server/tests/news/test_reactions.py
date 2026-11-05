@@ -109,6 +109,26 @@ def read_titles(fake: FakeProvider) -> list[str]:
 
 
 @pytest.mark.anyio
+async def test_nothing_is_read_while_the_night_is_skipped(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    news.add([RULES])
+    fake = FakeProvider([judge])
+    reader = reader_for(news, memory, fake)
+    stickler = npc("stickler", obedience=0.95)
+
+    reader.clock.skip(3600)
+    reader.read(stickler)
+    assert reader.tasks == set()
+    reader.clock.resume()
+    reader.read(stickler)
+    await settle(reader)
+
+    assert len(fake.requests) == 1
+    assert [m.news_id for m in news_memories(memory, "stickler")] == [RULES.id]
+
+
+@pytest.mark.anyio
 async def test_an_article_clashing_with_a_high_value_lands_badly(
     news: NewsStore, memory: MemoryStore
 ) -> None:

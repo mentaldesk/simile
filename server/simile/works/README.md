@@ -4,6 +4,10 @@ What the residents make from what's on their mind, in their `craft`: writing, wh
 news terminals, murals, painted on M7's walls, and paintings for the gallery. Works are stored in the
 `works` table of the memory store's file, and a mural's picture beside it in `murals`.
 
+While the player sleeps through the night (`clock.skipping`, P79), nobody makes a work, puts up a
+notice, reads at a terminal or looks at a mural. What they'd have started is skipped, not saved for
+later, and anything already under way finishes.
+
 ## Making a work
 
 `Maker.make(npc, wall=None, intention=None)` starts a resident writing, painting a mural on `wall`, or painting for

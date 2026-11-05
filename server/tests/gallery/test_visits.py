@@ -125,6 +125,24 @@ def test_a_visitor_looks_at_each_painting_they_have_not_seen_once_then_wanders_b
     assert len(stood) > 5
 
 
+def test_a_visitor_looks_at_no_painting_while_the_night_is_skipped(
+    works: WorksStore, store: GalleryStore, memory: MemoryStore
+) -> None:
+    fake = FakeProvider([REACTION])
+    visit = Visit(works, store, memory, LLMClient(fake), [TOBIAS])
+    visit.hang(("kofi-1", "kofi"))
+
+    visit.world.clock.skip(3600)
+    asyncio.run(visit.run(minutes=10))
+    assert fake.requests == []
+    assert looked_at(memory, "tobias") == []
+    visit.world.clock.resume()
+    asyncio.run(visit.run(minutes=10))
+
+    assert len(fake.requests) == 1
+    assert [m.work_id for m in looked_at(memory, "tobias")] == ["kofi-1"]
+
+
 def test_nobody_is_shown_round_unless_they_are_staying_at_the_gallery(
     works: WorksStore, store: GalleryStore, memory: MemoryStore
 ) -> None:

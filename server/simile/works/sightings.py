@@ -76,6 +76,8 @@ class Passers:
             self.look()
 
     def look(self) -> None:
+        if self.clock.skipping:
+            return
         showing = self.works.showing()
         painted = [(wall, showing[wall.id]) for wall in self.walls if wall.id in showing]
         if not painted:

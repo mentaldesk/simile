@@ -66,6 +66,22 @@ def read_by(memory: MemoryStore, npc: Npc) -> list[Memory]:
     return memory.recall(npc.id, NOW, kind=MemoryKind.WORK, k=100)
 
 
+def test_nothing_is_read_while_the_night_is_skipped(works: WorksStore, memory: MemoryStore) -> None:
+    works.add(work("a", values=CARING))
+    news = News(interest=0.1)
+    fake = FakeProvider([REACTION])
+    terminal = reader(works, memory, news, LLMClient(fake))
+
+    terminal.clock.skip(3600)
+    asyncio.run(read(terminal, MEI))
+    assert (fake.requests, news.read) == ([], [])
+    terminal.clock.resume()
+    asyncio.run(read(terminal, MEI))
+
+    assert len(fake.requests) == 1
+    assert news.read == ["mei"]
+
+
 def test_a_friends_work_outranks_a_strangers_and_a_rivals_at_the_same_alignment(
     works: WorksStore, memory: MemoryStore
 ) -> None:
