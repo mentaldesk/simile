@@ -58,7 +58,7 @@ from simile.street.moves import moves, possible
 from simile.voicing.distance import between
 from simile.world import Point, movement_of
 from simile.world.map import WALKING_SPEED, Pickup, TownMap
-from simile.world.paths import DOOR, Spot, octile
+from simile.world.paths import CROSSING_SPEED, DOOR, Spot, octile
 
 HOME, BUYERS = "maker_space", ("clinic", "scrap_stall")
 HUNGRY = 0.5
@@ -319,7 +319,7 @@ class LoopPlayer:
         """Along `route`, or until they had to dodge something on it."""
         for a, b in pairwise(route):
             if a.map != b.map:
-                await self.wait(self.movement.crossings.get(a, (None, DOOR))[1] / WALKING_SPEED)
+                await self.wait(self.crossing(a))
                 self.move(b)
                 continue
             if await self.wait_to_come_onto(a, b):
@@ -344,8 +344,17 @@ class LoopPlayer:
         climb = town.climb(a.x, a.y) or town.climb(b.x, b.y)
         if abs(dx) + abs(dy) != 1 and not (climb is DoorKind.STAIRS and abs(dx) == abs(dy) == 1):
             return None
-        pace = CLIMB[climb] if dy and climb is not None else jump_of(self.player.body).run
+        legs = jump_of(self.player.body)
+        pace = CLIMB[climb] * legs.climb if dy and climb is not None else legs.run
         return math.dist((a.x, a.y), (b.x, b.y)) / pace
+
+    def crossing(self, a: Spot) -> float:
+        """Seconds through the door at `a`, or up or down to another floor at their legs' climb."""
+        kind, tiles = self.movement.crossings.get(a, (DoorKind.DOOR, DOOR))
+        seconds = tiles / WALKING_SPEED
+        if kind in CLIMB:
+            seconds *= CROSSING_SPEED[kind] / (CLIMB[kind] * jump_of(self.player.body).climb)
+        return seconds
 
     def path(self, a: Spot, b: Spot) -> Iterator[tuple[float, float, float]]:
         """The positions they send on the way from `a` to `b`, and the seconds before each."""

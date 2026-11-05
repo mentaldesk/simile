@@ -14,9 +14,10 @@ whether they're asleep (`awake`). Nothing is handed to it: every recipe is learn
 found where the game puts them (`content/street/README.md`'s *Finds*).
 
 **Moving.** It runs the cheapest way its legs and feet allow (`simile.street.moves`), sending where
-it is every tenth of a sim second, as the client does every frame or so, and climbing at the
-client's pace. Ways in sight of a bot or a dog on its floor cost more, so it goes over them where it
-can, as on the metro's train roof and catwalk. On the way it uses P34's solutions:
+it is every tenth of a sim second, as the client does every frame or so, and climbing stairs and
+ladders, on a street or to another floor, at the client's pace for its legs. Ways in sight of a bot
+or a dog on its floor cost more, so it goes over them where it can, as on the metro's train roof
+and catwalk. On the way it uses P34's solutions:
 
 - **A bot** coming at it along its floor it jumps, landing well past it.
 - **A rat** coming for its food it comes down on, hopping as the rat comes under it.
@@ -56,7 +57,7 @@ parts weigh 10 kg, as much as the player can carry with nothing else, and the la
 
 Every coin comes from the kidney, salvage, secrets, finds and recipes, through the ledger. The fake
 LLM is `Canned`, the canned one, which has nothing to reflect on and notes each prompt that has a
-resident turn the player down. The loop takes about eleven minutes of play in its first sim
+resident turn the player down. The loop takes about nine minutes of play in its first sim
 morning, unhurt, with the lamp never running flat in the dark.
 
 ```bash
