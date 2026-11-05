@@ -67,6 +67,61 @@
       "title": "Body",
       "type": "object"
     },
+    "Corpse": {
+      "additionalProperties": false,
+      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It can\nhold nothing at all: it stays whatever it holds, unlike a `Pile`.",
+      "properties": {
+        "id": {
+          "description": "Which corpse, as two can lie on one tile.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "owner": {
+          "description": "Whose body it was: `\"player\"` for the player's own.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Owner",
+          "type": "string"
+        },
+        "at": {
+          "$ref": "#/$defs/MapTile"
+        },
+        "money": {
+          "description": "The cash still on it.",
+          "minimum": 0,
+          "title": "Money",
+          "type": "number"
+        },
+        "items": {
+          "description": "What it still carries.",
+          "items": {
+            "$ref": "#/$defs/Item"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "bionics": {
+          "description": "The bionics still in it, which come out as `bionic` items.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "title": "Bionics",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "owner",
+        "at",
+        "money",
+        "items",
+        "bionics"
+      ],
+      "title": "Corpse",
+      "type": "object"
+    },
     "Effect": {
       "additionalProperties": false,
       "description": "An ailment the player has, which fades on its own or lasts until it's treated.",
@@ -442,7 +497,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects, nothing searched and an empty stash. A save holding the old 10 kg\ncarry limit loads with 15. Their humanity is derived from the bionics fitted and isn't a field,\nso the client never sees it.",
+  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects, nothing searched, an empty stash, no corpses and nothing repaired. A\nsave holding the old 10 kg carry limit loads with 15. Their humanity is derived from the bionics\nfitted and isn't a field, so the client never sees it.",
   "properties": {
     "money": {
       "default": 0.0,
@@ -518,6 +573,15 @@
       "title": "Left",
       "type": "array"
     },
+    "corpses": {
+      "default": [],
+      "description": "Their own bodies, oldest first, each where they died, saved here and shown by the snapshot, `corpse_changed` and `corpse_gone`. Left out while there's none.",
+      "items": {
+        "$ref": "#/$defs/Corpse"
+      },
+      "title": "Corpses",
+      "type": "array"
+    },
     "taken": {
       "additionalProperties": {
         "format": "date-time",
@@ -549,6 +613,17 @@
         "type": "string"
       },
       "title": "Searched",
+      "type": "array"
+    },
+    "repaired": {
+      "default": [],
+      "description": "The machines they've repaired, by interactable id, in the order they repaired them, saved here and shown by the snapshot and `machine_changed`. Left out while there's none.",
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "title": "Repaired",
       "type": "array"
     }
   },

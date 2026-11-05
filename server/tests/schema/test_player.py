@@ -20,6 +20,7 @@ from simile.schema import (
     Bionic,
     Body,
     BodyPart,
+    Corpse,
     Effect,
     EffectKind,
     Item,
@@ -49,11 +50,15 @@ PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
     HURT,
     SEARCHING,
     ARMED,
+    DEAD,
 ) = PLAYERS
-STAGE_1 = PLAYERS[:-4]
-BEFORE_VITALS = PLAYERS[:-3]
-BEFORE_SEARCHING = PLAYERS[:-2]
-BEFORE_THE_STASH = PLAYERS[:-1]
+STAGE_1 = PLAYERS[:-5]
+BEFORE_VITALS = PLAYERS[:-4]
+BEFORE_SEARCHING = PLAYERS[:-3]
+BEFORE_THE_STASH = PLAYERS[:-2]
+BEFORE_CORPSES = PLAYERS[:-1]
+CORPSES: list[dict[str, Any]] = json.loads((HERE / "corpses.json").read_text())
+FULL_CORPSE, EMPTY_CORPSE = CORPSES
 STAGE_2_SAVE = (HERE / "stage_2_player.json").read_text()
 SALVAGE = DELVING["items"][1]
 LAMP, PISTOL, ROUNDS, PLASTIC, SALVAGED_CELL = ARMED["items"]
@@ -66,7 +71,7 @@ def schema(name: str) -> Draft202012Validator:
 
 
 def rejects(
-    model: type[Player | Item | Body | Pile | Recipe | Mind | Effect | Sale | Stash],
+    model: type[Player | Item | Body | Pile | Recipe | Mind | Effect | Sale | Stash | Corpse],
     data: dict[str, Any],
     match: str,
 ) -> None:
@@ -88,6 +93,7 @@ def rejects(
         "hurt",
         "searching",
         "armed",
+        "dead",
     ],
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
@@ -734,6 +740,8 @@ def test_a_stage_2_save_loads_as_it_was() -> None:
     assert player.load == pytest.approx(6.2)
     assert player.left[0].items[0].amount == 1
     assert player.sales[0].item.amount == 1
+    assert player.corpses == []
+    assert player.repaired == []
     assert json.loads(player.model_dump_json()) == json.loads(STAGE_2_SAVE)
 
 
@@ -910,3 +918,91 @@ def test_they_search_each_thing_once() -> None:
     player = Player.model_validate(SEARCHING)
     changes(player, "searched", [*player.searched, "aris_bench"], "search each thing once")
     assert len(player.searched) == 3
+
+
+@pytest.mark.parametrize("data", BEFORE_CORPSES)
+def test_a_save_from_before_corpses_has_none_and_nothing_repaired(data: dict[str, Any]) -> None:
+    player = Player.model_validate(data)
+    dumped = json.loads(player.model_dump_json())
+
+    assert player.corpses == []
+    assert player.repaired == []
+    assert "corpses" not in dumped
+    assert "repaired" not in dumped
+
+
+def test_a_dead_players_corpses_and_repairs_are_saved_on_them() -> None:
+    player = Player.model_validate(DEAD)
+
+    assert player.corpses[0].bionics == [Bionic.POWER_CELL, Bionic.DATAJACK]
+    assert player.corpses[0].at == MapTile(map="sewers", x=14, y=9)
+    assert player.repaired == ["printer_3d"]
+    assert player.body == Body()
+
+
+@pytest.mark.parametrize("data", CORPSES, ids=["full", "empty"])
+def test_corpse_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
+    parsed = Corpse.model_validate_json(json.dumps(data))
+
+    assert json.loads(parsed.model_dump_json()) == data
+    schema("Corpse").validate(data)
+    assert Corpse in MODELS
+
+
+def test_a_corpse_keeps_its_stacks_weapons_and_salvaged_bionics() -> None:
+    corpse = Corpse.model_validate(FULL_CORPSE)
+
+    assert [item.kind for item in corpse.items] == [
+        ItemKind.LAMP,
+        ItemKind.MATERIAL,
+        ItemKind.WEAPON,
+        ItemKind.BIONIC,
+    ]
+    assert corpse.items[1].amount == 2.5
+    assert corpse.items[2].rounds == 2
+    assert corpse.bionics == [Bionic.POWER_CELL, Bionic.DATAJACK, Bionic.BIONIC_LEGS_2]
+
+
+def test_a_corpse_stays_as_it_is_emptied_unlike_a_pile() -> None:
+    corpse = Corpse.model_validate(FULL_CORPSE)
+
+    corpse.money = 0
+    corpse.items = []
+    corpse.bionics = []
+
+    assert (corpse.money, corpse.items, corpse.bionics) == (0, [], [])
+
+
+def test_two_corpses_can_lie_on_one_tile() -> None:
+    player = Player(corpses=[Corpse.model_validate(data) for data in CORPSES])
+
+    assert player.corpses[0].at == player.corpses[1].at
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"money": -1}, "greater than or equal to 0"),
+        ({"money": float("inf")}, "finite"),
+        ({"bionics": ["wings"]}, "Input should be"),
+        ({"id": "Corpse 1"}, "should match pattern"),
+        ({"owner": ""}, "should match pattern"),
+        ({"at": {"x": 1, "y": 1}}, "map"),
+    ],
+)
+def test_rejects_invalid_corpses(update: dict[str, Any], match: str) -> None:
+    rejects(Corpse, FULL_CORPSE | update, match)
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"corpses": [FULL_CORPSE, FULL_CORPSE]}, "each corpse has its own id"),
+        ({"repaired": ["printer_3d", "printer_3d"]}, "repair each machine once"),
+        ({"repaired": ["Printer 3D"]}, "should match pattern"),
+    ],
+)
+def test_rejects_invalid_corpses_and_repairs_on_a_player(
+    update: dict[str, Any], match: str
+) -> None:
+    rejects(Player, STARTING | update, match)

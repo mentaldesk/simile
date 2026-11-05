@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "Bionic": {
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack or the eye.",
+      "enum": [
+        "datajack",
+        "infrared_eye",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
+      ],
+      "title": "Bionic",
+      "type": "string"
+    },
+    "Item": {
+      "additionalProperties": false,
+      "description": "Something the player carries, or a stack of it.",
+      "properties": {
+        "id": {
+          "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "name": {
+          "description": "What the player sees, e.g. \"Copper wire\".",
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "weight": {
+          "description": "In kg, each, counted against the carry limit.",
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "amount": {
+          "default": 1.0,
+          "description": "How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.",
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "charge": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.",
+          "title": "Charge"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.",
+          "title": "On"
+        },
+        "material": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Material"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else."
+        },
+        "rounds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.",
+          "title": "Rounds"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most rounds a weapon holds. Left out for anything else.",
+          "title": "Capacity"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.",
+          "title": "Condition"
+        },
+        "bionic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Bionic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else."
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "weight",
+        "charge",
+        "on"
+      ],
+      "title": "Item",
+      "type": "object"
+    },
+    "ItemKind": {
+      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, a `part` to fit,\n`material` to print with, a `weapon` to fire, `rounds` to load it with, or a salvaged `bionic`\nto have refitted.",
+      "enum": [
+        "salvage",
+        "food",
+        "lamp",
+        "part",
+        "material",
+        "weapon",
+        "rounds",
+        "bionic"
+      ],
+      "title": "ItemKind",
+      "type": "string"
+    },
+    "MachineKind": {
+      "description": "What a machine in the maker space is: Aris's 3D `printer`, or the `recycler`.",
+      "enum": [
+        "printer",
+        "recycler"
+      ],
+      "title": "MachineKind",
+      "type": "string"
+    },
+    "MachineState": {
+      "description": "Whether it needs repairing first.",
+      "enum": [
+        "broken",
+        "working"
+      ],
+      "title": "MachineState",
+      "type": "string"
+    },
+    "Material": {
+      "description": "What the printer prints with, which decides how hard its weapons and rounds hit.",
+      "enum": [
+        "plastic"
+      ],
+      "title": "Material",
+      "type": "string"
+    },
+    "Product": {
+      "additionalProperties": false,
+      "description": "Something a working machine makes, and what it takes.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Item",
+          "description": "What comes out, stack and all, such as 6 rounds."
+        },
+        "uses": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Material"
+            },
+            {
+              "const": "scrap",
+              "type": "string"
+            }
+          ],
+          "description": "What it's made from: a material they carry, or scrap, by weight.",
+          "title": "Uses"
+        },
+        "cost": {
+          "description": "How much of it: a material's amount, or kilos of scrap.",
+          "exclusiveMinimum": 0,
+          "title": "Cost",
+          "type": "number"
+        }
+      },
+      "required": [
+        "item",
+        "uses",
+        "cost"
+      ],
+      "title": "Product",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The state of a machine you repair and then use. Where it stands and what it's called are\non the map, in the `Interactable` with the same `id`.",
+  "properties": {
+    "id": {
+      "description": "Its interactable's id, e.g. \"printer_3d\".",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/MachineKind"
+    },
+    "state": {
+      "$ref": "#/$defs/MachineState"
+    },
+    "parts": {
+      "additionalProperties": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "default": {},
+      "description": "What repairing it uses up while it's broken, how many of each by item `id`, e.g. `{\"copper_wire\": 2}`. Empty once it works.",
+      "propertyNames": {
+        "minLength": 1
+      },
+      "title": "Parts",
+      "type": "object"
+    },
+    "makes": {
+      "default": [],
+      "description": "What it can make while it works, whether or not they have what it takes, each item once. Empty while it's broken, and it can be empty while it works.",
+      "items": {
+        "$ref": "#/$defs/Product"
+      },
+      "title": "Makes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "state",
+    "parts",
+    "makes"
+  ],
+  "title": "Machine",
+  "type": "object"
+}

@@ -15,6 +15,8 @@ from simile.protocol import (
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
+    CorpseChangedMessage,
+    CorpseGoneMessage,
     Creature,
     CreatureGoneMessage,
     CreatureMovedMessage,
@@ -29,6 +31,7 @@ from simile.protocol import (
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
+    MachineChangedMessage,
     Meal,
     Message,
     Mural,
@@ -68,6 +71,7 @@ from simile.protocol.messages import client_messages, server_messages
 from simile.schema import (
     Bionic,
     Body,
+    Corpse,
     CreatureKind,
     CreatureState,
     Effect,
@@ -77,6 +81,7 @@ from simile.schema import (
     ItemKind,
     JournalEntry,
     Lead,
+    Machine,
     MapTile,
     Material,
     Mind,
@@ -95,6 +100,9 @@ CREATURE_FIGURES = Path(__file__).parents[3] / "content" / "creatures"
 CREATURES = TypeAdapter(list[Creature]).validate_json(
     (Path(__file__).parent / "creatures.json").read_bytes()
 )
+SCHEMA_TESTS = Path(__file__).parents[1] / "schema"
+MACHINES = TypeAdapter(list[Machine]).validate_json((SCHEMA_TESTS / "machines.json").read_bytes())
+CORPSES = TypeAdapter(list[Corpse]).validate_json((SCHEMA_TESTS / "corpses.json").read_bytes())
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
 ARTICLE = NewsArticle(
@@ -390,6 +398,7 @@ JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
 
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 IN_THE_SEWERS = SNAPSHOT.model_copy(update={"creatures": CREATURES})
+AFTER_DYING = SNAPSHOT.model_copy(update={"machines": MACHINES[:2], "corpses": CORPSES})
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
@@ -444,6 +453,10 @@ SERVER = [
     IN_THE_SEWERS,
     *(CreatureMovedMessage(creature=creature) for creature in CREATURES),
     CreatureGoneMessage(creature_id="rat_2"),
+    AFTER_DYING,
+    *(MachineChangedMessage(machine=machine) for machine in MACHINES),
+    *(CorpseChangedMessage(corpse=corpse) for corpse in CORPSES),
+    CorpseGoneMessage(corpse_id="corpse_2"),
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -1079,6 +1092,10 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("Buyer", "treatments"),
         ("Fitting", "blocked"),
         ("SnapshotMessage", "creatures"),
+        ("SnapshotMessage", "machines"),
+        ("SnapshotMessage", "corpses"),
+        ("Player", "corpses"),
+        ("Player", "repaired"),
         ("Player", "searched"),
         ("Player", "power"),
         ("Player", "health"),
@@ -1520,6 +1537,59 @@ def test_a_snapshot_without_creatures_has_none() -> None:
 
     validator().validate(data)
     assert server_messages.validate_python(data).creatures == []
+
+
+def test_the_snapshot_has_every_machine_and_corpse() -> None:
+    data = json.loads(AFTER_DYING.model_dump_json())
+
+    assert data["machines"] == json.loads((SCHEMA_TESTS / "machines.json").read_text())[:2]
+    assert data["corpses"] == json.loads((SCHEMA_TESTS / "corpses.json").read_text())
+
+
+def test_a_snapshot_from_before_machines_and_corpses_has_none() -> None:
+    data = json.loads(SNAPSHOT.model_dump_json())
+    assert (data["machines"], data["corpses"]) == ([], [])
+    del data["machines"], data["corpses"]
+
+    parsed = server_messages.validate_python(data)
+
+    assert (parsed.machines, parsed.corpses) == ([], [])
+
+
+def test_a_machine_changing_carries_all_of_it() -> None:
+    message = MachineChangedMessage(machine=MACHINES[1])
+
+    assert json.loads(message.model_dump_json()) == {
+        "type": "machine_changed",
+        "machine": json.loads(MACHINES[1].model_dump_json()),
+    }
+
+
+def test_a_corpse_changing_carries_all_of_it_so_a_new_one_can_appear() -> None:
+    assert json.loads(CorpseChangedMessage(corpse=CORPSES[1]).model_dump_json()) == {
+        "type": "corpse_changed",
+        "corpse": {
+            "id": "corpse_2",
+            "owner": "player",
+            "at": {"map": "sewers", "x": 14, "y": 9},
+            "money": 0.0,
+            "items": [],
+            "bionics": [],
+        },
+    }
+    assert json.loads(CorpseGoneMessage(corpse_id="corpse_2").model_dump_json()) == {
+        "type": "corpse_gone",
+        "corpse_id": "corpse_2",
+    }
+
+
+def test_a_player_state_carries_their_corpses_and_repairs() -> None:
+    player = Player(corpses=[CORPSES[0]], repaired=["printer_3d"])
+
+    data = json.loads(PlayerStateMessage(player=player).model_dump_json())
+
+    assert data["player"]["corpses"][0]["id"] == "corpse_1"
+    assert data["player"]["repaired"] == ["printer_3d"]
 
 
 def test_a_creature_moving_carries_all_of_it_so_a_new_one_can_appear() -> None:

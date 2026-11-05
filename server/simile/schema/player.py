@@ -338,6 +338,22 @@ def _from_stage_1(data: dict[str, Any]) -> dict[str, Any]:
 BODY_PARTS: Final[tuple[BodyPart, ...]] = get_args(BodyPart.__value__)
 
 
+class Corpse(Model):
+    """A body left `at` the tile it fell on, or the ground below it, with what was on it. It can
+    hold nothing at all: it stays whatever it holds, unlike a `Pile`."""
+
+    model_config = CHECKED
+
+    id: Id = Field(description="Which corpse, as two can lie on one tile.")
+    owner: Id = Field(description='Whose body it was: `"player"` for the player\'s own.')
+    at: MapTile
+    money: float = Field(ge=0, allow_inf_nan=False, description="The cash still on it.")
+    items: list[Item] = Field(description="What it still carries.")
+    bionics: list[Bionic] = Field(
+        description="The bionics still in it, which come out as `bionic` items."
+    )
+
+
 def _replaced(data: dict[str, Any]) -> list[BodyPart]:
     bionic = data.get("bionic")
     return [part for part in BODY_PARTS if bionic is not None and part in bionic.replaces]
@@ -456,9 +472,9 @@ class Sale(Model):
 class Player(Model):
     """The player's state, saved with the world. Each field defaults to the starting player's, so
     a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
-    full health, no effects, nothing searched and an empty stash. A save holding the old 10 kg
-    carry limit loads with 15. Their humanity is derived from the bionics fitted and isn't a field,
-    so the client never sees it."""
+    full health, no effects, nothing searched, an empty stash, no corpses and nothing repaired. A
+    save holding the old 10 kg carry limit loads with 15. Their humanity is derived from the bionics
+    fitted and isn't a field, so the client never sees it."""
 
     model_config = CHECKED
 
@@ -508,6 +524,12 @@ class Player(Model):
         "collapsed, on the tile they fell on or the ground below it, and anything of a pickup that "
         "didn't fit when they took from it. Left out while there's none.",
     )
+    corpses: list[Corpse] = Field(
+        default=[],
+        exclude_if=lambda corpses: not corpses,
+        description="Their own bodies, oldest first, each where they died, saved here and shown "
+        "by the snapshot, `corpse_changed` and `corpse_gone`. Left out while there's none.",
+    )
     taken: dict[Key, Timestamp] = Field(
         default={},
         exclude_if=lambda taken: not taken,
@@ -527,6 +549,13 @@ class Player(Model):
         description="The searchable things and jacks they've searched, by interactable id, in the "
         "order they searched them. Each is searched once, and holds nothing after. Left out while "
         "there's none.",
+    )
+    repaired: list[Id] = Field(
+        default=[],
+        exclude_if=lambda repaired: not repaired,
+        description="The machines they've repaired, by interactable id, in the order they repaired "
+        "them, saved here and shown by the snapshot and `machine_changed`. Left out while there's "
+        "none.",
     )
 
     @field_validator("carry_limit")
@@ -548,6 +577,20 @@ class Player(Model):
         if len(set(searched)) != len(searched):
             raise ValueError("they search each thing once")
         return searched
+
+    @field_validator("corpses")
+    @classmethod
+    def _each_corpse_once(cls, corpses: list[Corpse]) -> list[Corpse]:
+        if len({corpse.id for corpse in corpses}) != len(corpses):
+            raise ValueError("each corpse has its own id")
+        return corpses
+
+    @field_validator("repaired")
+    @classmethod
+    def _each_repaired_once(cls, repaired: list[str]) -> list[str]:
+        if len(set(repaired)) != len(repaired):
+            raise ValueError("they repair each machine once")
+        return repaired
 
     @property
     def humanity(self) -> float:

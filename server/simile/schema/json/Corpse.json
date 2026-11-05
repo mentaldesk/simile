@@ -1,0 +1,265 @@
+{
+  "$defs": {
+    "Bionic": {
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack or the eye.",
+      "enum": [
+        "datajack",
+        "infrared_eye",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
+      ],
+      "title": "Bionic",
+      "type": "string"
+    },
+    "Item": {
+      "additionalProperties": false,
+      "description": "Something the player carries, or a stack of it.",
+      "properties": {
+        "id": {
+          "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "name": {
+          "description": "What the player sees, e.g. \"Copper wire\".",
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "weight": {
+          "description": "In kg, each, counted against the carry limit.",
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "amount": {
+          "default": 1.0,
+          "description": "How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.",
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "charge": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.",
+          "title": "Charge"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.",
+          "title": "On"
+        },
+        "material": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Material"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else."
+        },
+        "rounds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.",
+          "title": "Rounds"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most rounds a weapon holds. Left out for anything else.",
+          "title": "Capacity"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.",
+          "title": "Condition"
+        },
+        "bionic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Bionic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else."
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "weight",
+        "charge",
+        "on"
+      ],
+      "title": "Item",
+      "type": "object"
+    },
+    "ItemKind": {
+      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, a `part` to fit,\n`material` to print with, a `weapon` to fire, `rounds` to load it with, or a salvaged `bionic`\nto have refitted.",
+      "enum": [
+        "salvage",
+        "food",
+        "lamp",
+        "part",
+        "material",
+        "weapon",
+        "rounds",
+        "bionic"
+      ],
+      "title": "ItemKind",
+      "type": "string"
+    },
+    "MapTile": {
+      "additionalProperties": false,
+      "description": "A tile on a given map: the village or an interior, or in side view a street or a floor.",
+      "properties": {
+        "map": {
+          "minLength": 1,
+          "title": "Map",
+          "type": "string"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "map",
+        "x",
+        "y"
+      ],
+      "title": "MapTile",
+      "type": "object"
+    },
+    "Material": {
+      "description": "What the printer prints with, which decides how hard its weapons and rounds hit.",
+      "enum": [
+        "plastic"
+      ],
+      "title": "Material",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It can\nhold nothing at all: it stays whatever it holds, unlike a `Pile`.",
+  "properties": {
+    "id": {
+      "description": "Which corpse, as two can lie on one tile.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "owner": {
+      "description": "Whose body it was: `\"player\"` for the player's own.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Owner",
+      "type": "string"
+    },
+    "at": {
+      "$ref": "#/$defs/MapTile"
+    },
+    "money": {
+      "description": "The cash still on it.",
+      "minimum": 0,
+      "title": "Money",
+      "type": "number"
+    },
+    "items": {
+      "description": "What it still carries.",
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "bionics": {
+      "description": "The bionics still in it, which come out as `bionic` items.",
+      "items": {
+        "$ref": "#/$defs/Bionic"
+      },
+      "title": "Bionics",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "owner",
+    "at",
+    "money",
+    "items",
+    "bionics"
+  ],
+  "title": "Corpse",
+  "type": "object"
+}

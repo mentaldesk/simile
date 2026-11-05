@@ -279,5 +279,32 @@
       "right_kidney": "present"
     },
     "hunger": 0.1
+  },
+  {
+    "money": 0.0,
+    "items": [{"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 1.0, "on": false}],
+    "carry_limit": 15.0,
+    "body": {
+      "legs": "present",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "present",
+      "right_kidney": "present"
+    },
+    "hunger": 0.0,
+    "corpses": [
+      {
+        "id": "corpse_1",
+        "owner": "player",
+        "at": {"map": "sewers", "x": 14, "y": 9},
+        "money": 120.5,
+        "items": [
+          {"id": "noodles", "kind": "food", "name": "Noodles", "weight": 0.5, "charge": null, "on": null}
+        ],
+        "bionics": ["power_cell", "datajack"]
+      }
+    ],
+    "repaired": ["printer_3d"]
   }
 ]

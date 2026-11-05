@@ -1,0 +1,75 @@
+[
+  {
+    "id": "printer_3d",
+    "kind": "printer",
+    "state": "broken",
+    "parts": {"metal_sheet": 1, "linear_actuator": 1, "copper_wire": 2},
+    "makes": []
+  },
+  {
+    "id": "printer_3d",
+    "kind": "printer",
+    "state": "working",
+    "parts": {},
+    "makes": [
+      {
+        "item": {
+          "id": "plastic_pistol",
+          "kind": "weapon",
+          "name": "Plastic pistol",
+          "weight": 0.5,
+          "charge": null,
+          "on": null,
+          "material": "plastic",
+          "rounds": 0,
+          "capacity": 6,
+          "condition": 1.0
+        },
+        "uses": "plastic",
+        "cost": 6.0
+      },
+      {
+        "item": {
+          "id": "plastic_rounds",
+          "kind": "rounds",
+          "name": "Plastic rounds",
+          "weight": 0.02,
+          "amount": 6.0,
+          "charge": null,
+          "on": null,
+          "material": "plastic"
+        },
+        "uses": "plastic",
+        "cost": 2.0
+      }
+    ]
+  },
+  {
+    "id": "recycler",
+    "kind": "recycler",
+    "state": "working",
+    "parts": {},
+    "makes": [
+      {
+        "item": {
+          "id": "plastic",
+          "kind": "material",
+          "name": "Plastic",
+          "weight": 1.0,
+          "charge": null,
+          "on": null,
+          "material": "plastic"
+        },
+        "uses": "scrap",
+        "cost": 1.0
+      }
+    ]
+  },
+  {
+    "id": "printer_3d",
+    "kind": "printer",
+    "state": "working",
+    "parts": {},
+    "makes": []
+  }
+]

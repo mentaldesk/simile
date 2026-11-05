@@ -9,6 +9,7 @@ from simile.schema import (
     Bionic,
     BodyPart,
     Conversation,
+    Corpse,
     CreatureKind,
     CreatureState,
     EffectKind,
@@ -18,6 +19,7 @@ from simile.schema import (
     JournalEntry,
     Key,
     Line,
+    Machine,
     MapTile,
     Model,
     Pile,
@@ -103,7 +105,9 @@ class Creature(Model):
 class SnapshotMessage(Model):
     """The whole world, sent on connect. Replaces anything the client had."""
 
-    model_config = ConfigDict(json_schema_extra=_not_required("level", "creatures"))
+    model_config = ConfigDict(
+        json_schema_extra=_not_required("level", "creatures", "machines", "corpses")
+    )
 
     type: Literal["snapshot"] = "snapshot"
     time: Timestamp = Field(description="Sim time.")
@@ -122,6 +126,16 @@ class SnapshotMessage(Model):
         default=[],
         description="Every creature on every map. The server always sends it, and missing, "
         "there are none.",
+    )
+    machines: list[Machine] = Field(
+        default=[],
+        description="Every machine you repair and then use. The server always sends it, and "
+        "missing, there are none.",
+    )
+    corpses: list[Corpse] = Field(
+        default=[],
+        description="Every corpse on every map, oldest first. The server always sends it, and "
+        "missing, there are none.",
     )
 
 
@@ -162,6 +176,28 @@ class CreatureGoneMessage(Model):
 
     type: Literal["creature_gone"] = "creature_gone"
     creature_id: Id
+
+
+class MachineChangedMessage(Model):
+    """A machine changed, such as one just repaired: all of it, to replace what the client has."""
+
+    type: Literal["machine_changed"] = "machine_changed"
+    machine: Machine
+
+
+class CorpseChangedMessage(Model):
+    """A corpse changed, such as one just salvaged, or appeared: one the client doesn't have yet
+    is new."""
+
+    type: Literal["corpse_changed"] = "corpse_changed"
+    corpse: Corpse
+
+
+class CorpseGoneMessage(Model):
+    """A corpse is gone from the world."""
+
+    type: Literal["corpse_gone"] = "corpse_gone"
+    corpse_id: Id
 
 
 class ConversationStartedMessage(Model):
@@ -717,6 +753,9 @@ type ServerMessage = Annotated[
     | EntityMovedMessage
     | CreatureMovedMessage
     | CreatureGoneMessage
+    | MachineChangedMessage
+    | CorpseChangedMessage
+    | CorpseGoneMessage
     | ConversationStartedMessage
     | ConversationEndedMessage
     | LineMessage
