@@ -23,7 +23,7 @@ const WINDOW_ROW = 1.9;
 const SLAB_M = 0.3;
 const FRAME_M = 1.0;
 /** In the frame picture's px, kept as it stretches round a painting, for a manifest that doesn't say. */
-export const MOULDING: Moulding = { left: 13, right: 11, top: 18, bottom: 14 };
+export const MOULDING: Moulding = { left: 14, right: 15, top: 13, bottom: 14 };
 
 export const mouldingOf = (manifest: Pick<SceneryManifest, 'furniture'>): Moulding =>
   manifest.furniture.picture_frame?.moulding ?? MOULDING;

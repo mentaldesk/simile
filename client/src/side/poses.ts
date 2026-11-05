@@ -60,7 +60,7 @@ export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): 
   !inside && !player && ghost < 1;
 
 /** Metres up the front edge of each piece's seat, measured from its art, for a manifest that doesn't say. */
-export const SEAT_M: Record<string, number> = { stool: 0.567, bench: 0.392, cafe_table: 0.442, noodle_table: 0.483 };
+export const SEAT_M: Record<string, number> = { stool: 0.567, bench: 0.408, cafe_table: 0.5, noodle_table: 0.542 };
 const SEATS = new Set(['seat', 'bar', 'desk']);
 
 /** The manifest's furniture, by name. */
@@ -90,7 +90,7 @@ export function seatHeight(
 }
 
 /** Metres up the front edge of the bed's mattress, measured from its art, for a manifest that doesn't say. */
-export const BED_M = 0.45;
+export const BED_M = 0.492;
 /** Lying down, or getting up. */
 export const LIE_SECONDS = 0.8;
 /** Degrees a figure lying down starts with its head raised, or getting up ends. */

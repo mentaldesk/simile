@@ -37,7 +37,7 @@ const GROUND_DEPTH_M = 40;
 const FOREGROUND_SCALE = 1.4;
 const FOREGROUND_BLUR = 6;
 /** The street lamp's, for a manifest that doesn't say. */
-export const LAMP_HEAD_M = 3.35;
+export const LAMP_HEAD_M = 3.31;
 /** A city layer without one in the manifest's parallax. */
 export const CITY_PARALLAX = 0.1;
 const LAMP_LIGHT_M = 3.6;

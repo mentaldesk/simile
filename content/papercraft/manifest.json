@@ -356,7 +356,7 @@
    "variants": {
     "blue": "furniture/bed-blue"
    },
-   "bed": 0.45
+   "bed": 0.492
   },
   "wardrobe": {
    "piece": "furniture/wardrobe"
@@ -365,7 +365,8 @@
    "piece": "furniture/bookshelf"
   },
   "table": {
-   "piece": "furniture/table"
+   "piece": "furniture/table",
+   "seat": 0.492
   },
   "plant": {
    "piece": "furniture/plant"
@@ -389,7 +390,7 @@
   },
   "cafe_table": {
    "piece": "furniture/cafe_table",
-   "seat": 0.442
+   "seat": 0.5
   },
   "stove": {
    "piece": "furniture/stove"
@@ -410,7 +411,7 @@
   },
   "noodle_table": {
    "piece": "furniture/noodle_table",
-   "seat": 0.483
+   "seat": 0.542
   },
   "laser_cutter": {
    "piece": "furniture/laser_cutter"
@@ -444,7 +445,7 @@
   },
   "bench": {
    "piece": "furniture/bench",
-   "seat": 0.392
+   "seat": 0.408
   },
   "news_terminal": {
    "piece": "furniture/news_terminal"
@@ -454,7 +455,7 @@
   },
   "lamp": {
    "piece": "furniture/lamp",
-   "light": 3.35
+   "light": 3.31
   },
   "tree": {
    "piece": "furniture/tree"
@@ -583,9 +584,9 @@
   "picture_frame": {
    "piece": "furniture/picture_frame",
    "moulding": {
-    "left": 13,
-    "right": 11,
-    "top": 18,
+    "left": 14,
+    "right": 15,
+    "top": 13,
     "bottom": 14
    }
   },
@@ -995,7 +996,7 @@
   "furniture/armchair": {
    "file": "furniture/armchair.webp",
    "size": [
-    110,
+    114,
     114
    ],
    "height": 0.95,
@@ -1004,12 +1005,12 @@
     0.5,
     1.0
    ],
-   "hash": "8c398dd557252e91041a"
+   "hash": "9399a41e4905f28d4b15"
   },
   "furniture/armchair-sage": {
    "file": "furniture/armchair-sage.webp",
    "size": [
-    110,
+    114,
     114
    ],
    "height": 0.95,
@@ -1018,12 +1019,12 @@
     0.5,
     1.0
    ],
-   "hash": "9e0074fff7cf35041c4b"
+   "hash": "f145f00e2a1f5f628929"
   },
   "furniture/armchair-teal": {
    "file": "furniture/armchair-teal.webp",
    "size": [
-    111,
+    114,
     114
    ],
    "height": 0.95,
@@ -1032,12 +1033,12 @@
     0.5,
     1.0
    ],
-   "hash": "df9050293380ba8ce913"
+   "hash": "1f7b01ace14ec0a4b2be"
   },
   "furniture/banyan_tree": {
    "file": "furniture/banyan_tree.webp",
    "size": [
-    1120,
+    1090,
     1320
    ],
    "height": 11.0,
@@ -1046,12 +1047,12 @@
     0.5,
     1.0
    ],
-   "hash": "aeee6e5134fc3e527eb8"
+   "hash": "43a8f483c53f680e740b"
   },
   "furniture/bar_counter": {
    "file": "furniture/bar_counter.webp",
    "size": [
-    281,
+    302,
     132
    ],
    "height": 1.1,
@@ -1060,12 +1061,12 @@
     0.5,
     1.0
    ],
-   "hash": "9ba757f5a884822db9cb"
+   "hash": "6a3ffb620b3489cd0614"
   },
   "furniture/bathtub": {
    "file": "furniture/bathtub.webp",
    "size": [
-    182,
+    188,
     90
    ],
    "height": 0.75,
@@ -1074,12 +1075,12 @@
     0.5,
     1.0
    ],
-   "hash": "2ecb7379506a97c177d9"
+   "hash": "4a64b95a1c76b83db232"
   },
   "furniture/bed": {
    "file": "furniture/bed.webp",
    "size": [
-    189,
+    188,
     126
    ],
    "height": 1.05,
@@ -1088,12 +1089,12 @@
     0.5,
     1.0
    ],
-   "hash": "e1666b4acf17ea95ef84"
+   "hash": "4c2dc860fe455c4dcb23"
   },
   "furniture/bed-blue": {
    "file": "furniture/bed-blue.webp",
    "size": [
-    182,
+    188,
     126
    ],
    "height": 1.05,
@@ -1102,7 +1103,7 @@
     0.5,
     1.0
    ],
-   "hash": "0f42e4e51ed89dcb692c"
+   "hash": "777d50be4704feffa15b"
   },
   "furniture/bedroll": {
    "file": "furniture/bedroll.webp",
@@ -1121,7 +1122,7 @@
   "furniture/bedside_table": {
    "file": "furniture/bedside_table.webp",
    "size": [
-    72,
+    78,
     114
    ],
    "height": 0.95,
@@ -1130,12 +1131,12 @@
     0.5,
     1.0
    ],
-   "hash": "33c6f7c995332ccde7dd"
+   "hash": "89538874d4b0f79e5d19"
   },
   "furniture/bench": {
    "file": "furniture/bench.webp",
    "size": [
-    178,
+    175,
     108
    ],
    "height": 0.9,
@@ -1144,12 +1145,12 @@
     0.5,
     1.0
    ],
-   "hash": "bfc2ff1faf262bc6ef29"
+   "hash": "fe7a8aead1df1c3a369f"
   },
   "furniture/bicycle": {
    "file": "furniture/bicycle.webp",
    "size": [
-    201,
+    191,
     120
    ],
    "height": 1.0,
@@ -1158,12 +1159,12 @@
     0.5,
     1.0
    ],
-   "hash": "fe858dba2145d5ce059c"
+   "hash": "f98ab60a6f09156660a4"
   },
   "furniture/bin": {
    "file": "furniture/bin.webp",
    "size": [
-    91,
+    84,
     114
    ],
    "height": 0.95,
@@ -1172,12 +1173,12 @@
     0.5,
     1.0
    ],
-   "hash": "b49b362133ec07249159"
+   "hash": "b60260709cc04aa2c6d3"
   },
   "furniture/bookshelf": {
    "file": "furniture/bookshelf.webp",
    "size": [
-    110,
+    165,
     228
    ],
    "height": 1.9,
@@ -1186,7 +1187,7 @@
     0.5,
     1.0
    ],
-   "hash": "f33ddefbb753f008f071"
+   "hash": "e75a9c28890b79757b5b"
   },
   "furniture/breaker_box": {
    "file": "furniture/breaker_box.webp",
@@ -1219,7 +1220,7 @@
   "furniture/bush": {
    "file": "furniture/bush.webp",
    "size": [
-    144,
+    156,
     120
    ],
    "height": 1.0,
@@ -1228,7 +1229,7 @@
     0.5,
     1.0
    ],
-   "hash": "10df868796530a58e475"
+   "hash": "87d82cab6862402486ea"
   },
   "furniture/cafe_table": {
    "file": "furniture/cafe_table.webp",
@@ -1242,12 +1243,12 @@
     0.5,
     1.0
    ],
-   "hash": "643383e2a23ba3348d5e"
+   "hash": "1615d0d567a5ecfa2d8f"
   },
   "furniture/counter": {
    "file": "furniture/counter.webp",
    "size": [
-    203,
+    207,
     150
    ],
    "height": 1.25,
@@ -1256,7 +1257,7 @@
     0.5,
     1.0
    ],
-   "hash": "1dd42126d7f2956f9438"
+   "hash": "73f4836201da59f14c46"
   },
   "furniture/crates": {
    "file": "furniture/crates.webp",
@@ -1289,7 +1290,7 @@
   "furniture/espresso_machine": {
    "file": "furniture/espresso_machine.webp",
    "size": [
-    118,
+    127,
     186
    ],
    "height": 1.55,
@@ -1298,12 +1299,12 @@
     0.5,
     1.0
    ],
-   "hash": "dca4639d31c8044a09f9"
+   "hash": "3d5a8c60b576438a49d8"
   },
   "furniture/floor_lamp": {
    "file": "furniture/floor_lamp.webp",
    "size": [
-    66,
+    80,
     192
    ],
    "height": 1.6,
@@ -1312,12 +1313,12 @@
     0.5,
     1.0
    ],
-   "hash": "ca6d807fa94891f07ca3"
+   "hash": "7c45f88933ed437ecff2"
   },
   "furniture/fountain": {
    "file": "furniture/fountain.webp",
    "size": [
-    324,
+    273,
     264
    ],
    "height": 2.2,
@@ -1326,7 +1327,7 @@
     0.5,
     1.0
    ],
-   "hash": "8b89ab3a5fb3b7465fc6"
+   "hash": "278650f3882508f4f764"
   },
   "furniture/freight_lift": {
    "file": "furniture/freight_lift.webp",
@@ -1345,7 +1346,7 @@
   "furniture/fridge": {
    "file": "furniture/fridge.webp",
    "size": [
-    97,
+    101,
     204
    ],
    "height": 1.7,
@@ -1354,12 +1355,12 @@
     0.5,
     1.0
    ],
-   "hash": "7fabbbd2416b03231894"
+   "hash": "75c6092bb425fdb85408"
   },
   "furniture/grinder": {
    "file": "furniture/grinder.webp",
    "size": [
-    118,
+    124,
     168
    ],
    "height": 1.4,
@@ -1368,12 +1369,12 @@
     0.5,
     1.0
    ],
-   "hash": "9f3aae54a388f26519ef"
+   "hash": "ae17d91376aa787b5d66"
   },
   "furniture/kapok_tree": {
    "file": "furniture/kapok_tree.webp",
    "size": [
-    847,
+    765,
     1200
    ],
    "height": 10.0,
@@ -1382,12 +1383,12 @@
     0.5,
     1.0
    ],
-   "hash": "b5959cf35a5fa93d7c29"
+   "hash": "0b08160c304c53672839"
   },
   "furniture/kitchen": {
    "file": "furniture/kitchen.webp",
    "size": [
-    164,
+    288,
     114
    ],
    "height": 0.95,
@@ -1396,12 +1397,12 @@
     0.5,
     1.0
    ],
-   "hash": "a5829354d2866f25691f"
+   "hash": "b0015c16f9ab1fb50067"
   },
   "furniture/kitchen_counter": {
    "file": "furniture/kitchen_counter.webp",
    "size": [
-    116,
+    129,
     120
    ],
    "height": 1.0,
@@ -1410,12 +1411,12 @@
     0.5,
     1.0
    ],
-   "hash": "bcb7628a276813399d71"
+   "hash": "92fa7b7603926d7fea4d"
   },
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
    "size": [
-    68,
+    87,
     432
    ],
    "height": 3.6,
@@ -1424,12 +1425,12 @@
     0.5,
     1.0
    ],
-   "hash": "aa0cdb0a78488c43c165"
+   "hash": "21d469a925e778720eea"
   },
   "furniture/laser_cutter": {
    "file": "furniture/laser_cutter.webp",
    "size": [
-    89,
+    127,
     132
    ],
    "height": 1.1,
@@ -1438,7 +1439,7 @@
     0.5,
     1.0
    ],
-   "hash": "b601751e93c2823bbcb2"
+   "hash": "ca9ae92bc6d71510ba38"
   },
   "furniture/lockers": {
    "file": "furniture/lockers.webp",
@@ -1457,7 +1458,7 @@
   "furniture/loom": {
    "file": "furniture/loom.webp",
    "size": [
-    170,
+    194,
     192
    ],
    "height": 1.6,
@@ -1466,7 +1467,7 @@
     0.5,
     1.0
    ],
-   "hash": "a8e0d2517000a482fb0b"
+   "hash": "43f61c7eb09d2540c05f"
   },
   "furniture/maintenance_hatch": {
    "file": "furniture/maintenance_hatch.webp",
@@ -1485,7 +1486,7 @@
   "furniture/menu_board": {
    "file": "furniture/menu_board.webp",
    "size": [
-    187,
+    192,
     120
    ],
    "height": 1.0,
@@ -1494,7 +1495,7 @@
     0.5,
     1.0
    ],
-   "hash": "ca013f27686914c5b9cc"
+   "hash": "95eeb05a4dc7f3a7c740"
   },
   "furniture/metro_bench": {
    "file": "furniture/metro_bench.webp",
@@ -1541,7 +1542,7 @@
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
-    135,
+    102,
     264
    ],
    "height": 2.2,
@@ -1550,12 +1551,12 @@
     0.5,
     1.0
    ],
-   "hash": "cb50c939d78b269095d2"
+   "hash": "c3e39101c3e48d569eae"
   },
   "furniture/noodle_counter": {
    "file": "furniture/noodle_counter.webp",
    "size": [
-    197,
+    194,
     126
    ],
    "height": 1.05,
@@ -1564,12 +1565,12 @@
     0.5,
     1.0
    ],
-   "hash": "a84fe96ea7c95f56a07f"
+   "hash": "532259d24fc9b1ccfbcd"
   },
   "furniture/noodle_table": {
    "file": "furniture/noodle_table.webp",
    "size": [
-    228,
+    232,
     228
    ],
    "height": 1.9,
@@ -1578,12 +1579,12 @@
     0.5,
     1.0
    ],
-   "hash": "5b3cb04f23e950ff76f7"
+   "hash": "1a77e25cec79e377225e"
   },
   "furniture/palm_tree": {
    "file": "furniture/palm_tree.webp",
    "size": [
-    411,
+    454,
     840
    ],
    "height": 7.0,
@@ -1592,12 +1593,12 @@
     0.5,
     1.0
    ],
-   "hash": "d9584513df80b876b136"
+   "hash": "ecb073a89545aa086ad9"
   },
   "furniture/pegboard": {
    "file": "furniture/pegboard.webp",
    "size": [
-    270,
+    195,
     120
    ],
    "height": 1.0,
@@ -1606,12 +1607,12 @@
     0.5,
     1.0
    ],
-   "hash": "15889f38059dcbf7cbcb"
+   "hash": "b0ce1cb84cb62150f080"
   },
   "furniture/picture_frame": {
    "file": "furniture/picture_frame.webp",
    "size": [
-    90,
+    91,
     108
    ],
    "height": 0.9,
@@ -1620,7 +1621,7 @@
     0.5,
     1.0
    ],
-   "hash": "308c9957cc07e41a5139"
+   "hash": "6c897a30c7ce514c11e5"
   },
   "furniture/pipes": {
    "file": "furniture/pipes.webp",
@@ -1639,7 +1640,7 @@
   "furniture/plant": {
    "file": "furniture/plant.webp",
    "size": [
-    85,
+    97,
     132
    ],
    "height": 1.1,
@@ -1648,12 +1649,12 @@
     0.5,
     1.0
    ],
-   "hash": "6b63c1b0cc01af90105b"
+   "hash": "2028858833bb5a403287"
   },
   "furniture/plinth": {
    "file": "furniture/plinth.webp",
    "size": [
-    44,
+    60,
     168
    ],
    "height": 1.4,
@@ -1662,12 +1663,12 @@
     0.5,
     1.0
    ],
-   "hash": "5a7254012c3c064057b9"
+   "hash": "e9e44645413c61399355"
   },
   "furniture/printer_3d": {
    "file": "furniture/printer_3d.webp",
    "size": [
-    103,
+    119,
     180
    ],
    "height": 1.5,
@@ -1676,7 +1677,7 @@
     0.5,
     1.0
    ],
-   "hash": "59f20f5d645ada037b12"
+   "hash": "6d2f01ba4e58ff8b16a9"
   },
   "furniture/rubble": {
    "file": "furniture/rubble.webp",
@@ -1737,7 +1738,7 @@
   "furniture/sewing_machine": {
    "file": "furniture/sewing_machine.webp",
    "size": [
-    105,
+    109,
     132
    ],
    "height": 1.1,
@@ -1746,12 +1747,12 @@
     0.5,
     1.0
    ],
-   "hash": "fe34b3dbd215f59d20e4"
+   "hash": "2b53173e10bc58476890"
   },
   "furniture/shelf": {
    "file": "furniture/shelf.webp",
    "size": [
-    530,
+    346,
     192
    ],
    "height": 1.6,
@@ -1760,7 +1761,7 @@
     0.5,
     1.0
    ],
-   "hash": "675177cb4a050eaf60dc"
+   "hash": "9147ab8c2150858629f1"
   },
   "furniture/shipping_container": {
    "file": "furniture/shipping_container.webp",
@@ -1816,7 +1817,7 @@
     0.5,
     1.0
    ],
-   "hash": "c0393649b000e1ee2f00"
+   "hash": "374195ce7482a957a3c7"
   },
   "furniture/sofa-coral": {
    "file": "furniture/sofa-coral.webp",
@@ -1830,7 +1831,7 @@
     0.5,
     1.0
    ],
-   "hash": "2b91a269b73216b1f826"
+   "hash": "f48cbaec4fda4a913661"
   },
   "furniture/sofa-mustard": {
    "file": "furniture/sofa-mustard.webp",
@@ -1844,7 +1845,7 @@
     0.5,
     1.0
    ],
-   "hash": "c01f61c128d94c44cf7f"
+   "hash": "67a5950587496776522a"
   },
   "furniture/sofa-plum": {
    "file": "furniture/sofa-plum.webp",
@@ -1858,12 +1859,12 @@
     0.5,
     1.0
    ],
-   "hash": "d3e6a88e86e17ca1ccc0"
+   "hash": "58b8385f31d914261500"
   },
   "furniture/stool": {
    "file": "furniture/stool.webp",
    "size": [
-    51,
+    50,
     84
    ],
    "height": 0.7,
@@ -1872,12 +1873,12 @@
     0.5,
     1.0
    ],
-   "hash": "53f1eac4af815b5f66e1"
+   "hash": "c7164dfe0f93201d6937"
   },
   "furniture/stool-teal": {
    "file": "furniture/stool-teal.webp",
    "size": [
-    54,
+    49,
     84
    ],
    "height": 0.7,
@@ -1886,12 +1887,12 @@
     0.5,
     1.0
    ],
-   "hash": "828382498e81dde91970"
+   "hash": "8c07f45c3c0139410df2"
   },
   "furniture/stove": {
    "file": "furniture/stove.webp",
    "size": [
-    177,
+    175,
     240
    ],
    "height": 2.0,
@@ -1900,7 +1901,7 @@
     0.5,
     1.0
    ],
-   "hash": "dfae034b2e4127e94eb5"
+   "hash": "1ec0b7b431f554140f2b"
   },
   "furniture/switchboard": {
    "file": "furniture/switchboard.webp",
@@ -1919,7 +1920,7 @@
   "furniture/table": {
    "file": "furniture/table.webp",
    "size": [
-    233,
+    236,
     114
    ],
    "height": 0.95,
@@ -1928,7 +1929,7 @@
     0.5,
     1.0
    ],
-   "hash": "401a7b89d86675aafc93"
+   "hash": "fce0b02f4bf147028caf"
   },
   "furniture/ticket_machine": {
    "file": "furniture/ticket_machine.webp",
@@ -1961,7 +1962,7 @@
   "furniture/tree": {
    "file": "furniture/tree.webp",
    "size": [
-    579,
+    576,
     720
    ],
    "height": 6.0,
@@ -1970,7 +1971,7 @@
     0.5,
     1.0
    ],
-   "hash": "ed8504e13697dc6cfada"
+   "hash": "ec2fdd1c5760042e72b2"
   },
   "furniture/tunnel_arch": {
    "file": "furniture/tunnel_arch.webp",
@@ -2003,7 +2004,7 @@
   "furniture/wardrobe": {
    "file": "furniture/wardrobe.webp",
    "size": [
-    123,
+    130,
     240
    ],
    "height": 2.0,
@@ -2012,7 +2013,7 @@
     0.5,
     1.0
    ],
-   "hash": "5ec2caef7fa0ece3bc81"
+   "hash": "ada0c4cfcbcb2a19f952"
   },
   "furniture/washbasin": {
    "file": "furniture/washbasin.webp",
@@ -2026,12 +2027,12 @@
     0.5,
     1.0
    ],
-   "hash": "8bf7ee42ac736d9c6701"
+   "hash": "5c64e553316f9836bc0a"
   },
   "furniture/workbench": {
    "file": "furniture/workbench.webp",
    "size": [
-    219,
+    260,
     114
    ],
    "height": 0.95,
@@ -2040,7 +2041,7 @@
     0.5,
     1.0
    ],
-   "hash": "e351cc5c74fb0e772412"
+   "hash": "203f8d0453e5bb684990"
   },
   "glow/bakery": {
    "file": "glow/bakery.webp",
@@ -2867,7 +2868,7 @@
   "platforms/door": {
    "file": "platforms/door.webp",
    "size": [
-    143,
+    123,
     252
    ],
    "height": 2.1,
@@ -2876,12 +2877,12 @@
     0.5,
     1.0
    ],
-   "hash": "a491740877d85d4030dd"
+   "hash": "369a7c95385b59918c0e"
   },
   "platforms/ladder": {
    "file": "platforms/ladder.webp",
    "size": [
-    73,
+    74,
     432
    ],
    "height": 3.6,
@@ -2890,7 +2891,7 @@
     0.5,
     1.0
    ],
-   "hash": "c68536d6ae31a8e293cd"
+   "hash": "1c8e5774533ca389964e"
   },
   "platforms/ledge": {
    "file": "platforms/ledge.webp",
@@ -2904,12 +2905,12 @@
     0.5,
     1.0
    ],
-   "hash": "028283b8b16e35f67f3b"
+   "hash": "a496f6300630e7962608"
   },
   "platforms/lift": {
    "file": "platforms/lift.webp",
    "size": [
-    233,
+    243,
     348
    ],
    "height": 2.9,
@@ -2918,12 +2919,12 @@
     0.5,
     1.0
    ],
-   "hash": "e7239d32750278d1c49f"
+   "hash": "916542a0d65b4d4e7655"
   },
   "platforms/lift_shaft": {
    "file": "platforms/lift_shaft.webp",
    "size": [
-    262,
+    264,
     528
    ],
    "height": 4.4,
@@ -2932,7 +2933,7 @@
     0.5,
     1.0
    ],
-   "hash": "f8bc7376ccfcb21c3067"
+   "hash": "58a76375e88006be6741"
   },
   "platforms/rope_bridge": {
    "file": "platforms/rope_bridge.webp",
@@ -2946,7 +2947,7 @@
     0.5,
     1.0
    ],
-   "hash": "0971e1fa9d7c824b2015"
+   "hash": "1793913daae9a435d111"
   },
   "platforms/sewer_pier": {
    "file": "platforms/sewer_pier.webp",
@@ -3021,7 +3022,7 @@
   "platforms/stairs": {
    "file": "platforms/stairs.webp",
    "size": [
-    518,
+    520,
     636
    ],
    "height": 5.3,
@@ -3030,12 +3031,12 @@
     0.5,
     1.0
    ],
-   "hash": "37004bab4b31ec326dcd"
+   "hash": "0f945bee2eaba196c428"
   },
   "platforms/steps": {
    "file": "platforms/steps.webp",
    "size": [
-    296,
+    301,
     264
    ],
    "height": 2.2,
@@ -3044,12 +3045,12 @@
     0.5,
     1.0
    ],
-   "hash": "3e6effdd081adcdae754"
+   "hash": "9ce398c0c3e299b1782d"
   },
   "platforms/window": {
    "file": "platforms/window.webp",
    "size": [
-    177,
+    178,
     156
    ],
    "height": 1.3,
@@ -3058,7 +3059,7 @@
     0.5,
     1.0
    ],
-   "hash": "dba4bd5f6febdb9c9aa1"
+   "hash": "037c24dd76193e9c8e87"
   }
  }
 }
