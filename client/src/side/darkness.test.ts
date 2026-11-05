@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Item, PlayerStateMessage } from '../net';
-import { village } from './content';
+import { scenery, village } from './content';
 import {
   atPlug,
   DARK,
@@ -19,7 +19,7 @@ import {
 } from './darkness';
 import { lampOf, LOW, shining, switchLamp } from './lamp';
 import { DEPTH } from './depths';
-import { pileMarks } from './piles';
+import { usablesOn } from './usables';
 
 vi.mock('phaser', () => ({ default: {} }));
 
@@ -116,10 +116,11 @@ describe('Sight', () => {
 
 describe('things to pick up in the dark', () => {
   it('glint under the darkness, so it takes the lamp to find them', () => {
-    const marks = pileMarks(village, 'metro', [{ at: { map: 'metro', x: 63, y: 15 }, items: [WIRE] }]);
+    const piles = [{ at: { map: 'metro', x: 63, y: 15 }, items: [WIRE] }];
+    const drawn = usablesOn(village, scenery, village.map('metro')!, { searched: [], piles, clues: [] });
 
     expect(isLit(metro, 63, 15)).toBe(false);
-    expect(marks.map(({ depth }) => depth < DEPTH.dark)).toEqual([true]);
+    expect(drawn.filter(({ kind }) => kind === 'pile').map(({ picture }) => picture.depth < DEPTH.dark)).toEqual([true]);
   });
 });
 

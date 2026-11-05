@@ -1,12 +1,15 @@
 import iconManifest from '../../../content/icons/icons.json';
 import type { Pile, Position } from '../net';
 import type { Clue } from '../world/clues';
+import { interactablesOn } from '../world/interactables';
 import { mapOf } from '../world/map';
 import { eUse, reachables, type Reachable, type Reachables, type WayPrompt } from '../world/reach';
+import { holds, searches } from '../world/searchables';
 import { DEPTH } from './depths';
 import { furnitureKey } from './draw';
 import { feetOf, furniturePlacement, PPM, stretchWidth, xOf } from './layout';
 import type { Placed, SideMap, Village } from './maps';
+import { lootIcons } from './piles';
 import type { SceneryManifest } from './scenery';
 
 export type UsableKind = 'clue' | 'searchable' | 'jack' | 'terminal' | 'pile';
@@ -26,18 +29,20 @@ export type Usable = {
   /** Its building, for one on a floor, which shows only while the front is open. */
   building?: string;
   picture: Sprite;
-  /** The schematic lying on a searchable that teaches a recipe, until it's searched. */
-  recipe?: IconSprite;
+  /** What lies on a searchable until it's searched, or behind a pile's first thing. */
+  loot?: IconSprite[];
   /** Where a painted tick marks it searched. */
   searched?: { x: number; y: number; depth: number };
 };
 
-export type UsableState = { searched: readonly string[]; piles: readonly Pile[]; clues: readonly Clue[] };
+export type UsableState = { searched: readonly string[]; piles: readonly Pile[]; clues: readonly Clue[]; jacked?: boolean };
 
 const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
-/** Metres tall. */
-const ICON_M = { schematic: 0.34, pile: 0.4 };
+/** Metres tall: the heap's first icon, and those behind it. */
+const LOOT_M = { first: 0.65, behind: 0.5 };
+/** Shares of the first icon's height that each one behind it lies off to the side. */
+const HEAP_SHIFTS = [0, -0.5, 0.5];
 /** Pinned `pinned` metres up the wall, over the player's head. */
 const CLUES: Record<string, { icon: string; m: number; pinned: number }> = {
   aris_notes: { icon: 'aris_notes', m: 0.55, pinned: 2.2 },
@@ -50,8 +55,10 @@ const ABOVE = 0.1;
 export const thingId = (map: string, id: string): string => `${map}/${id}`;
 export const clueId = (id: string): string => `clue:${id}`;
 export const pileId = ({ at }: Pile): string => `pile:${at.map}:${at.x},${at.y}`;
-/** A pile keeps its id as its first item changes, and its picture with it. */
-export const glowKey = ({ id, picture }: Usable): string => `${id}|${'icon' in picture ? picture.icon : picture.piece}`;
+export const spritesOf = ({ picture, loot = [] }: Usable): Sprite[] => [picture, ...loot];
+/** A pile keeps its id as what it holds changes, and its pictures with it. */
+export const glowKey = (usable: Usable): string =>
+  `${usable.id}|${spritesOf(usable).map((sprite) => ('icon' in sprite ? sprite.icon : sprite.piece))}`;
 
 const area = ({ w, h }: Placed) => w * h;
 const shared = (a: Placed, b: Placed) =>
@@ -89,14 +96,32 @@ export function boxOf(manifest: SceneryManifest, sprite: Sprite) {
   return { left: sprite.x - sprite.originX * width, top: sprite.y - sprite.originY * height, width, height };
 }
 
+type Spot = { x: number; y: number; depth: number };
+
 /** In the middle of `thing`'s bottom row, on the floor or on the furniture there. */
-function iconOn(manifest: SceneryManifest, map: SideMap, thing: Placed, icon: string, m: number): IconSprite {
+function spotOn(manifest: SceneryManifest, map: SideMap, thing: Placed): Spot {
   const x = xOf(map.offset.x + thing.x + (thing.w - 1) / 2);
   const under = furnitureOver(manifest, map, { ...thing, y: thing.y + thing.h - 1, h: 1 });
   const base = under && pieceSprite(manifest, map, under);
   const lift = under && base ? (SURFACE_M[under.name] ?? manifest.pieces[base.piece].height * TOP) * PPM : 0;
   const y = (base?.y ?? feetOf(map.offset.y + thing.y + thing.h - 1)) - lift;
-  return { icon, height: m * PPM, x, y, originX: 0.5, originY: 1, depth: (base?.depth ?? depthOf(map)) + ABOVE };
+  return { x, y, depth: (base?.depth ?? depthOf(map)) + ABOVE };
+}
+
+/** Up to three icons heaped at `spot`, the first in front. */
+export function heapAt(icons: readonly string[], { x, y, depth }: Spot): IconSprite[] {
+  const first = LOOT_M.first * PPM;
+  const shifts = HEAP_SHIFTS.slice(0, icons.length);
+  const middle = shifts.reduce((sum, shift) => sum + shift, 0) / shifts.length;
+  return icons.map((icon, i) => ({
+    icon,
+    height: (i ? LOOT_M.behind : LOOT_M.first) * PPM,
+    x: x + (shifts[i] - middle) * first,
+    y,
+    originX: 0.5,
+    originY: 1,
+    depth: depth - i * 0.01,
+  }));
 }
 
 function cluePicture(map: SideMap, clue: Clue): IconSprite | undefined {
@@ -121,14 +146,16 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       return under && pieceSprite(manifest, map, under);
     };
     const found: Usable[] = [];
+    const held = new Map(interactablesOn(map.id).map((thing) => [thing.id, thing]));
     for (const thing of map.interactables) {
       if (thing.type !== 'searchable' && thing.type !== 'jack') continue;
       const picture = drawn(thing);
       if (!picture) continue;
       const usable: Usable = { id: thingId(map.id, thing.name), kind: thing.type, ...at, picture };
+      const holding = held.get(thing.name);
       if (state.searched.includes(thing.name)) usable.searched = tickOn(manifest, picture);
-      else if (thing.type === 'searchable' && thing.props.teaches) {
-        usable.recipe = iconOn(manifest, map, thing, 'schematic', ICON_M.schematic);
+      else if (holding && holds(holding) && searches(holding, state.searched, !!state.jacked)) {
+        usable.loot = heapAt(lootIcons(holding), spotOn(manifest, map, thing));
       }
       found.push(usable);
     }
@@ -140,18 +167,10 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       const picture = cluePicture(map, clue);
       if (picture) found.push({ id: clueId(clue.id), kind: 'clue', ...at, picture });
     }
-    for (const pile of state.piles.filter(({ at, items }) => at.map === map.id && items.length)) {
-      const icon = ICONS[pile.items[0].id] ? pile.items[0].id : 'unknown_item';
-      const picture: IconSprite = {
-        icon,
-        height: ICON_M.pile * PPM,
-        x: xOf(map.offset.x + pile.at.x),
-        y: feetOf(map.offset.y + pile.at.y),
-        originX: 0.5,
-        originY: 1,
-        depth: depthOf(map) + ABOVE,
-      };
-      found.push({ id: pileId(pile), kind: 'pile', ...at, picture });
+    for (const pile of state.piles.filter(({ at }) => at.map === map.id)) {
+      const spot = { x: xOf(map.offset.x + pile.at.x), y: feetOf(map.offset.y + pile.at.y), depth: depthOf(map) + ABOVE };
+      const [picture, ...loot] = heapAt(lootIcons(pile), spot);
+      if (picture) found.push({ id: pileId(pile), kind: 'pile', ...at, picture, ...(loot.length > 0 && { loot }) });
     }
     return found;
   });
