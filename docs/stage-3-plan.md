@@ -26,9 +26,6 @@ GitHub "blocked by" links.
 
 ## Decisions
 
-The first seven are the user's. The rest are proposals, marked *proposed*, for the user to confirm
-or change before the tasks are filed.
-
 | Decision | Choice |
 |---|---|
 | **Repairing a machine** | It takes parts, like a bionic recipe but without a recipe to find: E at a broken machine lists what it needs and what you have of each, and repairs it once you have them all. The printer needs a metal sheet, a linear actuator and 2 copper wire. |
@@ -38,13 +35,13 @@ or change before the tasks are filed.
 | **Implant parts** | The printer doesn't make them yet. |
 | **Death** | Death replaces stage 2's collapse. Health at none is death. Hunger at none starts to hurt: you take damage regularly until you eat, and starve to death if you don't. Once the power cell is in, power at none is death too, since you can't move. |
 | **The new body** | You wake in your bed in a whole, organic body with no bionics, as the design says. Everything in it can be sold again, so the kidney is always a little cash to start over with. |
-| **Material** *(proposed)* | An item you carry and stash, by kind (`plastic` for now) and amount. A pistol costs 6 plastic and a magazine of 6 rounds costs 2. Aris's spool holds 8. The recycler turns each kilo of scrap into 1 plastic. |
-| **Wear** *(proposed)* | A plastic pistol wears out after 30 rounds, as the [design](game-design.md#dangers) has it ("lasts a few shots"), so plastic stays a beginner's gun. Its condition shows on the item. |
-| **Recycler bots** *(proposed)* | They take 6 rounds, a whole magazine, and drop everything they collected when destroyed. Height is still the cheap way past them. |
-| **Your corpse** *(proposed)* | It stays where you died, with your money, everything you carried and every bionic you had fitted. Dying again before you reach it leaves a second corpse, and both stay. |
-| **Salvaging your own body** *(proposed)* | E at your corpse takes the money and the items. Bionics come out as parts you carry: `bionic` items with their grade. The clinic refits a salvaged bionic for a fitting fee, with no recipe parts, since its recipe is still in your mind. |
-| **The stash** *(proposed)* | Your home is the maker space, so the stash is Aris's lockers there. E puts things in and takes them out. It holds 20 kg to start. Fitting it out to hold more is a later task. |
-| **What the village sees** *(proposed)* | Carrying a pistol is a fact residents notice, like a bionic. Security and Tradition distrust it, as they already distrust bionics. |
+| **Material** | An item you carry and stash, by kind (`plastic` for now) and amount. A pistol costs 6 plastic and a magazine of 6 rounds costs 2. Aris's spool holds 8. The recycler turns each kilo of scrap into 1 plastic. |
+| **Wear** | A plastic pistol wears out after 30 rounds, as the [design](game-design.md#dangers) has it ("lasts a few shots"), so plastic stays a beginner's gun. Its condition shows on the item. |
+| **Recycler bots** | They take 6 rounds, a whole magazine, and drop everything they collected when destroyed. Height is still the cheap way past them. |
+| **Your corpse** | It stays where you died, with your money, everything you carried and every bionic you had fitted. Dying again before you reach it leaves a second corpse, and both stay. |
+| **Salvaging your own body** | E at your corpse takes the money and the items. Bionics come out as parts you carry: `bionic` items with their grade. The clinic refits a salvaged bionic for a fitting fee, with no recipe parts, since its recipe is still in your mind. |
+| **The stash** | Your home is the maker space, so the stash is Aris's lockers there. E puts things in and takes them out. It holds 20 kg to start. Fitting it out to hold more is a later task. |
+| **What the village sees** | Carrying a pistol is a fact residents notice, like a bionic. Security and Tradition distrust it, as they already distrust bionics. |
 
 ## Architecture additions
 
