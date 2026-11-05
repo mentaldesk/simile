@@ -26,18 +26,20 @@ class Street:
 
 STREETS: dict[str, Street] = {
     "high_street": Street(
-        "far-hills", "mid-shophouses", "near-walls", "ground-street", "front-plants"
+        "far-hills", "mid-shophouses", "near-walls", "ground-street", "front-plants", city="city"
     ),
     "lychee_lane": Street(
-        "far-hills", "mid-homes", "near-gardens", "ground-street", "front-plants"
+        "far-hills", "mid-homes", "near-gardens", "ground-street", "front-plants", city="city"
     ),
     "kapok_walk": Street(
-        "far-hills", "mid-rooftops", "near-gardens", "ground-street", "front-plants"
+        "far-hills", "mid-rooftops", "near-gardens", "ground-street", "front-plants", city="city"
     ),
     "banyan_row": Street(
-        "far-river", "mid-riverbank", "near-hedges", "ground-street", "front-reeds"
+        "far-river", "mid-riverbank", "near-hedges", "ground-street", "front-reeds", city="city"
     ),
-    "rooftops": Street("far-hills", "mid-rooftops", "near-walls", "ground-street", "front-plants"),
+    "rooftops": Street(
+        "far-hills", "mid-rooftops", "near-walls", "ground-street", "front-plants", city="city"
+    ),
     "metro": Street(
         "far-metro", "mid-metro", "near-metro", "ground-metro", "front-metro", sky="metro-vault"
     ),
@@ -62,7 +64,17 @@ class Landmark:
     ref: str = "clean/street"
 
 
-LANDMARKS: dict[str, Landmark] = {}
+APEX_AT = 0.6
+"""Where along each street above ground the Apex towers stand: over the square on High Street."""
+LANDMARKS: dict[str, Landmark] = {
+    "apex": Landmark(
+        "the twin headquarters towers of a rich biotech company seen from far away across a city: "
+        "two tall glass skyscrapers of dark blue-green glass and white steel, each narrowing in "
+        "steps to a slim needle spire, joined high up by a glass sky-bridge",
+        8.0,
+        {street: APEX_AT for street in STREETS if street not in UNDERGROUND},
+    )
+}
 """By plan name in `skyline.PLANS`."""
 GROUNDS = {
     "square": "ground-plaza",
@@ -258,22 +270,19 @@ PAPERS = {
     "bedroom-rose": "dusty rose wallpaper with thin vertical cream stripes",
     "bedroom-sage": "sage-green wallpaper with a small repeating pattern of pale ferns",
     "bedroom-lilac": "pale lilac wallpaper with a small repeating pattern of tiny white stars",
-    "cafe-panelling": "warm honey-coloured wooden wall panelling in narrow vertical boards",
-    "cafe-tiles": "a printed checkerboard of matt cream and sage-green squares, flat like "
-    "wrapping paper",
-    "plaster-cream": "plain cream plaster with soft mottled texture",
-    "brick": "a printed pattern of red-brown bricks with pale mortar, flat and matt like "
-    "wrapping paper",
+    "cafe-panelling": "pale oak wall panelling in narrow vertical slats",
+    "cafe-tiles": "white rectangular wall tiles in a neat stacked grid with pale grey grout",
+    "plaster-cream": "smooth pale warm grey plaster with a soft mottled texture",
+    "brick": "a wall of exposed red-brown bricks in neat rows with pale mortar",
     "dining-red": "deep red lacquered wall panels with a thin gold border pattern",
     "block-grey": "pale grey painted concrete blocks with thin grey joints",
-    "loft-boards": "strips of pale pine-coloured card laid across like boards, with a few "
-    "knots drawn in brown pencil",
+    "loft-boards": "pale pine boards laid across the wall, with a few knots",
     "plaster-white": "plain warm white plaster with a faint soft texture",
     "clinic-tiles": "pale green-white wall tiles in a neat grid with dark grout, a few chipped "
     "tiles and faint stains",
 }
-PAPER_STYLES: dict[str, Style] = {"clinic-tiles": "cartoon"}
-"""Papers in a style other than papercraft."""
+PAPER_STYLES: dict[str, Style] = {**dict.fromkeys(PAPERS, "clean"), "clinic-tiles": "cartoon"}
+"""Each paper's style: the village's comic style, and the clinic's cartoon."""
 ROOMS: dict[str, tuple[str, ...]] = {
     "living_room": ("living-ochre", "living-blue", "living-green"),
     "bedroom": ("bedroom-rose", "bedroom-sage", "bedroom-lilac"),

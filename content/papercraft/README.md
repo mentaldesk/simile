@@ -108,6 +108,7 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 | `strip` | A mid, near or foreground street layer, with alpha, tileable along x. |
 | `ground` | A ground street layer, with alpha, solid from its top edge down, tileable along x. Its top edge, or `surface` below it, is the far edge of the surface people walk on. |
 | `paper` | An opaque texture. Room papers tile both ways, and the floor slab and the sky along x. |
+| `landmark` | A building drawn once per street behind the city layer, with alpha, such as the Apex towers. `height` is how tall to draw it, and `anchor` is the middle of its foot. Its night lights are a `glow` piece the same size. |
 
 ### Lookups
 
@@ -185,6 +186,17 @@ sketches (`sketches.py`), so their seats, mattress, moulding and width stay wher
 expects them. The kitchen's sink and hob are in the ends a stretch keeps, so a long run repeats
 only plain cupboards. The tunnels keep their own pieces, but still climb the village's ladder,
 steps and ledge until they get their own.
+
+The village's street layers, room papers, slab and sky are `clean` (`village_layer`), with today's
+subjects. The ground strips are painted on grey and cut to their own band (`banded`), so they're
+opaque, and each carries the `surface` measured on its art. Every street above ground has the
+city behind it (`layers/city`), a skyline of flat-roofed glass towers with no spire to compete
+with the Apex towers, the one landmark (`skyline.APEX`: twin towers joined by a sky-bridge), which
+stands 60% of the way along each street. A landmark's glow isn't painted: it's the plan's lit
+windows and beacons drawn on its painting's own light and shade (`landmark_lights`), since FLUX's
+night pictures lit windows the plan doesn't. The far layers stay hills or river, and keep `HEADROOM`
+of their height clear above their hills, so the city and the Apex rise well over them at street
+level.
 
 ## The tunnels
 

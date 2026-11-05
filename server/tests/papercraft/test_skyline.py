@@ -22,8 +22,23 @@ def test_the_towers_stand_on_the_ground_line_round_the_plans_middle() -> None:
 def test_the_tallest_spire_is_as_tall_as_its_tower_says() -> None:
     p = plan("apex")
     rows = np.flatnonzero((np.asarray(p.shape) > 0).any(axis=1))
+    tallest = max(t.height + t.spire for t in APEX.towers)
 
-    assert abs((p.ground - rows[0]) / p.ppm - max(t.height + t.spire for t in APEX)) < 2
+    assert abs((p.ground - rows[0]) / p.ppm - tallest) < 2
+
+
+def test_the_apex_is_twin_towers_joined_only_by_their_sky_bridge() -> None:
+    p = plan("apex")
+    shape = np.asarray(p.shape) > 0
+    (bridge,) = APEX.bridges
+    middle = round(p.left)
+
+    def across(metres: float) -> bool:
+        return bool(shape[round(p.ground - metres * p.ppm), middle])
+
+    assert len(APEX.towers) == 2
+    assert across(bridge.y + bridge.depth / 2)
+    assert not across(bridge.y - 5) and not across(bridge.y + bridge.depth + 5)
 
 
 def test_only_lit_windows_and_beacons_glow_and_all_inside_the_towers() -> None:

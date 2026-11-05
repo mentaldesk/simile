@@ -19,6 +19,7 @@ from simile.papercraft.catalogue import (
 from simile.papercraft.layout import STREET_DIR, _objects, _props, load_layout
 from simile.papercraft.painter import CLEAN, in_style
 from simile.papercraft.village import (
+    GROUNDS,
     LOOKS,
     PAPER_STYLES,
     STREETS,
@@ -78,7 +79,10 @@ def style_of(key: str) -> str:
     if folder in ("fronts", "glow"):
         return LOOKS[name].style
     if folder == "papers":
-        return PAPER_STYLES.get(name, "papercraft")
+        prompt = PIECES[key].prompt
+        lead = next(s for s, w in WORDS.items() if prompt.startswith((w.lead, w.paper_lead)))
+        assert key == "papers/slab" or lead == PAPER_STYLES[name]
+        return lead
     if folder == "layers":
         return next(s for s, w in WORDS.items() if PIECES[key].prompt.startswith(w.lead))
     specs = {**FURNITURE, **EXTRAS, **PLATFORMS}
@@ -178,8 +182,39 @@ def test_a_street_with_a_city_lists_it_between_the_sky_and_the_far_layer(
     assert "city" in index(LAYOUT)["parallax"]
 
 
-def test_nothing_lists_a_landmark_yet() -> None:
-    assert landmarks() == [] and "landmarks" not in index(LAYOUT)
+def test_every_village_layer_and_paper_is_clean() -> None:
+    village = {k for k in PIECES if k.startswith(("layers/", "papers/"))} - underground_pieces()
+
+    assert {k for k in village if style_of(k) != "clean"} == set()
+    assert len(village) == 32
+
+
+def test_every_street_above_ground_has_the_city_and_the_apex_over_its_square() -> None:
+    listed = index(LAYOUT)
+    above = sorted(set(STREETS) - UNDERGROUND)
+
+    assert {s: listed["streets"][s].get("city") for s in above} == dict.fromkeys(
+        above, "layers/city"
+    )
+    assert listed["landmarks"]["apex"]["at"] == dict.fromkeys(above, 0.6)
+    assert [p.key for p in landmarks()] == ["landmarks/apex", "glow/apex"]
+
+
+def test_the_far_layers_stay_hills_or_river_with_room_above_for_the_city() -> None:
+    for street in set(STREETS) - UNDERGROUND:
+        far = PIECES[f"layers/{STREETS[street].far}"]
+        assert far.headroom > 0.3
+        assert "no towers" in far.prompt.lower()
+    assert "no spires" in PIECES["layers/city"].prompt.lower()
+
+
+def test_the_village_ground_strips_are_banded_and_measured() -> None:
+    grounds = {f"layers/{STREETS[s].ground}" for s in set(STREETS) - UNDERGROUND}
+    grounds |= {f"layers/{key}" for key in GROUNDS.values()}
+
+    for key in grounds:
+        assert "banded" in PIECES[key].cut and PIECES[key].surface is not None
+        assert MANIFEST_JSON["pieces"][key]["surface"] == PIECES[key].surface
 
 
 def test_a_landmark_is_listed_with_its_glow_and_where_it_stands(

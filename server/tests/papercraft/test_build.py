@@ -11,7 +11,8 @@ import pytest
 from PIL import Image
 
 from simile.papercraft import build as build_module
-from simile.papercraft.build import PPM, Build, tileable
+from simile.papercraft import skyline
+from simile.papercraft.build import PPM, Build, landmark_box, tileable
 from simile.papercraft.catalogue import LAYERS, fronts, items, landmarks, paper
 from simile.papercraft.layout import Facade, Layout, Mural
 from simile.papercraft.village import PAPERS, TILE, Landmark
@@ -271,7 +272,7 @@ def test_a_tiled_sky_is_not_joined_through_a_cloud() -> None:
 
 
 def test_a_banded_ground_is_cut_to_where_its_band_is_painted(tmp_path: Path) -> None:
-    ground = next(p for p in LAYERS if p.kind == "ground")
+    ground = replace(next(p for p in LAYERS if p.kind == "ground"), cut=())
     banded = replace(ground, key="layers/ground-banded", cut=("banded",))
     build = Build(
         [ground, banded],
@@ -292,7 +293,34 @@ def test_a_banded_ground_is_cut_to_where_its_band_is_painted(tmp_path: Path) -> 
     assert pieces[banded.key]["hash"] != pieces[ground.key]["hash"]
 
 
-def test_a_landmark_and_its_glow_are_painted_from_its_plan(tmp_path: Path) -> None:
+def test_a_far_layers_headroom_and_a_grounds_surface_reach_the_manifest(tmp_path: Path) -> None:
+    far = next(p for p in LAYERS if p.key == "layers/far-hills")
+    ground = replace(next(p for p in LAYERS if p.kind == "ground"), surface=0.25)
+    plain = replace(far, key="layers/far-plain", headroom=0.0)
+    build = Build(
+        [far, plain, ground],
+        content=tmp_path / "papercraft",
+        cache_dir=tmp_path / "cache",
+        painter=FakePainter,
+        mask=fake_mask,
+        key=fake_mask,
+        layout=LAYOUT,
+    )
+
+    build.run(log=lambda _: None)
+
+    pieces = json.loads((build.content / "manifest.json").read_text())["pieces"]
+    alpha = np.asarray(Image.open(build.content / pieces[far.key]["file"]).getchannel("A"))
+    clear = np.flatnonzero(alpha.max(axis=1) > 0)[0] / alpha.shape[0]
+    assert clear == pytest.approx(far.headroom, abs=0.01)
+    assert np.asarray(Image.open(build.content / pieces[plain.key]["file"]))[0, :, 3].max() > 0
+    assert pieces[ground.key]["surface"] == 0.25
+    assert "surface" not in pieces[far.key]
+
+
+def test_a_landmark_is_painted_from_its_plan_and_lit_where_its_plan_says(
+    tmp_path: Path,
+) -> None:
     apex = landmarks({"apex": Landmark("the Apex towers", 40.0, {"high_street": 0.5})})
     build = Build(
         apex,
@@ -308,12 +336,14 @@ def test_a_landmark_and_its_glow_are_painted_from_its_plan(tmp_path: Path) -> No
 
     pieces = json.loads((build.content / "manifest.json").read_text())["pieces"]
     day, glow = pieces["landmarks/apex"], pieces["glow/apex"]
-    assert set(report.painted) == {"landmarks/apex", "glow/apex"}
+    assert set(report.painted) == {"landmarks/apex"}
     assert day["kind"] == "landmark" and day["height"] == 40.0
     assert day["anchor"][0] == 0.5 and 0.9 < day["anchor"][1] < 1.0
     assert glow["size"] == day["size"]
     light = np.asarray(Image.open(build.content / glow["file"]).convert("L"))
     assert light.max() > 100 and (light < 12).mean() > 0.7
+    lit = np.asarray(skyline.plan("apex").glow.crop(landmark_box(skyline.plan("apex"))))
+    assert light[lit == 0].mean() < 4
 
 
 def test_a_layer_with_a_gap_near_each_end_is_cut_at_the_gaps() -> None:

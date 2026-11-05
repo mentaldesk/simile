@@ -35,8 +35,22 @@ def test_each_piece_is_a_webp_of_the_size_and_scale_its_entry_gives(key: str) ->
         assert image.mode == "RGBA"
         assert entry["size"][1] / entry["height"] == pytest.approx(PPM, rel=0.01)
         assert 0 <= entry["anchor"][0] <= 1 and 0 < entry["anchor"][1] <= 1
-    if entry["kind"] in ("layer", "strip", "ground"):
+    if entry["kind"] == "landmark":
+        assert entry["anchor"][0] == 0.5 and 0.9 < entry["anchor"][1] <= 1
+    if entry["kind"] in ("layer", "strip"):
         assert image.mode == "RGBA"
+
+
+VILLAGE_GROUNDS = {*MANIFEST_JSON["grounds"].values()} | {
+    layers["ground"] for layers in MANIFEST_JSON["streets"].values() if "city" in layers
+}
+
+
+@pytest.mark.parametrize("key", sorted(VILLAGE_GROUNDS))
+def test_the_ground_strips_are_opaque(key: str) -> None:
+    image = Image.open(CONTENT / PIECES[key]["file"]).convert("RGBA")
+
+    assert image.getchannel("A").getextrema()[0] == 255
 
 
 def test_every_lookup_names_a_piece() -> None:
@@ -49,6 +63,11 @@ def test_every_lookup_names_a_piece() -> None:
         *(k for f in MANIFEST_JSON["furniture"].values() for k in f.get("variants", {}).values()),
         *MANIFEST_JSON["platforms"].values(),
         MANIFEST_JSON["slab"],
+        *(
+            key
+            for m in MANIFEST_JSON.get("landmarks", {}).values()
+            for key in (m["piece"], m["glow"])
+        ),
     ]
 
     assert set(named) <= set(PIECES)
