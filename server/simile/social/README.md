@@ -145,9 +145,13 @@ and `look_every`.
   carrying a pistol. A gun on someone makes you wary, and you trust them less for it." It says
   pistol rather than the item's name, since "plastic pistol" could read as a toy.
 - **Trust.** Each wary resident who sees it, as for a sighting, takes an R1 event from the player on
-  trust alone, with valence their wariness and magnitude `sighting`, not stored. A resident notices
-  it once until the player puts it away, so turning up armed again dents trust again. Who has
-  noticed isn't saved, so a restart while armed counts one more.
+  trust alone, with valence their wariness and magnitude `sighting`, not stored. Familiarity stays
+  as it was, so being seen armed never makes them keener. A resident notices it once until the
+  player puts it away, and who has noticed isn't saved, but `dented` never takes trust past one
+  dent below their baseline: however often they see it, Tobias stays at 0.30, Raymond 0.38, Mirela
+  0.43, Henrietta 0.33 and Lachlan 0.53. Trust recovers by R1's decay, so a later outing can dent it
+  again, back to that floor. If something else has already taken it lower, seeing the pistol leaves
+  it there.
 - **No memory.** Unlike a bionic's sighting, it leaves no `observation` memory, because a prompt
   mentions the pistol only while it's carried, and a memory would stay on their mind and pass on in
   scenes with other residents. What's said about it in a conversation can still be remembered, as

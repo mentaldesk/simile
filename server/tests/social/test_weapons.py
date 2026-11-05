@@ -1,5 +1,6 @@
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from starlette.applications import Starlette
@@ -10,7 +11,7 @@ from simile.behaviour import behaviour_of
 from simile.conversation import conversations_of
 from simile.conversation.player import DEFAULT_PLAYER_CONFIG
 from simile.conversation.prompt import BLUNT, CUES, POLITE, Cue
-from simile.memory import memory_of
+from simile.memory import MemoryStore, memory_of
 from simile.npc import load_npcs
 from simile.persistence import player_of
 from simile.schema import (
@@ -24,13 +25,16 @@ from simile.schema import (
     Material,
     Npc,
     Stash,
+    Traits,
     lamp,
 )
 from simile.sim import Clock, World
-from simile.social import meet, tolerance
+from simile.social import apply_events, meet, relationship, tolerance
 from simile.social.bionics import level
+from simile.social.config import DEFAULT_BIONICS
+from simile.social.relationship import as_of
 from simile.social.sightings import Sightings, sightings_of
-from simile.social.weapons import FEELS, carrying, noticed, wariness, wary
+from simile.social.weapons import FEELS, carrying, dented, noticed, wariness, wary
 from simile.world.movement import Point
 
 from ..conversation.test_player import BEN, Village, make_npc
@@ -115,6 +119,110 @@ def test_the_event_is_on_trust_alone_and_as_bad_as_they_are_wary() -> None:
     assert wary(WARY) and wary(UNEASY) and not wary(CALM)
 
 
+def test_how_bad_the_event_is_varies_by_resident_at_the_same_magnitude() -> None:
+    event = noticed(UNEASY, NOW)
+
+    assert event.valence == pytest.approx(-0.4)
+    assert event.magnitude == DEFAULT_BIONICS.sighting == 0.3
+    assert noticed(WARY, NOW).magnitude == 0.3
+
+
+def test_one_dent_moves_trust_by_the_event_at_its_full_magnitude() -> None:
+    rel = meet(UNEASY, PLAYER_ID)
+    weak = noticed(UNEASY, NOW).model_copy(update={"magnitude": 0.001})
+
+    assert dented(rel, UNEASY, NOW).trust == apply_events(rel, [noticed(UNEASY, NOW)], NOW).trust
+    assert dented(rel, UNEASY, NOW).trust < apply_events(rel, [weak], NOW).trust
+
+
+def test_it_leaves_familiarity_as_it_was() -> None:
+    rel = meet(UNEASY, PLAYER_ID)
+    known = rel.model_copy(update={"familiarity": 0.4, "last_interaction": NOW})
+
+    assert dented(rel, UNEASY, NOW).familiarity == 0
+    assert dented(known, UNEASY, NOW).familiarity == 0.4
+
+
+def test_it_never_takes_trust_past_one_dent_below_the_baseline() -> None:
+    rel = meet(UNEASY, PLAYER_ID)
+    floor = dented(rel, UNEASY, NOW).trust
+    assert floor < rel.baseline.trust
+
+    assert dented(dented(rel, UNEASY, NOW), UNEASY, NOW).trust == floor
+    almost = rel.model_copy(update={"trust": floor + 0.001, "familiarity": 0.4})
+    assert dented(almost, UNEASY, NOW).trust == floor
+    below = rel.model_copy(update={"trust": floor - 0.1})
+    assert dented(below, UNEASY, NOW).trust == floor - 0.1
+
+
+@pytest.mark.parametrize("first_impressions", [0.0, 1.0])
+def test_the_floor_is_the_same_however_well_they_know_the_player(
+    monkeypatch: pytest.MonkeyPatch, first_impressions: float
+) -> None:
+    traits = Traits(first_impressions=first_impressions)
+    monkeypatch.setattr(relationship, "traits_of", lambda npc: traits)
+    stranger = meet(UNEASY, PLAYER_ID)
+    known = stranger.model_copy(update={"familiarity": 0.4})
+
+    for _ in range(30):
+        known = dented(known, UNEASY, NOW)
+
+    assert known.trust == dented(stranger, UNEASY, NOW).trust
+
+
+def test_it_dents_trust_built_up_above_the_baseline_down_to_the_floor_at_most() -> None:
+    rel = meet(UNEASY, PLAYER_ID)
+    friend = rel.model_copy(update={"trust": 0.9, "familiarity": 0.6})
+    floor = dented(rel, UNEASY, NOW).trust
+
+    trust = friend.trust
+    for _ in range(100):
+        friend = dented(friend, UNEASY, NOW)
+        assert floor <= friend.trust <= trust
+        trust = friend.trust
+    assert trust == pytest.approx(floor)
+
+
+@pytest.mark.parametrize(
+    ("id", "settled"),
+    [
+        ("tobias", 0.30),
+        ("raymond", 0.38),
+        ("mirela", 0.43),
+        ("henrietta", 0.33),
+        ("lachlan", 0.53),
+    ],
+)
+def test_where_trust_settles_for_the_wary_of_todays_village(id: str, settled: float) -> None:
+    npc = next(npc for npc in load_npcs() if npc.id == id)
+    rel = meet(npc, PLAYER_ID)
+
+    for day in range(30):
+        rel = dented(rel, npc, NOW + timedelta(days=day))
+
+    assert rel.trust == pytest.approx(settled, abs=0.005)
+
+
+@pytest.mark.parametrize(
+    ("id", "uneasy"),
+    [
+        ("tobias", 0.84),
+        ("raymond", 0.46),
+        ("mirela", 0.2),
+        ("henrietta", 0.16),
+        ("lachlan", 0.02),
+        ("kofi", 0.0),
+    ],
+)
+def test_how_uneasy_it_makes_todays_village(id: str, uneasy: float) -> None:
+    cast = next(npc for npc in load_npcs() if npc.id == id)
+    npc = cast.model_copy(update={"id": ANA.id})
+    street = armed_street()
+    street.sightings.npcs = {npc.id: npc}
+
+    assert street.sightings.unease(npc) == pytest.approx(uneasy, abs=0.005)
+
+
 def armed_street(*items: Item, body: Body | None = None) -> Street:
     street = Street(body=body or Body())
     street.sightings.carried = lambda: items or (PISTOL,)
@@ -143,7 +251,7 @@ def test_it_leaves_no_memory_or_history_to_outlast_it() -> None:
     assert street.store.shared_history("ana", PLAYER_ID, NOW).events == []
 
 
-def test_noticing_counts_once_until_it_is_put_away() -> None:
+def test_seeing_it_again_at_the_floor_changes_nothing() -> None:
     carried: list[Sequence[Item]] = [(PISTOL,)]
     street = Street(body=Body())
     street.sightings.carried = lambda: carried[0]
@@ -160,7 +268,61 @@ def test_noticing_counts_once_until_it_is_put_away() -> None:
     carried[0] = (PISTOL,)
     street.look()
     again = street.store.relationship("ana", PLAYER_ID)
-    assert first is not None and again is not None and again.trust < first.trust
+    assert again is not None and first is not None
+    assert again.trust == first.trust and again.familiarity == 0
+
+
+def test_repeated_outings_stop_at_the_floor_and_familiarity_never_grows() -> None:
+    carried: list[Sequence[Item]] = [(PISTOL,)]
+    street = Street(body=Body())
+    street.sightings.carried = lambda: carried[0]
+    street.look()
+    first = street.store.relationship("ana", PLAYER_ID)
+    assert first is not None
+
+    for _ in range(60):
+        carried[0] = ()
+        street.look()
+        carried[0] = (PISTOL,)
+        street.look()
+
+    after = street.store.relationship("ana", PLAYER_ID)
+    assert after is not None
+    assert after.trust == first.trust and after.familiarity == 0
+
+
+def test_trust_recovers_and_a_later_outing_dents_it_only_back_to_the_floor() -> None:
+    carried: list[Sequence[Item]] = [(PISTOL,)]
+    street = Street(body=Body())
+    street.sightings.carried = lambda: carried[0]
+    street.look()
+    first = street.store.relationship("ana", PLAYER_ID)
+    assert first is not None
+
+    carried[0] = ()
+    street.look()
+    street.clock.now += timedelta(days=30)
+    carried[0] = (PISTOL,)
+    assert as_of(first, street.clock.now).trust > first.trust
+    street.look()
+
+    later = street.store.relationship("ana", PLAYER_ID)
+    assert later is not None and later.trust == pytest.approx(first.trust)
+
+
+def test_a_restart_while_armed_adds_no_dent(tmp_path: Path) -> None:
+    for days in range(6):
+        with MemoryStore(tmp_path / "simile.db") as store:
+            street = Street(store, body=Body())
+            street.sightings.carried = lambda: (PISTOL,)
+            street.clock.now += timedelta(hours=days)
+            street.look()
+            rel = store.relationship("ana", PLAYER_ID)
+            assert rel is not None
+            if days == 0:
+                floor = rel.trust
+            assert rel.trust == pytest.approx(floor)
+            assert rel.familiarity == 0
 
 
 def test_nobody_notices_it_asleep_or_out_of_sight() -> None:
@@ -386,7 +548,7 @@ def test_the_server_reads_what_the_player_carries(app: Starlette) -> None:
         )
         assert behaviour.unease("tobias") > 0.8
         rel = memory_of(app).relationship("tobias", PLAYER_ID)
-        assert rel is not None and rel.familiarity > 0
+        assert rel is not None and rel.trust < rel.baseline.trust and rel.familiarity == 0
 
         player.items = [item for item in player.items if item.kind is not ItemKind.WEAPON]
         assert conversations_of(app).looks("tobias") is None

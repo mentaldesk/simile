@@ -1,9 +1,19 @@
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 
-from simile.schema import PLAYER_ID, Aspect, CoreValue, InteractionEvent, Item, ItemKind, Npc
+from simile.schema import (
+    PLAYER_ID,
+    Aspect,
+    CoreValue,
+    InteractionEvent,
+    Item,
+    ItemKind,
+    Npc,
+    Relationship,
+)
 from simile.social.bionics import level
 from simile.social.config import DEFAULT_BIONICS, BionicsConfig
+from simile.social.relationship import apply_events
 
 FEELS: dict[int, str] = {
     -2: "Guns have no place in this village: you don't trust anyone who goes about with one, and "
@@ -45,3 +55,16 @@ def noticed(npc: Npc, now: datetime, config: BionicsConfig = DEFAULT_BIONICS) ->
         magnitude=config.sighting,
         timestamp=now,
     )
+
+
+def dented(
+    rel: Relationship, npc: Npc, now: datetime, config: BionicsConfig = DEFAULT_BIONICS
+) -> Relationship:
+    """`rel`, as of `now`, after `npc` sees the player armed: trust falls, but not past the first
+    dent from their baseline, and nothing else moves."""
+    event = noticed(npc, now, config)
+    hit = apply_events(rel, [event], now)
+    fresh = rel.model_copy(update={"trust": rel.baseline.trust, "familiarity": 0.0})
+    floor = apply_events(fresh, [event], now).trust
+    trust = max(hit.trust, min(floor, rel.trust))
+    return hit.model_copy(update={"trust": trust, "familiarity": rel.familiarity})

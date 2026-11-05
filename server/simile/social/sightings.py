@@ -21,7 +21,7 @@ from simile.sim import Clock
 from simile.social.bionics import against, looks, seen_in, sighting, tolerance, unease
 from simile.social.config import DEFAULT_BIONICS, BionicsConfig
 from simile.social.relationship import apply_events, as_of, meet
-from simile.social.weapons import armed, carrying, noticed, wariness, wary
+from simile.social.weapons import armed, carrying, dented, wariness, wary
 from simile.voicing.distance import apart
 from simile.world.movement import Movement
 
@@ -110,18 +110,18 @@ class Sightings:
         return after
 
     def notice(self, npc: Id) -> None:
-        """`npc` sees the player armed. It leaves no memory, so the pistol is out of their prompts
-        once it's put away, only a dent in the trust of anyone wary."""
+        """`npc` sees the player armed: no memory, only a dent in the trust of anyone wary."""
         self._noticed.add(npc)
         resident = self.npcs[npc]
         if wary(resident, self.config):
-            self.store.add(self._felt(npc, [noticed(resident, self.clock.now, self.config)]))
+            self.store.add(dented(self._current(npc), resident, self.clock.now, self.config))
 
     def _felt(self, npc: Id, events: Sequence[InteractionEvent]) -> Relationship:
-        now = self.clock.now
+        return apply_events(self._current(npc), events, self.clock.now)
+
+    def _current(self, npc: Id) -> Relationship:
         stored = self.store.relationship(npc, PLAYER_ID)
-        before = as_of(stored, now) if stored else meet(self.npcs[npc], PLAYER_ID)
-        return apply_events(before, events, now)
+        return as_of(stored, self.clock.now) if stored else meet(self.npcs[npc], PLAYER_ID)
 
     def seen(self, npc: Id) -> dict[Bionic, datetime]:
         """When `npc` first saw each bionic, read from their memories the first time it's asked."""
