@@ -23,7 +23,7 @@ class Look:
 
     @classmethod
     def of(cls, appearance: Appearance, seed: str | None) -> "Look":
-        """Skin is kept exactly; everything else is muted to sit in the papercraft world. The
+        """Skin is kept exactly; everything else is muted to sit in the painted world. The
         accent, seeded by the character's id, and the apron are the palette's."""
         from simile.characters.palette import PALETTE, accent, apron
 
