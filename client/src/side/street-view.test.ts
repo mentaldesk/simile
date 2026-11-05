@@ -131,12 +131,17 @@ const UNDER = village.streets.filter(({ underground }) => underground).map(({ id
 const CITY = [DEPTH.city, DEPTH.cityHaze, DEPTH.landmark, DEPTH.landmarkHaze, DEPTH.landmarkGlow];
 
 describe("today's manifest", () => {
-  it('draws no city or landmark on any street', () => {
+  it('draws the city and one Apex on every street above ground, and none under it', () => {
     expect(UNDER).toEqual(expect.arrayContaining(['metro', 'sewers']));
     for (const id of STREETS) {
       const { street, at } = drawStreet(id);
       street.update(view(3000, 1500), lightAt(23, scenery), true, undefined, 0.1);
-      for (const depth of CITY) expect(at(depth), id).toEqual([]);
+      if (UNDER.includes(id)) {
+        for (const depth of CITY) expect(at(depth), id).toEqual([]);
+      } else {
+        expect(at(DEPTH.city).length, id).toBeGreaterThan(0);
+        expect(at(DEPTH.landmark), id).toHaveLength(1);
+      }
     }
   });
 
@@ -147,13 +152,14 @@ describe("today's manifest", () => {
   });
 });
 
-/** Today's manifest without P69's measurements or `parallax.city`. */
+/** Today's manifest without P69's measurements, the grounds' `surface` or `parallax.city`. */
 function bare(): SceneryManifest {
   const manifest = structuredClone(scenery);
   delete manifest.parallax.city;
   for (const entry of Object.values(manifest.furniture)) {
     for (const field of ['seat', 'bed', 'light', 'moulding'] as const) delete entry[field];
   }
+  for (const piece of Object.values(manifest.pieces)) delete piece.surface;
   return manifest;
 }
 
