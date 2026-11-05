@@ -9,8 +9,6 @@ export type ServerMessage =
   | CreatureMovedMessage
   | CreatureGoneMessage
   | MachineChangedMessage
-  | CorpseChangedMessage
-  | CorpseGoneMessage
   | ConversationStartedMessage
   | ConversationEndedMessage
   | LineMessage
@@ -179,10 +177,6 @@ export interface SnapshotMessage {
    * Every machine you repair and then use. The server always sends it, and missing, there are none.
    */
   machines?: Machine[];
-  /**
-   * Every corpse on every map, oldest first. The server always sends it, and missing, there are none.
-   */
-  corpses?: Corpse[];
 }
 /**
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
@@ -339,91 +333,6 @@ export interface Item {
   bionic?: Bionic | null;
 }
 /**
- * A body left `at` the tile it fell on, or the ground below it, with what was on it. It can
- * hold nothing at all: it stays whatever it holds, unlike a `Pile`.
- */
-export interface Corpse {
-  /**
-   * Which corpse, as two can lie on one tile.
-   */
-  id: string;
-  /**
-   * Whose body it was: `"player"` for the player's own.
-   */
-  owner: string;
-  at: MapTile;
-  /**
-   * The cash still on it.
-   */
-  money: number;
-  /**
-   * What it still carries.
-   */
-  items: Item1[];
-  /**
-   * The bionics still in it, which come out as `bionic` items.
-   */
-  bionics: Bionic[];
-}
-/**
- * A tile on a given map: the village or an interior, or in side view a street or a floor.
- */
-export interface MapTile {
-  map: string;
-  x: number;
-  y: number;
-}
-/**
- * Something the player carries, or a stack of it.
- */
-export interface Item1 {
-  /**
-   * What it is, the same for every one of its kind, e.g. "copper_wire" or "lamp". Salvage is priced by it.
-   */
-  id: string;
-  kind: ItemKind;
-  /**
-   * What the player sees, e.g. "Copper wire".
-   */
-  name: string;
-  /**
-   * In kg, each, counted against the carry limit.
-   */
-  weight: number;
-  /**
-   * How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.
-   */
-  amount?: number;
-  /**
-   * A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.
-   */
-  charge: number | null;
-  /**
-   * Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.
-   */
-  on: boolean | null;
-  /**
-   * What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else.
-   */
-  material?: Material | null;
-  /**
-   * The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.
-   */
-  rounds?: number | null;
-  /**
-   * The most rounds a weapon holds. Left out for anything else.
-   */
-  capacity?: number | null;
-  /**
-   * A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.
-   */
-  condition?: number | null;
-  /**
-   * What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else.
-   */
-  bionic?: Bionic | null;
-}
-/**
  * The sim clock, sent after the snapshot, when the speed changes and every sim minute.
  */
 export interface ClockMessage {
@@ -472,21 +381,6 @@ export interface CreatureGoneMessage {
 export interface MachineChangedMessage {
   type: 'machine_changed';
   machine: Machine;
-}
-/**
- * A corpse changed, such as one just salvaged, or appeared: one the client doesn't have yet
- * is new.
- */
-export interface CorpseChangedMessage {
-  type: 'corpse_changed';
-  corpse: Corpse;
-}
-/**
- * A corpse is gone from the world.
- */
-export interface CorpseGoneMessage {
-  type: 'corpse_gone';
-  corpse_id: string;
 }
 export interface ConversationStartedMessage {
   type: 'conversation_started';
@@ -776,7 +670,7 @@ export interface Player {
    */
   left?: Pile[];
   /**
-   * Their own bodies, oldest first, each where they died, saved here and shown by the snapshot, `corpse_changed` and `corpse_gone`. Left out while there's none.
+   * Their own bodies, oldest first, each where they died. Left out while there's none.
    */
   corpses?: Corpse[];
   /**
@@ -797,6 +691,56 @@ export interface Player {
    * The machines they've repaired, by interactable id, in the order they repaired them, saved here and shown by the snapshot and `machine_changed`. Left out while there's none.
    */
   repaired?: string[];
+}
+/**
+ * Something the player carries, or a stack of it.
+ */
+export interface Item1 {
+  /**
+   * What it is, the same for every one of its kind, e.g. "copper_wire" or "lamp". Salvage is priced by it.
+   */
+  id: string;
+  kind: ItemKind;
+  /**
+   * What the player sees, e.g. "Copper wire".
+   */
+  name: string;
+  /**
+   * In kg, each, counted against the carry limit.
+   */
+  weight: number;
+  /**
+   * How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.
+   */
+  amount?: number;
+  /**
+   * A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.
+   */
+  charge: number | null;
+  /**
+   * Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.
+   */
+  on: boolean | null;
+  /**
+   * What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else.
+   */
+  material?: Material | null;
+  /**
+   * The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.
+   */
+  rounds?: number | null;
+  /**
+   * The most rounds a weapon holds. Left out for anything else.
+   */
+  capacity?: number | null;
+  /**
+   * A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.
+   */
+  condition?: number | null;
+  /**
+   * What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else.
+   */
+  bionic?: Bionic | null;
 }
 /**
  * What they keep at home. Left out while it's empty and at its starting limit.
@@ -874,6 +818,41 @@ export interface Pile {
    * Cash lying there, which weighs nothing. Left out while there's none.
    */
   money?: number;
+}
+/**
+ * A tile on a given map: the village or an interior, or in side view a street or a floor.
+ */
+export interface MapTile {
+  map: string;
+  x: number;
+  y: number;
+}
+/**
+ * A body left `at` the tile it fell on, or the ground below it, with what was on it. It can
+ * hold nothing at all: it stays whatever it holds, unlike a `Pile`.
+ */
+export interface Corpse {
+  /**
+   * Which corpse, as two can lie on one tile.
+   */
+  id: string;
+  /**
+   * Whose body it was: `"player"` for the player's own.
+   */
+  owner: string;
+  at: MapTile;
+  /**
+   * The cash still on it.
+   */
+  money: number;
+  /**
+   * What it still carries.
+   */
+  items: Item1[];
+  /**
+   * The bionics still in it, which come out as `bionic` items.
+   */
+  bionics: Bionic[];
 }
 /**
  * Something the player sold that its buyer keeps for them to buy back.

@@ -527,8 +527,8 @@ class Player(Model):
     corpses: list[Corpse] = Field(
         default=[],
         exclude_if=lambda corpses: not corpses,
-        description="Their own bodies, oldest first, each where they died, saved here and shown "
-        "by the snapshot, `corpse_changed` and `corpse_gone`. Left out while there's none.",
+        description="Their own bodies, oldest first, each where they died. Left out while "
+        "there's none.",
     )
     taken: dict[Key, Timestamp] = Field(
         default={},

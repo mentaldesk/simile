@@ -114,7 +114,6 @@ client replaces whatever it had.
 | `level` | number | Which of the generated levels in `content/street/levels/` this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers. The client bundles every level and plays this one's maps. The server always sends it; missing, it's 0. |
 | `creatures` | `Creature[]` | Every creature on every map. The server always sends it; missing, there are none. |
 | `machines` | `Machine[]` | Every machine you repair and then use. The server always sends it; missing, there are none. |
-| `corpses` | `Corpse[]` | Every corpse on every map, oldest first. The server always sends it; missing, there are none. |
 
 A `Creature` is one of the tunnels' dangers, which the sim runs and the client draws and animates.
 It has its `id`; its `kind`, named as its figure is in `content/creatures/`: `"rat"`, `"bot"` (a
@@ -150,11 +149,6 @@ no `Machine`, such as the loom, is only scenery for now.
 A `Product` has its `item`, the whole `Item` that comes out, with its `amount` for a stack, such as 6
 rounds; `uses`, what it's made from, a `Material` they carry or `"scrap"`; and `cost`, how much of
 that: a material's `amount`, or kilos of scrap. The recycler's is 1 plastic for 1 kg of scrap.
-
-A `Corpse` is a body left in the world, with what was on it. It has its `id`, as two can lie on one
-tile; its `owner`, whose body it was, `"player"` for the player's own; `at`, a `MapTile`, the tile
-they fell on or the ground below it; `money`; `items`, what it still carries; and `bionics`, each
-`Bionic` still in it. Unlike a `Pile`, it stays whatever it holds, and can hold nothing at all.
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one
@@ -206,16 +200,6 @@ removes it.
 
 `machine`: a `Machine`, all of it, as in the [`snapshot`](#snapshot). The server sends it when a
 machine changes, such as one just repaired, and the client replaces the one with that `id`.
-
-### `corpse_changed`
-
-`corpse`: a `Corpse`, all of it, as in the [`snapshot`](#snapshot). The server sends it when a
-corpse changes, such as one just salvaged. One the client doesn't have yet has just appeared, and
-the client adds it.
-
-### `corpse_gone`
-
-`corpse_id`: a corpse that's gone from the world. The client removes it.
 
 ### `conversation_started`
 
@@ -329,7 +313,7 @@ change is sent at once. Clients that predate it ignore it.
 | `effects` | `Effect[]` | Their ailments, in the order they got them, each kind once. Left out while there's none. |
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
-| `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. It's here because `Player` is what's saved. Draw them from the [`snapshot`](#snapshot), [`corpse_changed`](#corpse_changed) and [`corpse_gone`](#corpse_gone). Left out while there's none. |
+| `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. Each `player_state` has all of them, so read them from here: a corpse no longer in the list is gone. Left out while there's none. |
 | `taken` | object | When each pickup in the world was last emptied, by the player or a recycler bot, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
 | `searched` | `string[]` | The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none. |
@@ -456,6 +440,12 @@ A `Pile` is things lying on a tile in the world for the player to pick up with
 `x` and `y`, whole tiles). It holds at least one item or some money, and `money` is left out while
 it's 0. What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
 the ground below it. Salvage and secrets, in `piles`, are another.
+
+A `Corpse` is one of their own bodies, in `corpses`, with what was on it. It has its `id`, as two
+can lie on one tile; its `owner`, whose body it was, `"player"` for the player's own; `at`, a
+`MapTile`, the tile they fell on or the ground below it; `money`; `items`, what it still carries;
+and `bionics`, each `Bionic` still in it. Unlike a `Pile`, it stays whatever it holds, and can hold
+nothing at all.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney`,
 `right_kidney`, `stomach` and `feet`. Each is `"present"`, `"sold"`, or the bionic fitted in its

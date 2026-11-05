@@ -456,48 +456,6 @@
       "title": "Corpse",
       "type": "object"
     },
-    "CorpseChangedMessage": {
-      "additionalProperties": false,
-      "description": "A corpse changed, such as one just salvaged, or appeared: one the client doesn't have yet\nis new.",
-      "properties": {
-        "type": {
-          "const": "corpse_changed",
-          "default": "corpse_changed",
-          "type": "string"
-        },
-        "corpse": {
-          "$ref": "#/$defs/Corpse"
-        }
-      },
-      "required": [
-        "type",
-        "corpse"
-      ],
-      "title": "CorpseChangedMessage",
-      "type": "object"
-    },
-    "CorpseGoneMessage": {
-      "additionalProperties": false,
-      "description": "A corpse is gone from the world.",
-      "properties": {
-        "type": {
-          "const": "corpse_gone",
-          "default": "corpse_gone",
-          "type": "string"
-        },
-        "corpse_id": {
-          "maxLength": 64,
-          "pattern": "^[a-z][a-z0-9_]*$",
-          "type": "string"
-        }
-      },
-      "required": [
-        "type",
-        "corpse_id"
-      ],
-      "title": "CorpseGoneMessage",
-      "type": "object"
-    },
     "Creature": {
       "additionalProperties": false,
       "description": "A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking\nkind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one\nroosting the ceiling it hangs from. Creatures are only on side-view maps, so each faces right\nor left.",
@@ -1819,7 +1777,7 @@
         },
         "corpses": {
           "default": [],
-          "description": "Their own bodies, oldest first, each where they died, saved here and shown by the snapshot, `corpse_changed` and `corpse_gone`. Left out while there's none.",
+          "description": "Their own bodies, oldest first, each where they died. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Corpse"
           },
@@ -2332,8 +2290,6 @@
           "clock": "#/$defs/ClockMessage",
           "conversation_ended": "#/$defs/ConversationEndedMessage",
           "conversation_started": "#/$defs/ConversationStartedMessage",
-          "corpse_changed": "#/$defs/CorpseChangedMessage",
-          "corpse_gone": "#/$defs/CorpseGoneMessage",
           "creature_gone": "#/$defs/CreatureGoneMessage",
           "creature_moved": "#/$defs/CreatureMovedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
@@ -2369,12 +2325,6 @@
         },
         {
           "$ref": "#/$defs/MachineChangedMessage"
-        },
-        {
-          "$ref": "#/$defs/CorpseChangedMessage"
-        },
-        {
-          "$ref": "#/$defs/CorpseGoneMessage"
         },
         {
           "$ref": "#/$defs/ConversationStartedMessage"
@@ -2520,14 +2470,6 @@
           "description": "Every machine you repair and then use. The server always sends it, and missing, there are none.",
           "items": {
             "$ref": "#/$defs/Machine"
-          },
-          "type": "array"
-        },
-        "corpses": {
-          "default": [],
-          "description": "Every corpse on every map, oldest first. The server always sends it, and missing, there are none.",
-          "items": {
-            "$ref": "#/$defs/Corpse"
           },
           "type": "array"
         }
