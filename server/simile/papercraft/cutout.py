@@ -181,7 +181,7 @@ def fill_holes(mask: Image.Image, largest: int = 600) -> Image.Image:
 
 
 def skyline(mask: Image.Image) -> Image.Image:
-    """A layer's mask made solid between its top and bottom edges in every column, so pale paper
+    """A layer's mask made solid between its top and bottom edges in every column, so pale paint
     isn't see-through."""
     m = np.asarray(mask, dtype=np.float32) / 255
     solid = m > 0.5

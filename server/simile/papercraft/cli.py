@@ -19,7 +19,7 @@ def register(app: typer.Typer) -> None:
             typer.Option(help="Side-view maps to fit, if not content/street/."),
         ] = None,
     ) -> None:
-        """Paint the village's papercraft scenery into content/papercraft/, with FLUX.2 Klein in
+        """Paint the village's scenery into content/papercraft/, with FLUX.2 Klein in
         edit mode, once the GPU is free. Needs Apple Silicon and the `images` extra. Repaints only
         what changed.
 
@@ -67,7 +67,7 @@ def register(app: typer.Typer) -> None:
             float, typer.Option(help="Pixels a metre to draw the streets at: a retina screen's.")
         ] = 80,
     ) -> None:
-        """Contact sheets of every papercraft piece, and streets and dollhouses composed from
+        """Contact sheets of every scenery piece, and streets and dollhouses composed from
         them on the side-view maps at each time of day, for looking at."""
         from simile.papercraft.layout import STREET_DIR
         from simile.papercraft.preview import preview

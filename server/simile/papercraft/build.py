@@ -297,7 +297,7 @@ class Build:
         if piece.base:
             images.append(_fit(self.raw(self.pieces[piece.base], unit), NIGHT_SIDE))
         for name in piece.refs:
-            images.append(reference(name, 512 if name == "furniture" else 768))
+            images.append(reference(name))
         return images
 
     def finish(self, piece: Painting) -> dict:

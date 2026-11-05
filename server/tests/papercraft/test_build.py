@@ -64,7 +64,7 @@ PIECES = [
     next(p for p in LAYERS if p.kind == "ground"),
     next(p for p in LAYERS if p.kind == "layer"),
     next(p for p in LAYERS if p.kind == "strip"),
-    paper("living-ochre", PAPERS["living-ochre"]),
+    paper("living-ochre", PAPERS["living-ochre"], "clean"),
     ITEMS["furniture/sofa"],
     ITEMS["furniture/sofa-coral"],
     *fronts(LAYOUT),

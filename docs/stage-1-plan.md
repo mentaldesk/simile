@@ -15,7 +15,7 @@ The user's answers to the open design questions.
 | Decision | Choice |
 |---|---|
 | **Where** | The village, as it is now. One level down, an **abandoned metro station**, designed by hand, with the clinic in it. Below that, the **sewers**, generated each game in the spirit of WazHack, and reached by a maintenance lift from the clinic. |
-| **Look** | The village stays clean, as today's papercraft until its re-render. The tunnels use the cartoon from #329's study, with grime that rises with depth: the metro and the clinic are a little dirty, and the sewers are properly grimy. |
+| **Look** | The village stays clean: since its re-render (#549) it's the tunnels' comic line without their dirt. The tunnels use the cartoon from #329's study, with grime that rises with depth: the metro and the clinic are a little dirty, and the sewers are properly grimy. |
 | **Tension, before combat** | **Darkness and hunger.** Parts of the tunnels are unlit, and you need a lamp to see. The lamp's battery runs down, and it charges at plugs: in the village (the café, the maker space and so on) and at a few maintenance spots in the tunnels. Get lost in the dark and you can starve. |
 | **Starving, before stage 2** | You collapse and wake at home, hungry, with what you carried left where you fell. Stage 2's death builds on this. |
 | **What the bionics cost** | The legs replace your legs, the datajack takes a vertebra, and the eye takes an eye. A kidney is the first thing you sell for money. |

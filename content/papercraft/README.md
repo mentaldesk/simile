@@ -1,9 +1,12 @@
-# Papercraft scenery
+# Scenery
 
-The side-view village's scenery: street layers, building fronts with their night glow, room
-papers, furniture and platform pieces. FLUX.2 Klein 4B paints each one in edit mode with the
-[references](references/) as style images, and the build cuts it out, scales it and commits it as
-WebP. Part 5's scene (#311) draws it, and part 4's dolls (#310) are painted with the same painter.
+The side-view village's scenery, and the tunnels' under it: street layers, the city and the Apex
+towers, building fronts with their night glow, room papers, furniture and platform pieces. It's all
+hand-drawn comic art (#549): the village clean, the metro and the clinic a little dirty, and the
+sewers grimy. FLUX.2 Klein 4B paints each piece in edit mode with the [references](references/) as
+style images, and the build cuts it out, scales it and commits it as WebP. Part 5's scene (#311)
+draws it, and part 4's dolls (#310) are painted with the same painter. The folder and the
+`simile papercraft` command keep the name of #295's first look, which was papercraft.
 
 Don't edit these files by hand. Change `server/simile/papercraft/` and run:
 
@@ -34,7 +37,7 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
 - **Painted** from a prompt naming its materials and colours, in `catalogue.py`.
   - A building's front is redrawn from a flat plan drawn in code (`fronts.py`), with no style
     image. The plan fixes its width, height and storeys, its door, its windows, shop windows,
-    lamps and lanterns, and blank walls for murals, so FLUX only adds the papercraft. FLUX keeps
+    lamps and lanterns, and blank walls for murals, so FLUX only adds the drawing. FLUX keeps
     to a plan one house wide but redraws a wider one as some other building, so a front wider
     than 8.6 m is painted as a terrace of units, each a whole front with its own roof, and put
     back together side by side. FLUX also likes to give every unit a door, so on the café the
@@ -167,20 +170,20 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 
 ## References
 
-[`references/`](references/) holds the five style references from #295's study (0.75 MB): street,
-house, rooftops, furniture and characters. The build reads them from here, never from `docs/`.
-[`references/cartoon/`](references/cartoon/) holds #329's revised cartoon references, street and
-interior (0.47 MB), for the tunnels.
-[`references/clean/`](references/clean/) holds the village's comic references, street and interior
-(0.38 MB): line B from #554's study, the tunnels' scratchy line kept clean.
+The build reads the style references from here, never from `docs/`.
+
+- [`references/clean/`](references/clean/) holds the village's comic references, street and
+  interior (0.38 MB): line B from #554's study, the tunnels' scratchy line kept clean.
+- [`references/cartoon/`](references/cartoon/) holds #329's revised cartoon references, street and
+  interior (0.47 MB), for the tunnels. The icons and the creatures are painted from its street.
 
 ## The village in the comic style
 
-The village is being repainted in the comic style (#549): the tunnels' scratchy ink line without
-their dirt (`painter.CLEAN`), painted from `references/clean/`. Every village front's `Look` is
-`clean` with `modern=True`, so its plan and prompt carry today's details (`fronts.modernised`),
-and Banyan Row's metro entrance is clean like the street. A front paler than the white backdrop
-allows (its RGB summing past 575) is painted on grey.
+The village is in the comic style (#549): the tunnels' scratchy ink line without their dirt
+(`painter.CLEAN`), painted from `references/clean/`. Every village front's `Look` is `clean` with
+`modern=True`, so its plan and prompt carry today's details (`fronts.modernised`), and Banyan
+Row's metro entrance is clean like the street. A front paler than the white backdrop allows (its
+RGB summing past 575) is painted on grey.
 
 Every village piece of furniture, extra and platform piece is `clean` too (`catalogue.clean`),
 with today's subjects, painted from `references/clean/` and, where it's pale or white, on grey. The
@@ -204,8 +207,8 @@ level.
 
 The metro under the village (`content/street/README.md`'s *The metro*) is painted in #329's revised
 cartoon, kept a little dirty: its layers (`TUNNEL_LAYERS`), the furniture marked `cartoon`, the
-clinic's front (its `Look` is `cartoon`) and its room paper (`CARTOON_PAPERS`). Their prompts end in
-`painter.CARTOON` rather than the papercraft style, and they're painted from the cartoon references.
+clinic's front (its `Look` is `cartoon`) and its room paper (`PAPER_STYLES`). Their prompts end in
+`painter.CARTOON` rather than `painter.CLEAN`, and they're painted from the cartoon references.
 The rest of the pipeline is the same, with three additions:
 
 - `near-metro` is a solid tiled wall 4.6 m tall, so it hides the foot of `mid-metro`, which the

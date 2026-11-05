@@ -1,4 +1,4 @@
-"""Building fronts drawn flat in code, as the plan FLUX redraws in papercraft.
+"""Building fronts drawn flat in code, as the plan FLUX redraws in the comic style.
 
 The plan fixes what the painting must keep: the width, the storeys, the door where the map has
 it, blank walls where murals go, and where the windows and lamps are, which is all a glow map may
