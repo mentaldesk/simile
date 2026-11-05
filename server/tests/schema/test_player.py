@@ -780,11 +780,20 @@ def test_plastic_is_a_material_by_kind_and_amount() -> None:
     )
 
 
-def test_a_weapon_has_its_rounds_loaded_and_its_condition() -> None:
+def test_a_weapon_has_its_rounds_loaded_its_capacity_and_its_condition() -> None:
     pistol = Item.model_validate(PISTOL)
 
-    assert (pistol.kind, pistol.rounds, pistol.condition) == (ItemKind.WEAPON, 4, 0.8)
+    assert (pistol.kind, pistol.rounds, pistol.capacity, pistol.condition) == (
+        ItemKind.WEAPON,
+        4,
+        6,
+        0.8,
+    )
     assert pistol.amount == 1
+
+
+def test_a_weapon_can_be_full() -> None:
+    assert Item.model_validate(PISTOL | {"rounds": 6}).rounds == 6
 
 
 def test_an_empty_worn_out_weapon_is_still_a_weapon() -> None:
@@ -814,17 +823,24 @@ def test_a_pile_and_a_sale_hold_stacks_and_weapons() -> None:
     ("data", "match"),
     [
         (SALVAGE | {"rounds": 6}, "a weapon has a magazine, and nothing else has one"),
+        (SALVAGE | {"capacity": 6}, "a weapon has a capacity, and nothing else has one"),
         (SALVAGE | {"condition": 1.0}, "a weapon has a condition, and nothing else has one"),
         (SALVAGE | {"bionic": "datajack"}, "a bionic has a grade, and nothing else has one"),
         (SALVAGE | {"material": "plastic"}, "nothing else does"),
         (LAMP | {"material": "plastic"}, "nothing else does"),
         (PISTOL | {"rounds": None}, "a weapon has a magazine,"),
+        (PISTOL | {"capacity": None}, "a weapon has a capacity,"),
         (PISTOL | {"condition": None}, "a weapon has a condition,"),
         (PISTOL | {"material": None}, "nothing else does"),
         (ROUNDS | {"material": None}, "nothing else does"),
         (PLASTIC | {"material": None}, "nothing else does"),
         (SALVAGED_CELL | {"bionic": None}, "a bionic has a grade,"),
         (PISTOL | {"rounds": -1}, "greater than or equal to 0"),
+        (PISTOL | {"rounds": 7}, "no more rounds than its capacity"),
+        (PISTOL | {"rounds": "7"}, "valid integer"),
+        (PISTOL | {"capacity": 3}, "no more rounds than its capacity"),
+        (PISTOL | {"rounds": 0, "capacity": 0}, "greater than or equal to 1"),
+        (PISTOL | {"capacity": "6"}, "valid integer"),
         (PISTOL | {"condition": 1.5}, "less than or equal to 1"),
         (PLASTIC | {"material": "wood", "id": "wood"}, "material"),
         (PLASTIC | {"id": "carbon_fibre"}, "a material's id is its material"),
@@ -851,6 +867,9 @@ def test_rejects_invalid_stacks_weapons_and_salvaged_bionics(
     ("data", "field", "value", "match"),
     [
         (PISTOL, "rounds", None, "a weapon has a magazine"),
+        (PISTOL, "rounds", 7, "no more rounds than its capacity"),
+        (PISTOL, "capacity", 3, "no more rounds than its capacity"),
+        (PISTOL, "capacity", None, "a weapon has a capacity"),
         (PISTOL, "condition", -0.1, "greater than or equal to 0"),
         (PISTOL, "amount", 3.0, "only material and rounds stack"),
         (ROUNDS, "amount", 1.5, "rounds come whole"),

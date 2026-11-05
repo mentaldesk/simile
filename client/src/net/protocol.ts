@@ -612,9 +612,13 @@ export interface Item {
    */
   material?: Material | null;
   /**
-   * The rounds loaded in a weapon. Left out for anything else.
+   * The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.
    */
   rounds?: number | null;
+  /**
+   * The most rounds a weapon holds. Left out for anything else.
+   */
+  capacity?: number | null;
   /**
    * A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.
    */

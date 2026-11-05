@@ -39,6 +39,7 @@ _ITS_OWN: Final = (
     (ItemKind.LAMP, "charge", "charge"),
     (ItemKind.LAMP, "on", "switch"),
     (ItemKind.WEAPON, "rounds", "magazine"),
+    (ItemKind.WEAPON, "capacity", "capacity"),
     (ItemKind.WEAPON, "condition", "condition"),
     (ItemKind.BIONIC, "bionic", "grade"),
 )
@@ -90,8 +91,17 @@ class Item(Model):
     rounds: int | None = Field(
         default=None,
         ge=0,
+        strict=True,
         exclude_if=_none,
-        description="The rounds loaded in a weapon. Left out for anything else.",
+        description="The rounds loaded in a weapon, up to its `capacity`. Left out for anything "
+        "else.",
+    )
+    capacity: int | None = Field(
+        default=None,
+        ge=1,
+        strict=True,
+        exclude_if=_none,
+        description="The most rounds a weapon holds. Left out for anything else.",
     )
     condition: Unit | None = Field(
         default=None,
@@ -118,6 +128,10 @@ class Item(Model):
             for owner, field in ((ItemKind.MATERIAL, "material"), (ItemKind.BIONIC, "bionic")):
                 if kind == owner and data.get("id") != data.get(field):
                     raise ValueError(f"a {owner}'s id is its {field}")
+            # `rounds` and `capacity` are strict, so a string can't slip past this as a number.
+            rounds, capacity = data.get("rounds"), data.get("capacity")
+            if isinstance(rounds, int) and isinstance(capacity, int) and rounds > capacity:
+                raise ValueError("a weapon holds no more rounds than its capacity")
         return data
 
     @model_validator(mode="before")

@@ -213,6 +213,7 @@
         "on": null,
         "material": "plastic",
         "rounds": 4,
+        "capacity": 6,
         "condition": 0.8
       },
       {

@@ -341,6 +341,7 @@ PISTOL = Item(
     weight=0.5,
     material=Material.PLASTIC,
     rounds=4,
+    capacity=6,
     condition=0.8,
 )
 PLASTIC = Item(
@@ -1649,6 +1650,7 @@ def test_player_state_has_their_stash_and_what_a_weapon_and_a_stack_hold() -> No
         "on": None,
         "material": "plastic",
         "rounds": 4,
+        "capacity": 6,
         "condition": 0.8,
     }
     assert player["stash"]["limit"] == 20

@@ -114,8 +114,22 @@
             }
           ],
           "default": null,
-          "description": "The rounds loaded in a weapon. Left out for anything else.",
+          "description": "The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.",
           "title": "Rounds"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most rounds a weapon holds. Left out for anything else.",
+          "title": "Capacity"
         },
         "condition": {
           "anyOf": [
