@@ -327,3 +327,39 @@ describe('a manifest with a city, a landmark and measurements', () => {
     for (const sides of frames) expect(sides).toEqual([20, 21, 22, 23]);
   });
 });
+
+describe("a street's platforms", () => {
+  /** Today's manifest with fixture platforms under the village: the sewers have no steps. */
+  function below(): SceneryManifest {
+    const manifest = structuredClone(scenery);
+    manifest.platforms_below = {
+      metro: { ladder: 'fixture/metro-ladder', steps: 'fixture/metro-steps', ledge: 'fixture/metro-ledge' },
+      sewers: { ladder: 'fixture/sewers-ladder', ledge: 'fixture/sewers-ledge' },
+    };
+    return manifest;
+  }
+  const { platforms } = scenery;
+
+  it('draws its own pieces where it has them, and the village rest', () => {
+    expect(StreetView.platformsOf(below(), map('metro'))).toEqual({
+      ...platforms,
+      ladder: 'fixture/metro-ladder',
+      steps: 'fixture/metro-steps',
+      ledge: 'fixture/metro-ledge',
+    });
+  });
+
+  it("draws the village's on a street with none of its own, or in a manifest without platforms_below", () => {
+    expect(StreetView.platformsOf(below(), map('high_street'))).toEqual(platforms);
+    const bare = below();
+    delete bare.platforms_below;
+    for (const id of STREETS) expect(StreetView.platformsOf(bare, map(id)), id).toEqual(platforms);
+  });
+
+  it("draws the village's in place of a kind the street leaves out", () => {
+    const sewers = StreetView.platformsOf(below(), map('sewers'));
+    expect(sewers).toMatchObject({ ladder: 'fixture/sewers-ladder', ledge: 'fixture/sewers-ledge' });
+    expect(platforms.steps).toBeTruthy();
+    expect(sewers.steps).toBe(platforms.steps);
+  });
+});
