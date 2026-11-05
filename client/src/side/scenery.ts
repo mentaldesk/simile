@@ -62,6 +62,8 @@ export type SceneryManifest = {
   buildings: Record<string, BuildingEntry>;
   furniture: Record<string, FurnitureEntry>;
   platforms: Record<string, string>;
+  /** By street id, the platforms it draws in place of the village's. */
+  platforms_below?: Record<string, Record<string, string>>;
   slab: string;
   pieces: Record<string, Piece>;
 };

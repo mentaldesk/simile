@@ -10,7 +10,6 @@ from simile.behaviour import (
     Behaviour,
     BehaviourConfig,
     Goal,
-    GoalChosen,
     MuralSpot,
     Need,
     Places,
@@ -35,7 +34,6 @@ from simile.schema import (
 from simile.sim import STEP, Clock, EntityMoved, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import STREET_DIR, SpotKind, load_maps, with_every_location
-from simile.world.spots import purpose_of
 
 STREETS = load_maps(STREET_DIR)
 PLACES = Places(with_every_location(STREETS))
@@ -81,9 +79,6 @@ class Village:
         )
         self.moves: list[EntityMoved] = []
         self.world.bus.subscribe(EntityMoved, self.moves.append)
-        self.world.bus.subscribe(
-            GoalChosen, lambda e: self.movement.intend(e.npc, purpose_of(e.activity, e.target))
-        )
         self.world.loop.register(self.behaviour)
         self.world.loop.register(self.movement)
         self.behaviour.start()

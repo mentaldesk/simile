@@ -47,8 +47,6 @@ const LADDER_ABOVE_M = 0.6;
 const SIGN_SCALE = 0.6;
 
 type Image = Phaser.GameObjects.Image;
-/** By street id, the platforms it draws in place of the village's. */
-type Below = SceneryManifest & { platforms_below?: Record<string, Record<string, string>> };
 
 type Layer = {
   name: LayerName;
@@ -159,7 +157,7 @@ export class StreetView {
 
   /** Its own ladder, steps and ledge under the village, and the village's where it has none. */
   static platformsOf(manifest: SceneryManifest, map: SideMap): Record<string, string> {
-    return { ...manifest.platforms, ...(manifest as Below).platforms_below?.[map.id] };
+    return { ...manifest.platforms, ...manifest.platforms_below?.[map.id] };
   }
 
   /** The landmarks standing along it, each with where. */

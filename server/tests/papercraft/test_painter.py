@@ -1,15 +1,21 @@
 import pytest
 from PIL import Image
 
+from simile.papercraft.catalogue import paintings
 from simile.papercraft.painter import NO_TEXT, REFERENCES, STYLE, EditPainter, reference, styled
 from simile.works.config import DEFAULT_CONFIG
 
-NAMES = ("street", "house", "rooftops", "furniture", "characters")
+NAMES = ("clean/street", "clean/interior", "cartoon/street", "cartoon/interior")
 
 
 def test_the_references_live_in_content() -> None:
-    assert sorted(p.stem for p in REFERENCES.glob("*.jpg")) == sorted(NAMES)
+    found = sorted(p.relative_to(REFERENCES).as_posix() for p in REFERENCES.rglob("*.jpg"))
+    assert found == sorted(f"{name}.jpg" for name in NAMES)
     assert REFERENCES.parts[-2:] == ("papercraft", "references")
+
+
+def test_every_reference_is_painted_from() -> None:
+    assert {ref for painting in paintings() for ref in painting.refs} == set(NAMES)
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -43,7 +49,7 @@ def test_flux_paints_in_edit_mode_from_a_reference() -> None:
             styled("A red teapot on a plain white background."),
             (256, 240),
             1,
-            [reference("furniture", 256)],
+            [reference("clean/interior", 256)],
         )
 
     assert picture.size == (256, 240)

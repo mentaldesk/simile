@@ -19,6 +19,7 @@ STYLE = (
     "papercraft diorama made of cut coloured paper and cardboard layers, visible paper edges and "
     "fibres, soft drop shadows between layers, handmade crafty look"
 )
+"""The dolls' papercraft style, while `dolls/paint.py` paints in it."""
 CARTOON = (
     "hand-drawn 2D cartoon game art: thick dark brown ink outlines that are scratchy, uneven and "
     "slightly broken, as if drawn with a worn dip pen, flat colour fills with simple soft "
@@ -40,20 +41,20 @@ CLEAN = (
     "rounded simplified shapes, bold readable silhouettes"
 )
 """The tunnels' scratchy line without their dirt, kept clean: the village's comic style."""
-type Style = Literal["papercraft", "clean", "cartoon", "grimy"]
-WORDS: dict[Style, str] = {"papercraft": STYLE, "clean": CLEAN, "cartoon": CARTOON, "grimy": GRIMY}
+type Style = Literal["clean", "cartoon", "grimy"]
+WORDS: dict[Style, str] = {"clean": CLEAN, "cartoon": CARTOON, "grimy": GRIMY}
 NO_TEXT = " No text, no lettering, no logos, no words on signs."
 REFERENCE_WIDTH = 768
 
 
-def in_style(subject: str, style: Style = "papercraft") -> str:
+def in_style(subject: str, style: Style) -> str:
     """`subject` in `style`, with the ban on lettering."""
     return f"{subject} Art style: {WORDS[style]}.{NO_TEXT}"
 
 
 def styled(subject: str) -> str:
-    """`subject` with the references' art style and the ban on lettering."""
-    return in_style(subject, "papercraft")
+    """`subject` in the dolls' papercraft style, with the ban on lettering."""
+    return f"{subject} Art style: {STYLE}.{NO_TEXT}"
 
 
 def clean(subject: str) -> str:

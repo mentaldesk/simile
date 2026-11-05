@@ -10,15 +10,12 @@ from simile.papercraft.layout import Layout, load_layout
 from simile.papercraft.painter import Style, in_style
 from simile.papercraft.sketches import SKETCHES
 from simile.papercraft.village import (
-    CLAY,
     GROUNDS,
     LANDMARKS,
     LOOKS,
     PAPER_STYLES,
     PAPERS,
-    SLATE,
     STREETS,
-    TERRACOTTA,
     Landmark,
     Look,
     front,
@@ -33,22 +30,6 @@ SPRITE = (
     "else in the picture, and no shadow on the background."
 )
 SIDE_SPRITE = SPRITE.replace("straight from the front", "exactly from the side")
-LEAD = "Make a new picture in exactly the papercraft style of the reference picture: "
-REDRAW = (
-    "Redraw image 1 as {subject}, made of cut paper and card in the papercraft style of image 2: "
-    "matt paper with visible fibres and cut edges. Keep every shape exactly where it is, with the "
-    "same outlines and colours, seen exactly from the side with no perspective, on a plain {back} "
-    "background, and no shadow on the background."
-)
-TEXTURE = (
-    "A flat photo, taken from directly above, of a sheet of patterned craft paper that fills the "
-    "whole frame edge to edge: {}. Visible paper fibres, even soft light, no objects, no edges."
-)
-PAPER_LEAD = (
-    "Make a flat texture in the colours and paper style of the reference picture, showing none "
-    "of its objects: "
-)
-PAPER_CARD = "all matt paper and card, with visible paper fibres and cut edges, not glossy"
 NOTHING_BUT_PLANTS = " Only plants, fences and garden things: no houses, no buildings, no people."
 CARTOON_LEAD = "Make a new picture in exactly the cartoon style of the reference picture: "
 CARTOON_REDRAW = (
@@ -132,18 +113,6 @@ class Words:
 
 
 WORDS: dict[Style, Words] = {
-    "papercraft": Words(
-        LEAD,
-        REDRAW,
-        PAPER_LEAD,
-        TEXTURE,
-        "made of cut paper and card as a papercraft diorama: matt paper with visible fibres, cut "
-        "edges and soft shadows between layers",
-        "paper walls",
-        "the paper texture",
-        "street",
-        "house",
-    ),
     "clean": Words(
         CLEAN_LEAD,
         CLEAN_REDRAW,
@@ -180,7 +149,6 @@ WORDS: dict[Style, Words] = {
         TUNNEL_ROOMS,
     ),
 }
-SURFACE: frozenset[Style] = frozenset({"papercraft", "clean"})
 
 
 @dataclass(frozen=True)
@@ -241,28 +209,22 @@ def layer(
     subject: str,
     size: tuple[int, int],
     height: float,
-    style: Style = "papercraft",
+    style: Style,
     **kw,
 ) -> Painting:
     """A street layer. The village's near and foreground ones are kept to plants, since edit
     mode copies the street reference's houses into them otherwise."""
     words = WORDS[style]
-    if style in SURFACE and key.startswith(("near-", "front-")):
+    if style == "clean" and key.startswith(("near-", "front-")):
         subject += NOTHING_BUT_PLANTS
     prompt = in_style(words.lead + subject, style)
     return Painting(f"layers/{key}", kind, prompt, size, (words.layers,), height, **kw)
 
 
-def paper(
-    key: str, pattern: str, size: tuple[int, int] = (768, 512), style: Style = "papercraft", **kw
-) -> Painting:
+def paper(key: str, pattern: str, style: Style, size: tuple[int, int] = (768, 512)) -> Painting:
     words = WORDS[style]
     prompt = in_style(words.paper_lead + words.texture.format(pattern), style)
-    return Painting(f"papers/{key}", "paper", prompt, size, (words.rooms,), **kw)
-
-
-def cartoon_paper(key: str, pattern: str, size: tuple[int, int] = (768, 512)) -> Painting:
-    return paper(key, pattern, size, "cartoon")
+    return Painting(f"papers/{key}", "paper", prompt, size, (words.rooms,))
 
 
 def sewer_layer(
@@ -656,12 +618,12 @@ class Item:
     """What else to cut away: a kind of painted shadow from `cutout.SHADOWS`, `gaps` of backdrop
     showing through the object, and for a sketched piece `outline`, all that's off its sketch."""
     reseed: int = 0
-    ref: str = "furniture"
+    ref: str = CLEAN_ROOMS
     sketch: str | None = None
     folder: str = "furniture"
     variants: dict[str, str] = field(default_factory=dict)
     """Colour variants: name, and what's recoloured to what."""
-    style: Style = "papercraft"
+    style: Style = "clean"
     seat: float | None = None
     """Metres from its foot up to the top of its seat at the front edge."""
     bed: float | None = None
@@ -682,7 +644,6 @@ def clean(
     return Item(subject, height, size, ref=ref, style="clean", **kw)
 
 
-STREET = "street"
 FURNITURE: dict[str, Item] = {
     "kitchen": clean(
         "a fitted modern kitchen run of handleless matt white base cupboards under a light oak "
@@ -1448,13 +1409,6 @@ def items(layout: Layout) -> list[Painting]:
     return [*bases.values(), *(v for n, s in specs.items() for v in variants(s, bases[n]))]
 
 
-ROOF_TILES = {
-    TERRACOTTA: "terracotta clay tiles",
-    SLATE: "grey slate tiles",
-    CLAY: "brown clay tiles",
-}
-
-
 MURAL_WORDS = (
     " The wide plain stretch of wall on the {side} is a blank wall kept for a mural: leave it "
     "smooth and empty, with no windows, no doors, no flower boxes and no plants on it."
@@ -1540,50 +1494,7 @@ def modern_front_prompt(look: Look, unit: Front) -> str:
 
 def front_prompt(look: Look, unit: Front) -> str:
     """The prompt for one unit of a front, naming only what its plan has."""
-    if look.style not in SURFACE:
-        return cartoon_front_prompt(look, unit)
-    if look.modern:
-        return modern_front_prompt(look, unit)
-    roof = (
-        "a flat roof with a low parapet"
-        if look.roof_shape == "flat"
-        else f"a {'hipped' if look.roof_shape == 'hip' else 'pitched'} roof of "
-        f"{ROOF_TILES.get(look.roof, 'clay tiles')}"
-    )
-    parts = ["the walls", "the roof", "every window"]
-    extras = []
-    if look.shutters:
-        extras.append("wooden shutters")
-    if look.flower_boxes:
-        extras.append("flower boxes under the windows")
-    if unit.shop_boxes():
-        parts.append("the striped awnings over the shop windows")
-    elif unit.awnings:
-        parts.append("the striped awnings over the windows")
-    if unit.lanterns:
-        parts.append("the round paper lanterns")
-        extras.append("round red paper lanterns")
-    if unit.door is not None:
-        parts += ["the door", "the wall lamp", "the potted plants"]
-        if look.glass_door:
-            extras.append("a glass door")
-    ground = "grey" if backdrop(unit) == GREY else "white"
-    rules = " Leave the blank stretches of wall plain, with nothing on them." if unit.murals else ""
-    if unit.murals and look.mural_words:
-        rules = MURAL_WORDS.format(side=_side(unit))
-    if unit.door is None and unit.awnings:
-        rules += " This part of the building has no door: only the windows shown."
-    elif unit.door is None:
-        rules += " It has no door."
-    return in_style(
-        f"Redraw image 1 as the front of {look.look}, with {roof}"
-        + (f", {', '.join(extras)}" if extras else "")
-        + f", {WORDS[look.style].front}. Keep every shape exactly where it is, with the same "
-        f"outlines and colours: {', '.join(parts)}. Seen straight from the front, a flat "
-        f"elevation with no perspective, on a plain {ground} background.{rules} No people, no "
-        "signs.",
-        look.style,
-    )
+    return modern_front_prompt(look, unit) if look.modern else cartoon_front_prompt(look, unit)
 
 
 def night_prompt(look: Look, unit: Front) -> str:
@@ -1639,7 +1550,7 @@ def fronts(layout: Layout) -> list[Painting]:
 
 def room_papers(layout: Layout) -> list[Painting]:
     used = sorted({p for floors in papers(layout).values() for p in floors})
-    made = [paper(key, PAPERS[key], style=PAPER_STYLES.get(key, "papercraft")) for key in used]
+    made = [paper(key, PAPERS[key], PAPER_STYLES[key]) for key in used]
     return [*made, SLAB]
 
 

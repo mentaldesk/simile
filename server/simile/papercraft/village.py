@@ -107,7 +107,7 @@ class Look:
     """Added to the seed, to paint a rejected front again."""
     reseeds: tuple[int, ...] = ()
     """Added to each unit's seed, by unit, to paint one rejected unit again."""
-    style: Style = "papercraft"
+    style: Style = "clean"
     plants: bool = True
     """A potted plant each side of the door."""
     whole: bool = False
@@ -117,10 +117,6 @@ class Look:
     pictogram: str | None = None
     """What a modern shop window's neon sign shows, such as "coffee cup"."""
 
-
-TERRACOTTA: Rgb = (184, 96, 70)
-SLATE: Rgb = (104, 112, 124)
-CLAY: Rgb = (150, 108, 86)
 
 DARK: Rgb = (52, 56, 62)
 ROOF: Rgb = (96, 100, 108)
