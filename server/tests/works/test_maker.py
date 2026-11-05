@@ -256,6 +256,22 @@ def test_makes_nothing_without_a_craft_a_wall_for_a_mural_or_an_llm(
     assert fake.requests == []
 
 
+def test_makes_nothing_while_the_night_is_skipped(memory: MemoryStore, works: WorksStore) -> None:
+    fake = FakeProvider([reply()])
+    llm = LLMClient(fake)
+    clock = Clock(NOW)
+
+    async def scenario() -> Work | None:
+        maker = Maker(works, memory, clock, lambda: llm)
+        clock.skip(3600)
+        assert maker.make(VIKTOR) is None
+        clock.resume()
+        return await make(maker)
+
+    assert asyncio.run(scenario()) is not None
+    assert len(fake.requests) == 1
+
+
 def test_writes_without_blocking_and_one_piece_at_a_time(
     memory: MemoryStore, works: WorksStore
 ) -> None:

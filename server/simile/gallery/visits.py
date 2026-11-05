@@ -162,7 +162,9 @@ class Visitors:
     def _arrive(self, who: Id, frame: Interactable, painting: Work | None) -> None:
         minutes = self.rng.uniform(*self.config.linger)
         self.looking[who] = (key(frame), self.clock.now + timedelta(minutes=minutes))
-        if painting is None or not self._new_to(who, painting) or (llm := self.llm()) is None:
+        if painting is None or self.clock.skipping or not self._new_to(who, painting):
+            return
+        if (llm := self.llm()) is None:
             return
         self._seen_by(who).add(painting.id)
         task = asyncio.get_running_loop().create_task(

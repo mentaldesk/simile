@@ -45,7 +45,9 @@ sim minutes) at each. A new goal or a conversation stops the tour.
   Haiku call through L1, below conversations' priority, as at the terminals and murals. The reply
   becomes a `work` memory `about` the artist with `work_id` and the painting's first 3 tags, so
   they talk about it later (M10). If the call fails, they try again after `look_again` (a sim
-  hour). What's been seen is read back from memories, so a restart doesn't repeat it.
+  hour). What's been seen is read back from memories, so a restart doesn't repeat it. While the
+  player sleeps through the night (`clock.skipping`), nobody looks, so a painting passed then is
+  still new to them later.
 - **The player** remembers each painting they stand at, once, with no call. The client's panel
   shows it up close (`client/src/ui/gallery-panel.ts`).
 

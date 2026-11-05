@@ -14,6 +14,8 @@ them at the terminals and bring them up later, and the player reads them there t
 - **Analysis.** Every sim minute, the articles among the 60 newest that aren't analysed yet get one
   Haiku call each through L1, below conversations' priority, which also writes the long summary.
   A first start analyses up to 10 items per feed, about 60 calls, and logs how many as it starts.
+  While the player sleeps through the night (`clock.skipping`), analysis waits, and residents at
+  the terminals read nothing.
 - **Turning it off.** `SIMILE_NEWS=0` leaves the news table alone: nothing is fetched, article
   pages included, and no bundled articles are added. Articles already stored but not analysed, say
   from `simile news --refresh`, are still analysed, and summarised only from text their feed

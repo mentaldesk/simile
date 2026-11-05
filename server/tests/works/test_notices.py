@@ -137,6 +137,25 @@ def test_a_failed_notice_waits_before_trying_again(works: WorksStore) -> None:
     assert noticeboard.due() == ["mei"]
 
 
+def test_no_notice_goes_up_while_the_night_is_skipped(works: WorksStore) -> None:
+    clock = Clock(NOW)
+    fake = FakeProvider([draft()])
+    noticeboard = board(works, clock, LLMClient(fake))
+
+    async def scenario() -> None:
+        clock.skip(3600)
+        noticeboard.tick(DEFAULT_CONFIG.notice_check)
+        assert noticeboard.tasks == set()
+        clock.resume()
+        noticeboard.tick(DEFAULT_CONFIG.notice_check)
+        await asyncio.gather(*noticeboard.tasks)
+
+    asyncio.run(scenario())
+
+    assert len(fake.requests) == 1
+    assert works.last_notice("mei") is not None
+
+
 def test_the_board_shows_the_newest_notices_still_up(works: WorksStore) -> None:
     for n in range(4):
         created = NOW - timedelta(hours=n * 10)

@@ -142,7 +142,7 @@ class NewsReader:
     def read(self, npc: Npc) -> None:
         """Start reading the unread article that interests `npc` most, if any. Doesn't block."""
         llm = self.llm()
-        if llm is None:
+        if llm is None or self.clock.skipping:
             return
         best = self.ranked(npc)
         if not best:
