@@ -1325,7 +1325,8 @@ PLATFORMS: dict[str, Item] = {
 PLATFORMS_BELOW: dict[str, dict[str, Item]] = {
     "metro": {
         "ladder": Item(
-            "a tall old steel maintenance ladder of two flat steel rails and round steel rungs",
+            "a tall old maintenance ladder of dark gunmetal-grey painted steel: two flat rails and "
+            "round rungs",
             3.6,
             ref=TUNNELS,
             sketch="metro_ladder",
