@@ -1,0 +1,124 @@
+{
+  "money": 212.5,
+  "items": [
+    {
+      "id": "lamp",
+      "kind": "lamp",
+      "name": "Lamp",
+      "weight": 1.0,
+      "charge": 0.4,
+      "on": true
+    },
+    {
+      "id": "copper_wire",
+      "kind": "salvage",
+      "name": "Copper wire",
+      "weight": 1.5,
+      "charge": null,
+      "on": null
+    },
+    {
+      "id": "copper_wire",
+      "kind": "salvage",
+      "name": "Copper wire",
+      "weight": 1.5,
+      "charge": null,
+      "on": null
+    },
+    {
+      "id": "apex_actuator",
+      "kind": "part",
+      "name": "Apex actuator",
+      "weight": 2.0,
+      "charge": null,
+      "on": null
+    },
+    {
+      "id": "ration_bar",
+      "kind": "food",
+      "name": "Ration bar",
+      "weight": 0.2,
+      "charge": null,
+      "on": null
+    }
+  ],
+  "carry_limit": 15.0,
+  "body": {
+    "legs": "bionic_legs_2",
+    "vertebra": "datajack",
+    "left_eye": "infrared_eye",
+    "right_eye": "present",
+    "left_kidney": "sold",
+    "right_kidney": "present",
+    "stomach": "power_cell_2",
+    "feet": "spring_feet"
+  },
+  "mind": {
+    "recipes": [
+      "power_cell",
+      "datajack"
+    ],
+    "sold": [
+      "datajack"
+    ]
+  },
+  "hunger": 0.2,
+  "power": 0.7,
+  "health": 0.6,
+  "effects": [
+    {
+      "kind": "rat_bite",
+      "strength": 0.3,
+      "fades": 0.1,
+      "since": "2026-03-14T09:10:00Z"
+    }
+  ],
+  "left": [
+    {
+      "at": {
+        "map": "sewers_0",
+        "x": 12,
+        "y": 7
+      },
+      "items": [
+        {
+          "id": "circuit_board",
+          "kind": "salvage",
+          "name": "Circuit board",
+          "weight": 0.5,
+          "charge": null,
+          "on": null
+        },
+        {
+          "id": "copper_wire",
+          "kind": "salvage",
+          "name": "Copper wire",
+          "weight": 1.5,
+          "charge": null,
+          "on": null
+        }
+      ],
+      "money": 40.0
+    }
+  ],
+  "taken": {
+    "sewers_0_scrap_3": "2026-03-14T09:10:00Z"
+  },
+  "sales": [
+    {
+      "item": {
+        "id": "circuit_board",
+        "kind": "salvage",
+        "name": "Circuit board",
+        "weight": 0.5,
+        "charge": null,
+        "on": null
+      },
+      "place": "scrap_stall",
+      "price": 12.0
+    }
+  ],
+  "searched": [
+    "metro_dead_fridge"
+  ]
+}

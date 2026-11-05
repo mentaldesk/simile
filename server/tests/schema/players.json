@@ -199,5 +199,84 @@
     "mind": {"recipes": ["power_cell", "datajack"]},
     "hunger": 0.3,
     "searched": ["maker_space_drawers", "aris_bench", "metro_vending_machine"]
+  },
+  {
+    "money": 60.0,
+    "items": [
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.9, "on": false},
+      {
+        "id": "plastic_pistol",
+        "kind": "weapon",
+        "name": "Plastic pistol",
+        "weight": 0.5,
+        "charge": null,
+        "on": null,
+        "material": "plastic",
+        "rounds": 4,
+        "condition": 0.8
+      },
+      {
+        "id": "plastic_rounds",
+        "kind": "rounds",
+        "name": "Plastic rounds",
+        "weight": 0.05,
+        "amount": 12.0,
+        "charge": null,
+        "on": null,
+        "material": "plastic"
+      },
+      {
+        "id": "plastic",
+        "kind": "material",
+        "name": "Plastic",
+        "weight": 1.0,
+        "amount": 2.5,
+        "charge": null,
+        "on": null,
+        "material": "plastic"
+      },
+      {
+        "id": "power_cell_2",
+        "kind": "bionic",
+        "name": "Power cell, grade 2",
+        "weight": 1.5,
+        "charge": null,
+        "on": null,
+        "bionic": "power_cell_2"
+      }
+    ],
+    "carry_limit": 15.0,
+    "stash": {
+      "items": [
+        {
+          "id": "plastic",
+          "kind": "material",
+          "name": "Plastic",
+          "weight": 1.0,
+          "amount": 8.0,
+          "charge": null,
+          "on": null,
+          "material": "plastic"
+        },
+        {
+          "id": "copper_wire",
+          "kind": "salvage",
+          "name": "Copper wire",
+          "weight": 1.5,
+          "charge": null,
+          "on": null
+        }
+      ],
+      "limit": 20.0
+    },
+    "body": {
+      "legs": "present",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "present",
+      "right_kidney": "present"
+    },
+    "hunger": 0.1
   }
 ]

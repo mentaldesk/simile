@@ -78,6 +78,7 @@ from simile.schema import (
     JournalEntry,
     Lead,
     MapTile,
+    Material,
     Mind,
     Pile,
     Player,
@@ -86,6 +87,7 @@ from simile.schema import (
     Sale,
     Source,
     SourceKind,
+    Stash,
     lamp,
 )
 
@@ -332,6 +334,29 @@ SEARCHED = PlayerStateMessage(
     ),
     recipes=[JACK_RECIPE],
 )
+PISTOL = Item(
+    id="plastic_pistol",
+    kind=ItemKind.WEAPON,
+    name="Plastic pistol",
+    weight=0.5,
+    material=Material.PLASTIC,
+    rounds=4,
+    condition=0.8,
+)
+PLASTIC = Item(
+    id="plastic",
+    kind=ItemKind.MATERIAL,
+    name="Plastic",
+    weight=1,
+    amount=8,
+    material=Material.PLASTIC,
+)
+ARMED = PlayerStateMessage(
+    player=Player(
+        items=[lamp(), PISTOL],
+        stash=Stash(items=[PLASTIC]),
+    ),
+)
 DRAINED = PlayerCollapsedMessage(position=Position(x=4, y=9, map="home"), cause=Vital.POWER)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
@@ -410,6 +435,7 @@ SERVER = [
     BUYING_BACK,
     TREATING,
     SEARCHED,
+    ARMED,
     JournalMessage(entries=[]),
     JOURNAL,
     COLLAPSED,
@@ -1609,3 +1635,21 @@ def test_player_state_says_what_they_have_searched() -> None:
 
     assert player["searched"] == ["aris_bench", "maker_space_drawers"]
     assert "searched" not in json.loads(STARTING.model_dump_json())["player"]
+
+
+def test_player_state_has_their_stash_and_what_a_weapon_and_a_stack_hold() -> None:
+    player = json.loads(ARMED.model_dump_json())["player"]
+
+    assert player["items"][1] == {
+        "id": "plastic_pistol",
+        "kind": "weapon",
+        "name": "Plastic pistol",
+        "weight": 0.5,
+        "charge": None,
+        "on": None,
+        "material": "plastic",
+        "rounds": 4,
+        "condition": 0.8,
+    }
+    assert player["stash"]["limit"] == 20
+    assert player["stash"]["items"][0]["amount"] == 8

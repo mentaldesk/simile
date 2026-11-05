@@ -16,6 +16,7 @@ from simile.schema import (
     PRESENT,
     SOLD,
     SPRING_FEET,
+    STASH_LIMIT,
     Bionic,
     Body,
     BodyPart,
@@ -24,22 +25,38 @@ from simile.schema import (
     Item,
     ItemKind,
     MapTile,
+    Material,
     Mind,
     Pile,
     Player,
     Recipe,
     Sale,
+    Stash,
     export,
     lamp,
 )
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED, HURT, SEARCHING = PLAYERS
-STAGE_1 = PLAYERS[:-3]
-BEFORE_VITALS = PLAYERS[:-2]
-BEFORE_SEARCHING = PLAYERS[:-1]
+(
+    STARTING,
+    KIDNEY_SOLD,
+    DELVING,
+    FITTED,
+    COLLAPSED,
+    SALVAGING,
+    CELL_FITTED,
+    HURT,
+    SEARCHING,
+    ARMED,
+) = PLAYERS
+STAGE_1 = PLAYERS[:-4]
+BEFORE_VITALS = PLAYERS[:-3]
+BEFORE_SEARCHING = PLAYERS[:-2]
+BEFORE_THE_STASH = PLAYERS[:-1]
+STAGE_2_SAVE = (HERE / "stage_2_player.json").read_text()
 SALVAGE = DELVING["items"][1]
+LAMP, PISTOL, ROUNDS, PLASTIC, SALVAGED_CELL = ARMED["items"]
 RECIPES: list[dict[str, Any]] = json.loads((HERE / "recipes.json").read_text())
 CELL, JACK, APEX_LEGS, EYE = RECIPES
 
@@ -49,7 +66,7 @@ def schema(name: str) -> Draft202012Validator:
 
 
 def rejects(
-    model: type[Player | Item | Body | Pile | Recipe | Mind | Effect | Sale],
+    model: type[Player | Item | Body | Pile | Recipe | Mind | Effect | Sale | Stash],
     data: dict[str, Any],
     match: str,
 ) -> None:
@@ -70,6 +87,7 @@ def rejects(
         "cell_fitted",
         "hurt",
         "searching",
+        "armed",
     ],
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
@@ -706,6 +724,156 @@ def test_a_save_from_before_searching_has_searched_nothing(data: dict[str, Any])
 
     assert player.searched == []
     assert json.loads(player.model_dump_json()) == data
+
+
+def test_a_stage_2_save_loads_as_it_was() -> None:
+    player = Player.model_validate_json(STAGE_2_SAVE)
+
+    assert player.stash == Stash()
+    assert all(item.amount == 1 for item in player.items)
+    assert player.load == pytest.approx(6.2)
+    assert player.left[0].items[0].amount == 1
+    assert player.sales[0].item.amount == 1
+    assert json.loads(player.model_dump_json()) == json.loads(STAGE_2_SAVE)
+
+
+@pytest.mark.parametrize("data", BEFORE_THE_STASH)
+def test_a_save_from_before_the_stash_has_an_empty_one_at_the_starting_limit(
+    data: dict[str, Any],
+) -> None:
+    player = Player.model_validate(data)
+
+    assert player.stash.items == []
+    assert player.stash.limit == STASH_LIMIT == 20
+    assert json.loads(player.model_dump_json()) == data
+
+
+def test_a_stack_weighs_each_one_by_its_amount() -> None:
+    assert Item.model_validate(ROUNDS).load == pytest.approx(0.6)
+    assert Item.model_validate(SALVAGE).load == SALVAGE["weight"]
+    assert Player.model_validate(ARMED).load == pytest.approx(6.1)
+
+
+def test_the_stash_counts_against_its_own_limit_and_not_what_they_carry() -> None:
+    player = Player.model_validate(ARMED)
+
+    assert player.stash.load == 9.5
+    assert player.load == pytest.approx(6.1)
+
+
+def test_a_stash_that_holds_something_or_has_been_fitted_out_is_saved() -> None:
+    assert "stash" not in Player().model_dump(mode="json")
+    stocked = Player(stash=Stash(items=[Item.model_validate(PLASTIC)]))
+    fitted_out = Player(stash=Stash(limit=40))
+
+    for player in (stocked, fitted_out):
+        assert Player.model_validate_json(player.model_dump_json()) == player
+
+
+def test_plastic_is_a_material_by_kind_and_amount() -> None:
+    plastic = Item.model_validate(PLASTIC)
+
+    assert (plastic.kind, plastic.material, plastic.amount) == (
+        ItemKind.MATERIAL,
+        Material.PLASTIC,
+        2.5,
+    )
+
+
+def test_a_weapon_has_its_rounds_loaded_and_its_condition() -> None:
+    pistol = Item.model_validate(PISTOL)
+
+    assert (pistol.kind, pistol.rounds, pistol.condition) == (ItemKind.WEAPON, 4, 0.8)
+    assert pistol.amount == 1
+
+
+def test_an_empty_worn_out_weapon_is_still_a_weapon() -> None:
+    pistol = Item.model_validate(PISTOL | {"rounds": 0, "condition": 0.0})
+
+    assert json.loads(pistol.model_dump_json()) == PISTOL | {"rounds": 0, "condition": 0.0}
+
+
+@pytest.mark.parametrize("bionic", list(Bionic))
+def test_any_grade_of_any_bionic_can_be_salvaged(bionic: Bionic) -> None:
+    item = Item.model_validate(SALVAGED_CELL | {"id": bionic.value, "bionic": bionic.value})
+
+    assert item.bionic is bionic
+
+
+def test_a_pile_and_a_sale_hold_stacks_and_weapons() -> None:
+    pile = Pile(
+        at=MapTile(map="sewers", x=1, y=2),
+        items=[Item.model_validate(ROUNDS), Item.model_validate(PISTOL)],
+    )
+
+    assert Pile.model_validate_json(pile.model_dump_json()) == pile
+    assert json.loads(pile.model_dump_json())["items"] == [ROUNDS, PISTOL]
+
+
+@pytest.mark.parametrize(
+    ("data", "match"),
+    [
+        (SALVAGE | {"rounds": 6}, "a weapon has a magazine, and nothing else has one"),
+        (SALVAGE | {"condition": 1.0}, "a weapon has a condition, and nothing else has one"),
+        (SALVAGE | {"bionic": "datajack"}, "a bionic has a grade, and nothing else has one"),
+        (SALVAGE | {"material": "plastic"}, "nothing else does"),
+        (LAMP | {"material": "plastic"}, "nothing else does"),
+        (PISTOL | {"rounds": None}, "a weapon has a magazine,"),
+        (PISTOL | {"condition": None}, "a weapon has a condition,"),
+        (PISTOL | {"material": None}, "nothing else does"),
+        (ROUNDS | {"material": None}, "nothing else does"),
+        (PLASTIC | {"material": None}, "nothing else does"),
+        (SALVAGED_CELL | {"bionic": None}, "a bionic has a grade,"),
+        (PISTOL | {"rounds": -1}, "greater than or equal to 0"),
+        (PISTOL | {"condition": 1.5}, "less than or equal to 1"),
+        (PLASTIC | {"material": "wood", "id": "wood"}, "material"),
+        (PLASTIC | {"id": "carbon_fibre"}, "a material's id is its material"),
+        (SALVAGED_CELL | {"bionic": "power_cell"}, "a bionic's id is its bionic"),
+        (SALVAGED_CELL | {"id": "kidney", "bionic": "kidney"}, "bionic"),
+        (SALVAGE | {"amount": 2.0}, "only material and rounds stack"),
+        (LAMP | {"amount": 2.0}, "only material and rounds stack"),
+        (PISTOL | {"amount": 2.0}, "only material and rounds stack"),
+        (SALVAGED_CELL | {"amount": 2.0}, "only material and rounds stack"),
+        (ROUNDS | {"amount": 2.5}, "rounds come whole"),
+        (ROUNDS | {"amount": 0}, "greater than 0"),
+        (PLASTIC | {"amount": -1}, "greater than 0"),
+        (PLASTIC | {"amount": float("inf")}, "finite number"),
+        (ROUNDS | {"amount": "2.5"}, "valid number"),
+    ],
+)
+def test_rejects_invalid_stacks_weapons_and_salvaged_bionics(
+    data: dict[str, Any], match: str
+) -> None:
+    rejects(Item, data, match)
+
+
+@pytest.mark.parametrize(
+    ("data", "field", "value", "match"),
+    [
+        (PISTOL, "rounds", None, "a weapon has a magazine"),
+        (PISTOL, "condition", -0.1, "greater than or equal to 0"),
+        (PISTOL, "amount", 3.0, "only material and rounds stack"),
+        (ROUNDS, "amount", 1.5, "rounds come whole"),
+        (PLASTIC, "amount", 0.0, "greater than 0"),
+        (SALVAGE, "amount", 2.0, "only material and rounds stack"),
+    ],
+)
+def test_rejects_invalid_changes_to_stacks_and_weapons(
+    data: dict[str, Any], field: str, value: Any, match: str
+) -> None:
+    changes(Item.model_validate(data), field, value, match)
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"limit": 0}, "greater than 0"),
+        ({"limit": float("inf")}, "finite number"),
+        ({"items": [SALVAGE | {"amount": 2.0}]}, "only material and rounds stack"),
+    ],
+)
+def test_rejects_invalid_stashes(update: dict[str, Any], match: str) -> None:
+    rejects(Stash, update, match)
 
 
 def test_they_keep_what_they_have_searched_in_order() -> None:

@@ -7,21 +7,49 @@ from simile.schema.common import CHECKED, Id, Key, MapTile, Model, Timestamp, Un
 
 CARRY_LIMIT = 15.0
 OLD_CARRY_LIMIT: Final = 10.0
+STASH_LIMIT: Final = 20.0
 PRESENT: Final = "present"
 SOLD: Final = "sold"
 
 
 class ItemKind(StrEnum):
-    """What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit."""
+    """What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, a `part` to fit,
+    `material` to print with, a `weapon` to fire, `rounds` to load it with, or a salvaged `bionic`
+    to have refitted."""
 
     SALVAGE = "salvage"
     FOOD = "food"
     LAMP = "lamp"
     PART = "part"
+    MATERIAL = "material"
+    WEAPON = "weapon"
+    ROUNDS = "rounds"
+    BIONIC = "bionic"
+
+
+class Material(StrEnum):
+    """What the printer prints with, which decides how hard its weapons and rounds hit."""
+
+    PLASTIC = "plastic"
+
+
+_STACKS: Final = (ItemKind.MATERIAL, ItemKind.ROUNDS)
+_MADE_OF_MATERIAL: Final = (*_STACKS, ItemKind.WEAPON)
+_ITS_OWN: Final = (
+    (ItemKind.LAMP, "charge", "charge"),
+    (ItemKind.LAMP, "on", "switch"),
+    (ItemKind.WEAPON, "rounds", "magazine"),
+    (ItemKind.WEAPON, "condition", "condition"),
+    (ItemKind.BIONIC, "bionic", "grade"),
+)
+
+
+def _none(value: object) -> bool:
+    return value is None
 
 
 class Item(Model):
-    """Something the player carries."""
+    """Something the player carries, or a stack of it."""
 
     model_config = CHECKED
 
@@ -32,7 +60,16 @@ class Item(Model):
     kind: ItemKind
     name: str = Field(min_length=1, description='What the player sees, e.g. "Copper wire".')
     weight: float = Field(
-        ge=0, allow_inf_nan=False, description="In kg, counted against the carry limit."
+        ge=0, allow_inf_nan=False, description="In kg, each, counted against the carry limit."
+    )
+    amount: float = Field(
+        default=1.0,
+        gt=0,
+        allow_inf_nan=False,
+        strict=True,
+        exclude_if=lambda amount: amount == 1,
+        description="How many in the stack. Only material and rounds stack: rounds come whole, and "
+        "material in any amount, since it comes from scrap by weight. Left out while it's 1.",
     )
     charge: Unit | None = Field(
         default=None,
@@ -44,21 +81,85 @@ class Item(Model):
         description="Whether a lamp is switched on, running its battery down. The player switches "
         "it, and it goes off by itself when it's flat. Null for anything else.",
     )
+    material: Material | None = Field(
+        default=None,
+        exclude_if=_none,
+        description="What material, rounds or a weapon are made of. A material's `id` is this. "
+        "Left out for anything else.",
+    )
+    rounds: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=_none,
+        description="The rounds loaded in a weapon. Left out for anything else.",
+    )
+    condition: Unit | None = Field(
+        default=None,
+        exclude_if=_none,
+        description="A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.",
+    )
+    bionic: "Bionic | None" = Field(
+        default=None,
+        exclude_if=_none,
+        description="What a salvaged bionic refits as, grade and all, which is also its `id`. Left "
+        "out for anything else.",
+    )
 
     @model_validator(mode="before")
     @classmethod
-    def _only_a_lamp_has_a_charge_and_a_switch(cls, data: Any) -> Any:
+    def _each_kind_has_its_own_fields(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            lamp = data.get("kind") == ItemKind.LAMP
-            for field, what in (("charge", "charge"), ("on", "switch")):
-                if lamp == (data.get(field) is None):
-                    raise ValueError(f"a lamp has a {what}, and nothing else has one")
+            kind = data.get("kind")
+            for owner, field, what in _ITS_OWN:
+                if (kind == owner) == (data.get(field) is None):
+                    raise ValueError(f"a {owner} has a {what}, and nothing else has one")
+            if (kind in _MADE_OF_MATERIAL) == (data.get("material") is None):
+                raise ValueError("material, rounds and a weapon have a material, nothing else does")
+            for owner, field in ((ItemKind.MATERIAL, "material"), (ItemKind.BIONIC, "bionic")):
+                if kind == owner and data.get("id") != data.get(field):
+                    raise ValueError(f"a {owner}'s id is its {field}")
         return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def _only_material_and_rounds_stack(cls, data: Any) -> Any:
+        # `amount` is strict, so a string can't slip past these checks and turn into a number after.
+        if isinstance(data, dict):
+            amount = data.get("amount", 1)
+            if amount != 1 and data.get("kind") not in _STACKS:
+                raise ValueError("only material and rounds stack")
+            whole = not isinstance(amount, int | float) or amount % 1 == 0
+            if data.get("kind") == ItemKind.ROUNDS and not whole:
+                raise ValueError("rounds come whole")
+        return data
+
+    @property
+    def load(self) -> float:
+        """What the stack weighs, in kg."""
+        return self.weight * self.amount
 
 
 def lamp() -> Item:
     """The lamp the player starts with, fully charged and switched off."""
     return Item(id="lamp", kind=ItemKind.LAMP, name="Lamp", weight=1.0, charge=1.0, on=False)
+
+
+class Stash(Model):
+    """What the player keeps in Aris's lockers in the maker space, beside what they carry."""
+
+    model_config = CHECKED
+
+    items: list[Item] = Field(
+        default=[], description="What's in it. Putting things in keeps their weight within `limit`."
+    )
+    limit: float = Field(
+        default=STASH_LIMIT, gt=0, allow_inf_nan=False, description="The most it holds, in kg."
+    )
+
+    @property
+    def load(self) -> float:
+        """What everything in it weighs, in kg."""
+        return sum(item.load for item in self.items)
 
 
 class Pile(Model):
@@ -341,9 +442,9 @@ class Sale(Model):
 class Player(Model):
     """The player's state, saved with the world. Each field defaults to the starting player's, so
     a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
-    full health, no effects and nothing searched. A save holding the old 10 kg carry limit loads
-    with 15. Their humanity is derived from the bionics fitted and isn't a field, so the client
-    never sees it."""
+    full health, no effects, nothing searched and an empty stash. A save holding the old 10 kg
+    carry limit loads with 15. Their humanity is derived from the bionics fitted and isn't a field,
+    so the client never sees it."""
 
     model_config = CHECKED
 
@@ -359,6 +460,11 @@ class Player(Model):
     )
     carry_limit: float = Field(
         default=CARRY_LIMIT, gt=0, allow_inf_nan=False, description="The most they carry, in kg."
+    )
+    stash: Stash = Field(
+        default_factory=Stash,
+        exclude_if=lambda stash: stash == Stash(),
+        description="What they keep at home. Left out while it's empty and at its starting limit.",
     )
     body: Body = Field(default_factory=Body)
     mind: Mind = Field(default_factory=Mind, exclude_if=lambda mind: not mind.recipes)
@@ -437,4 +543,4 @@ class Player(Model):
     @property
     def load(self) -> float:
         """What everything they carry weighs, in kg."""
-        return sum(item.weight for item in self.items)
+        return sum(item.load for item in self.items)
