@@ -91,6 +91,7 @@
  "streets": {
   "banyan_row": {
    "sky": "layers/sky",
+   "city": "layers/city",
    "far": "layers/far-river",
    "mid": "layers/mid-riverbank",
    "near": "layers/near-hedges",
@@ -99,6 +100,7 @@
   },
   "high_street": {
    "sky": "layers/sky",
+   "city": "layers/city",
    "far": "layers/far-hills",
    "mid": "layers/mid-shophouses",
    "near": "layers/near-walls",
@@ -107,6 +109,7 @@
   },
   "kapok_walk": {
    "sky": "layers/sky",
+   "city": "layers/city",
    "far": "layers/far-hills",
    "mid": "layers/mid-rooftops",
    "near": "layers/near-gardens",
@@ -115,6 +118,7 @@
   },
   "lychee_lane": {
    "sky": "layers/sky",
+   "city": "layers/city",
    "far": "layers/far-hills",
    "mid": "layers/mid-homes",
    "near": "layers/near-gardens",
@@ -131,6 +135,7 @@
   },
   "rooftops": {
    "sky": "layers/sky",
+   "city": "layers/city",
    "far": "layers/far-hills",
    "mid": "layers/mid-rooftops",
    "near": "layers/near-walls",
@@ -144,6 +149,19 @@
    "near": "layers/near-sewer",
    "ground": "layers/ground-sewer",
    "foreground": "layers/front-sewer"
+  }
+ },
+ "landmarks": {
+  "apex": {
+   "piece": "landmarks/apex",
+   "glow": "glow/apex",
+   "at": {
+    "high_street": 0.6,
+    "lychee_lane": 0.6,
+    "kapok_walk": 0.6,
+    "banyan_row": 0.6,
+    "rooftops": 0.6
+   }
   }
  },
  "grounds": {
@@ -2043,6 +2061,20 @@
    ],
    "hash": "203f8d0453e5bb684990"
   },
+  "glow/apex": {
+   "file": "glow/apex.webp",
+   "size": [
+    398,
+    1495
+   ],
+   "height": 8.0,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.994
+   ],
+   "hash": "f62634e3f9ce90f542de"
+  },
   "glow/bakery": {
    "file": "glow/bakery.webp",
    "size": [
@@ -2411,15 +2443,39 @@
    "eaves": 12.1,
    "hash": "25cc964d80542abdee7e"
   },
-  "layers/far-hills": {
-   "file": "layers/far-hills.webp",
+  "landmarks/apex": {
+   "file": "landmarks/apex.webp",
    "size": [
-    1316,
-    182
+    398,
+    1495
+   ],
+   "height": 8.0,
+   "kind": "landmark",
+   "anchor": [
+    0.5,
+    0.994
+   ],
+   "hash": "bfea5e09a39029c70fe4"
+  },
+  "layers/city": {
+   "file": "layers/city.webp",
+   "size": [
+    1529,
+    390
    ],
    "height": 5.0,
    "kind": "layer",
-   "hash": "49fda8e4ed22b6a338e6"
+   "hash": "02e87b14ae72a9c5a1a3"
+  },
+  "layers/far-hills": {
+   "file": "layers/far-hills.webp",
+   "size": [
+    1380,
+    293
+   ],
+   "height": 5.0,
+   "kind": "layer",
+   "hash": "6096f13daa81ef1a436c"
   },
   "layers/far-metro": {
    "file": "layers/far-metro.webp",
@@ -2434,12 +2490,12 @@
   "layers/far-river": {
    "file": "layers/far-river.webp",
    "size": [
-    1514,
-    173
+    1236,
+    331
    ],
    "height": 4.0,
    "kind": "layer",
-   "hash": "ebd2607209dcac26ba4f"
+   "hash": "5dc510ddc9dd9dc7e3d2"
   },
   "layers/far-sewer": {
    "file": "layers/far-sewer.webp",
@@ -2464,22 +2520,22 @@
   "layers/front-plants": {
    "file": "layers/front-plants.webp",
    "size": [
-    1500,
-    437
+    1152,
+    316
    ],
    "height": 2.0,
    "kind": "strip",
-   "hash": "87a3c71b1d11828f9ee2"
+   "hash": "b11729bf156fbc62d114"
   },
   "layers/front-reeds": {
    "file": "layers/front-reeds.webp",
    "size": [
-    1521,
-    334
+    1500,
+    279
    ],
    "height": 2.0,
    "kind": "strip",
-   "hash": "0fa02b1bf85dbc5a276b"
+   "hash": "3d718f6a34a6c0310173"
   },
   "layers/front-sewer": {
    "file": "layers/front-sewer.webp",
@@ -2504,32 +2560,35 @@
   "layers/ground-park": {
    "file": "layers/ground-park.webp",
    "size": [
-    1523,
-    255
+    1404,
+    246
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "716b1b7a61079ae75dbf"
+   "surface": 0.03,
+   "hash": "91761666ae4ce2dc8019"
   },
   "layers/ground-plaza": {
    "file": "layers/ground-plaza.webp",
    "size": [
-    1056,
-    198
+    1048,
+    159
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "61e16760802fc47c7212"
+   "surface": 0.08,
+   "hash": "ed425c6f07e51d309f11"
   },
   "layers/ground-promenade": {
    "file": "layers/ground-promenade.webp",
    "size": [
-    1052,
-    243
+    1264,
+    207
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "cb43afbb8b43e68cb267"
+   "surface": 0.07,
+   "hash": "b7989096d1c283a4182c"
   },
   "layers/ground-sewer": {
    "file": "layers/ground-sewer.webp",
@@ -2544,12 +2603,13 @@
   "layers/ground-street": {
    "file": "layers/ground-street.webp",
    "size": [
-    1024,
-    191
+    1484,
+    231
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "7e7c800bc23d43310793"
+   "surface": 0.06,
+   "hash": "0e4ed3a189f39ea18b49"
   },
   "layers/metro-vault": {
    "file": "layers/metro-vault.webp",
@@ -2564,12 +2624,12 @@
   "layers/mid-homes": {
    "file": "layers/mid-homes.webp",
    "size": [
-    1500,
-    480
+    1044,
+    333
    ],
    "height": 8.0,
    "kind": "strip",
-   "hash": "afa7456de86c7ddb8ce2"
+   "hash": "717341b4f7fe69adbe3a"
   },
   "layers/mid-metro": {
    "file": "layers/mid-metro.webp",
@@ -2584,22 +2644,22 @@
   "layers/mid-riverbank": {
    "file": "layers/mid-riverbank.webp",
    "size": [
-    1486,
-    526
+    1500,
+    551
    ],
    "height": 7.0,
    "kind": "strip",
-   "hash": "e8eb7868667f90de918a"
+   "hash": "f55a9ffa0a7462dc0357"
   },
   "layers/mid-rooftops": {
    "file": "layers/mid-rooftops.webp",
    "size": [
-    1526,
-    461
+    1104,
+    500
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "6c4d6b24c49af1c84ece"
+   "hash": "ce7cc16cd1780267c03a"
   },
   "layers/mid-sewer": {
    "file": "layers/mid-sewer.webp",
@@ -2614,32 +2674,32 @@
   "layers/mid-shophouses": {
    "file": "layers/mid-shophouses.webp",
    "size": [
-    1496,
-    397
+    1328,
+    317
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "842c0191a4ce1407781b"
+   "hash": "62daa3c3b57823aaf711"
   },
   "layers/near-gardens": {
    "file": "layers/near-gardens.webp",
    "size": [
-    1489,
-    408
+    1506,
+    320
    ],
    "height": 2.4,
    "kind": "strip",
-   "hash": "b3e64435f7e99af3b076"
+   "hash": "74300a2bed9c7831931d"
   },
   "layers/near-hedges": {
    "file": "layers/near-hedges.webp",
    "size": [
-    1483,
-    420
+    1492,
+    372
    ],
    "height": 2.6,
    "kind": "strip",
-   "hash": "06435d046c00c7d5b416"
+   "hash": "933971e9db0e33c18bd0"
   },
   "layers/near-metro": {
    "file": "layers/near-metro.webp",
@@ -2664,12 +2724,12 @@
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
    "size": [
-    1506,
-    415
+    1490,
+    397
    ],
    "height": 2.2,
    "kind": "strip",
-   "hash": "8514d80c86fe1146417d"
+   "hash": "5a4e608131a246098c9b"
   },
   "layers/sewer-vault": {
    "file": "layers/sewer-vault.webp",
@@ -2684,82 +2744,82 @@
   "layers/sky": {
    "file": "layers/sky.webp",
    "size": [
-    1416,
+    1360,
     768
    ],
    "height": 12.0,
    "kind": "paper",
-   "hash": "0af68fc6265bd7ffd74a"
+   "hash": "848b19e353f12c0b423e"
   },
   "papers/bedroom-lilac": {
    "file": "papers/bedroom-lilac.webp",
    "size": [
-    608,
-    316
-   ],
-   "height": 2.633,
-   "kind": "paper",
-   "hash": "301996d4d295b4c8d6cf"
-  },
-  "papers/bedroom-rose": {
-   "file": "papers/bedroom-rose.webp",
-   "size": [
-    512,
-    312
-   ],
-   "height": 2.6,
-   "kind": "paper",
-   "hash": "a434e5c2c02d816b9bac"
-  },
-  "papers/bedroom-sage": {
-   "file": "papers/bedroom-sage.webp",
-   "size": [
-    484,
-    336
-   ],
-   "height": 2.8,
-   "kind": "paper",
-   "hash": "c7044e4b9fdc35ca343e"
-  },
-  "papers/block-grey": {
-   "file": "papers/block-grey.webp",
-   "size": [
-    584,
-    352
-   ],
-   "height": 2.933,
-   "kind": "paper",
-   "hash": "b32e1719ce0c42009125"
-  },
-  "papers/brick": {
-   "file": "papers/brick.webp",
-   "size": [
-    492,
-    344
-   ],
-   "height": 2.867,
-   "kind": "paper",
-   "hash": "755f5556051b373bfe5f"
-  },
-  "papers/cafe-panelling": {
-   "file": "papers/cafe-panelling.webp",
-   "size": [
-    616,
-    312
-   ],
-   "height": 2.6,
-   "kind": "paper",
-   "hash": "76f5a4ef9887cfc3fd4e"
-  },
-  "papers/cafe-tiles": {
-   "file": "papers/cafe-tiles.webp",
-   "size": [
-    564,
+    600,
     368
    ],
    "height": 3.067,
    "kind": "paper",
-   "hash": "0c093b37b40a4e6cbdc8"
+   "hash": "3a947894536db90dc4bf"
+  },
+  "papers/bedroom-rose": {
+   "file": "papers/bedroom-rose.webp",
+   "size": [
+    732,
+    312
+   ],
+   "height": 2.6,
+   "kind": "paper",
+   "hash": "f2ebe4ea2ff767b5b422"
+  },
+  "papers/bedroom-sage": {
+   "file": "papers/bedroom-sage.webp",
+   "size": [
+    660,
+    404
+   ],
+   "height": 3.367,
+   "kind": "paper",
+   "hash": "1ed0d6fd3f98aa523cb4"
+  },
+  "papers/block-grey": {
+   "file": "papers/block-grey.webp",
+   "size": [
+    604,
+    396
+   ],
+   "height": 3.3,
+   "kind": "paper",
+   "hash": "391f8b8338069702b154"
+  },
+  "papers/brick": {
+   "file": "papers/brick.webp",
+   "size": [
+    528,
+    380
+   ],
+   "height": 3.167,
+   "kind": "paper",
+   "hash": "42fd144617bc4ce1a74a"
+  },
+  "papers/cafe-panelling": {
+   "file": "papers/cafe-panelling.webp",
+   "size": [
+    644,
+    352
+   ],
+   "height": 2.933,
+   "kind": "paper",
+   "hash": "decfcc522750822bb9fe"
+  },
+  "papers/cafe-tiles": {
+   "file": "papers/cafe-tiles.webp",
+   "size": [
+    580,
+    476
+   ],
+   "height": 3.967,
+   "kind": "paper",
+   "hash": "51679a8b3b537b20b8c4"
   },
   "papers/clinic-tiles": {
    "file": "papers/clinic-tiles.webp",
@@ -2774,82 +2834,82 @@
   "papers/dining-red": {
    "file": "papers/dining-red.webp",
    "size": [
-    484,
-    312
+    520,
+    332
    ],
-   "height": 2.6,
+   "height": 2.767,
    "kind": "paper",
-   "hash": "eef14119c9100fd36cfd"
+   "hash": "5aeae9ec069e005e7629"
   },
   "papers/living-blue": {
    "file": "papers/living-blue.webp",
    "size": [
-    484,
-    344
+    560,
+    452
    ],
-   "height": 2.867,
+   "height": 3.767,
    "kind": "paper",
-   "hash": "1998208c2adbbd47964c"
+   "hash": "cbfeda68aa3a9c6dc0dc"
   },
   "papers/living-green": {
    "file": "papers/living-green.webp",
    "size": [
-    528,
-    412
+    576,
+    364
    ],
-   "height": 3.433,
+   "height": 3.033,
    "kind": "paper",
-   "hash": "9fa2fae861cc43842ed3"
+   "hash": "8146cabf4d6fdc687635"
   },
   "papers/living-ochre": {
    "file": "papers/living-ochre.webp",
    "size": [
-    536,
-    392
+    492,
+    360
    ],
-   "height": 3.267,
+   "height": 3.0,
    "kind": "paper",
-   "hash": "d14c8358fa499adfa600"
+   "hash": "20c5a589572a5124c0fe"
   },
   "papers/loft-boards": {
    "file": "papers/loft-boards.webp",
    "size": [
-    484,
-    436
+    520,
+    456
    ],
-   "height": 3.633,
+   "height": 3.8,
    "kind": "paper",
-   "hash": "e724ddb2d1a9e9e33306"
+   "hash": "17deae8c7ad54dd4cf48"
   },
   "papers/plaster-cream": {
    "file": "papers/plaster-cream.webp",
    "size": [
-    496,
-    312
+    580,
+    408
    ],
-   "height": 2.6,
+   "height": 3.4,
    "kind": "paper",
-   "hash": "b7cd0d095e47bb7147da"
+   "hash": "3924e6baf282bd225bc7"
   },
   "papers/plaster-white": {
    "file": "papers/plaster-white.webp",
    "size": [
-    484,
-    312
+    488,
+    416
    ],
-   "height": 2.6,
+   "height": 3.467,
    "kind": "paper",
-   "hash": "af79b1a9dea0fcd7e59c"
+   "hash": "5a4cc81f8d41be7c07e7"
   },
   "papers/slab": {
    "file": "papers/slab.webp",
    "size": [
-    656,
-    193
+    852,
+    104
    ],
    "height": 0.3,
    "kind": "paper",
-   "hash": "9417c99e48e217d9df2f"
+   "hash": "87e37646e58a55bd3aea"
   },
   "platforms/catwalk": {
    "file": "platforms/catwalk.webp",

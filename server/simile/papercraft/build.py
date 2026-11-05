@@ -34,6 +34,8 @@ PAINTING = 1
 """Bump when what a painting is made from changes in a way its inputs don't show."""
 PIPELINE = 19
 """Bump when cutting, scaling or saving changes."""
+LIGHTS = 2
+"""Bump when `landmark_lights` changes."""
 NIGHT_SIDE = 768
 NIGHT_TINT = (0.3, 0.36, 0.6)
 WEBP_METHOD = 6
@@ -176,6 +178,12 @@ class Build:
         inputs: list[object] = [PIPELINE, PPM, piece.kind, piece.height, self.paint_hash(piece)]
         if piece.cut:
             inputs.append(list(piece.cut))
+        if piece.headroom:
+            inputs.append(["headroom", piece.headroom])
+        if piece.surface is not None:
+            inputs.append(["surface", piece.surface])
+        if piece.kind == "glow" and piece.landmark:
+            inputs.append(["lights", LIGHTS])
         if _units(piece):
             inputs += [fronts.PLAN, _fields(self.front(piece))]
         return digest(*inputs)
@@ -197,6 +205,8 @@ class Build:
         """The paintings a piece is made from: one per unit for a front or glow map."""
         if _units(piece):
             return list(range(len(self.units(piece))))
+        if piece.kind == "glow" and piece.landmark:
+            return []
         return [None]
 
     def read_manifest(self) -> dict:
@@ -318,11 +328,13 @@ class Build:
                     mask = cutout.skyline(mask)
                 if "banded" in piece.cut:
                     mask, (x0, x1) = cutout.banded(mask)
-                    image = cutout.unmix(raw, mask).crop((x0, 0, x1, raw.height))
+                    image = solid_rows(cutout.unmix(raw, mask).crop((x0, 0, x1, raw.height)))
                 else:
                     image = cutout.unmix(raw, mask)
-                image = tileable(trim_rows(image))
+                image = headroom(tileable(trim_rows(image)), piece.headroom)
                 height = piece.height or image.height / PPM
+                if piece.surface is not None:
+                    entry["surface"] = piece.surface
             else:
                 if piece.sketch and "outline" in piece.cut:
                     shape = _sketch_shape(piece.sketch)
@@ -386,7 +398,7 @@ class Build:
         to its plan with its foot's middle as its anchor."""
         plan = skyline.plan(piece.landmark or "")
         if piece.kind == "glow":
-            image = glow_map(self.raw(self.pieces[piece.base or ""]), self.raw(piece), plan)
+            image = landmark_lights(self.raw(self.pieces[piece.base or ""]), plan)
         else:
             raw = self.raw(piece)
             mask = outline_mask(raw, silhouette(plan), round(0.012 * raw.width) | 1, 5)
@@ -488,6 +500,23 @@ def glow_map(day: Image.Image, night: Image.Image, plan: Plan) -> Image.Image:
     return Image.fromarray(light.astype(np.uint8))
 
 
+WINDOW_LIGHT = np.array([255, 214, 150], dtype=np.float32)
+BEACON_LIGHT = np.array([255, 96, 80], dtype=np.float32)
+
+
+def landmark_lights(day: Image.Image, plan: Plan) -> Image.Image:
+    """A landmark's lights at night: its plan's lit windows, warm, and its beacons, red where
+    the painting has them, on the painting's own light and shade."""
+    size = plan.glow.size
+    where = np.asarray(plan.glow.filter(ImageFilter.GaussianBlur(1)), np.float32)[..., None] / 255
+    d = np.asarray(day.resize(size, Image.Resampling.LANCZOS), dtype=np.float32)
+    lum = d.mean(axis=2, keepdims=True) / 255
+    red = (d[..., :1] > d[..., 1:2] + 50) & (d[..., :1] > d[..., 2:] + 50)
+    colour = np.where(red, BEACON_LIGHT, WINDOW_LIGHT)
+    light = where * colour * (0.55 + 0.45 * lum)
+    return Image.fromarray(np.clip(light, 0, 255).astype(np.uint8))
+
+
 def band_rows(image: Image.Image, share: float = 0.97) -> Image.Image:
     """`image` cut to its longest run of rows that are almost all painting, not backdrop: a
     band painted across a picture, without the backdrop above it or its ragged edge."""
@@ -501,6 +530,14 @@ def band_rows(image: Image.Image, share: float = 0.97) -> Image.Image:
     return image.crop((0, int(top), image.width, int(bottom)))
 
 
+def solid_rows(image: Image.Image) -> Image.Image:
+    """`image` cut to the rows from its first fully opaque one to its last."""
+    rows = np.flatnonzero((np.asarray(image.getchannel("A")) == 255).all(axis=1))
+    if not len(rows):
+        return image
+    return image.crop((0, int(rows[0]), image.width, int(rows[-1]) + 1))
+
+
 def trim_rows(image: Image.Image) -> Image.Image:
     """`image` without the fully transparent rows above and below it, keeping its width."""
     alpha = np.asarray(image.getchannel("A")) > 8
@@ -508,6 +545,15 @@ def trim_rows(image: Image.Image) -> Image.Image:
     if not len(rows):
         return image
     return image.crop((0, int(rows[0]), image.width, int(rows[-1]) + 1))
+
+
+def headroom(image: Image.Image, share: float) -> Image.Image:
+    """`image` with clear rows added above it, `share` of its new height."""
+    if share <= 0:
+        return image
+    out = Image.new(image.mode, (image.width, round(image.height / (1 - share))), (0, 0, 0, 0))
+    out.paste(image, (0, out.height - image.height))
+    return out
 
 
 def tileable(

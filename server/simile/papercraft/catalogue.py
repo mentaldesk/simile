@@ -7,7 +7,7 @@ from typing import Literal, NamedTuple
 from simile.papercraft import skyline
 from simile.papercraft.fronts import GREY, Front, backdrop, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
-from simile.papercraft.painter import Style, in_style, styled
+from simile.papercraft.painter import Style, in_style
 from simile.papercraft.sketches import SKETCHES
 from simile.papercraft.village import (
     CLAY,
@@ -221,6 +221,11 @@ class Painting:
     """For a landmark or its glow map, its plan in `skyline.PLANS`."""
     reseeds: tuple[int, ...] = ()
     """For a front or glow map, added to each unit's seed, by unit, to paint one unit again."""
+    surface: float | None = None
+    """For a ground piece, metres down from its top edge to the far edge of its walking surface,
+    measured on the art."""
+    headroom: float = 0.0
+    """For a far layer, the share of its height left clear above its skyline."""
 
     @property
     def seed(self) -> int:
@@ -274,165 +279,202 @@ def tunnel_layer(
     return layer(key, kind, subject, size, height, "cartoon", **kw)
 
 
-SKY = Painting(
-    "layers/sky",
-    "paper",
-    styled(
-        LEAD + "A plain sky backdrop made of layered paper: a smooth gradient from pale warm "
-        "cream near the bottom to soft blue at the top, with five soft cut-paper clouds. Only "
-        "sky: no ground, no hills, no buildings, no trees, no birds."
-    ),
-    (1536, 768),
-    ("street",),
-    12.0,
-)
-
 STRIP = (
     "running from the left edge of the frame to the right edge, standing on one straight "
     "baseline on a plain white background."
 )
+
+
+def village_layer(key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw):
+    """A village street layer in the comic style, painted on grey if `grey`."""
+    if kw.pop("grey", False):
+        subject = subject.replace(ON_WHITE, ON_GREY).replace("white space", "empty space")
+    return layer(key, kind, subject, size, height, "clean", **kw)
+
+
+ON_WHITE = "on a plain flat white background"
+ON_GREY = "on a plain flat medium grey background"
+CLEAN_STRIP = (
+    "running from the left edge of the frame to the right edge, standing on one straight "
+    f"baseline {ON_WHITE}."
+)
+SOLID = " Every building and tree is solid and drawn as clearly as the rest."
+GROUND = f"running from the left edge of the frame to the right edge, {ON_GREY}."
+HEADROOM = 0.45
+"""The share of a far layer left clear above its hills, so the city and the Apex rise over them:
+the client draws it 5.75 m tall from 7.5 m up, and the view's top is 15.6 m up."""
+SKY = village_layer(
+    "sky",
+    "paper",
+    "A plain sky backdrop: a smooth gradient from pale warm haze near the bottom to clear soft "
+    "blue at the top, with five soft clouds. Only sky: no ground, no buildings, no towers, no "
+    "trees, no birds, no drones.",
+    (1536, 768),
+    12.0,
+)
+CITY = village_layer(
+    "city",
+    "layer",
+    "A long strip of a distant modern city skyline seen from far away: a dense row of glass "
+    "office towers and apartment blocks of many different heights and widths, in pale misty "
+    "blue-grey and soft teal, every one with a plain flat roof, a few construction cranes, and "
+    f"no tower much taller than the rest, all standing on one straight baseline, {ON_WHITE} "
+    "with white space above it. No spires, no masts, no antennas, no domes, no people, no signs.",
+    (1536, 640),
+    5.0,
+)
 LAYERS = [
     SKY,
-    layer(
+    CITY,
+    village_layer(
         "far-hills",
         "layer",
-        "A long strip of distant rolling hills cut from pale sage-green and misty blue-grey "
-        "paper, with a few tiny far-off houses and trees on the ridges, lying on a plain flat "
-        "white background with white space above and below it.",
+        "A long strip of distant low, gently rolling hills in pale sage green and misty blue-grey, "
+        f"with a few small round trees on the ridges, lying {ON_WHITE} with white space above and "
+        "below it. Only hills and trees: no buildings, no towers.",
         (1536, 512),
         5.0,
+        headroom=HEADROOM,
     ),
-    layer(
+    village_layer(
         "far-river",
         "layer",
         "A long strip of low misty blue-grey hills on the far bank of a wide river, with a few "
-        "tiny palm trees and stilt houses along the shore, cut from pale paper, lying on a plain "
-        "flat white background with white space above and below it.",
+        f"small palm trees and low houses along the shore, lying {ON_WHITE} with white space "
+        "above and below it. No towers, no tall buildings.",
         (1536, 512),
         4.0,
+        headroom=HEADROOM,
     ),
-    layer(
+    village_layer(
         "mid-shophouses",
         "strip",
-        "A long row of distant two- and three-storey shophouses with tiled roofs, shutters and "
-        "faded awnings, with the round crowns of trees between them, cut from faded, hazy paper "
-        "in muted terracotta, cream and green, all standing on one straight baseline, on a plain "
-        "flat white background with white space above them. Empty streets: no people, no "
-        "animals, no signs.",
+        "A long row of distant mid-rise apartment blocks and offices of pale concrete and glass, "
+        "with rooftop gardens, solar panels and air-conditioning units, and the round crowns of "
+        "banyan trees between them, all standing on one straight baseline, "
+        f"{ON_WHITE} with white space above them.{SOLID} No people, no signs.",
         (1536, 640),
         9.0,
+        grey=True,
     ),
-    layer(
+    village_layer(
         "mid-homes",
         "strip",
-        "A long row of distant small two-storey village homes with tiled roofs and little "
-        "gardens, with kapok trees in red flower and leafy lychee trees between them, cut from "
-        "faded, hazy paper in muted pink, cream, sage and terracotta, all standing on one "
-        "straight baseline, on a plain flat white background with white space above them. Empty "
-        "streets: no people, no animals.",
+        "A long row of distant small two-storey modern village homes with flat roofs, solar "
+        "panels and little gardens, with kapok trees in red flower and leafy lychee trees between "
+        "them, in soft pink, cream, sage and terracotta, all standing on one straight baseline, "
+        f"{ON_WHITE} with white space above them.{SOLID} No people, no animals.",
         (1536, 640),
         8.0,
+        grey=True,
     ),
-    layer(
+    village_layer(
         "mid-rooftops",
         "strip",
-        "A long row of distant village rooftops of terracotta and grey slate, a few chimneys and "
-        "water tanks, and the broad crowns of big banyan trees rising between them, cut from "
-        "faded, hazy paper, all standing on one straight baseline, on a plain flat white "
-        "background with white space above them. No people, no towers.",
+        "A long row of distant village rooftops, flat roofs and roofs of terracotta and dark "
+        "charcoal slate, over houses with warm-coloured walls and brightly painted doors, with "
+        "water tanks, solar panels and air-conditioning units, and the broad crowns of big banyan "
+        "trees rising between them, all standing on one straight baseline, "
+        f"{ON_WHITE} with white space above them.{SOLID} No people, no towers.",
         (1536, 640),
         9.0,
     ),
-    layer(
+    village_layer(
         "mid-riverbank",
         "strip",
-        "A long row of distant palm trees, banyan trees and low reed beds along a riverbank, "
-        "with a small wooden jetty, cut from faded, hazy paper in muted greens and sand, all "
-        "standing on one straight baseline, on a plain flat white background with white space "
-        "above them. No people, no boats.",
+        "A long row of distant palm trees, banyan trees and low reed beds on a riverbank, in "
+        "greens and sand, all standing on one straight baseline of sandy bank, "
+        f"{ON_WHITE} with white space above them.{SOLID} No water, no people, no boats.",
         (1536, 640),
         7.0,
     ),
-    layer(
+    village_layer(
         "near-walls",
         "strip",
-        "A long low garden wall of pale stone, seen straight from the front, with bougainvillea "
-        "in magenta flower spilling over it and small potted trees, cut from layered card, "
-        + STRIP,
+        "A long low run of pale concrete planters, seen straight from the front, full of lush "
+        "tropical plants, clipped hedges, young palms and magenta bougainvillea, with a slim "
+        f"modern railing behind them, {CLEAN_STRIP}",
         (1536, 512),
         2.2,
     ),
-    layer(
+    village_layer(
         "near-gardens",
         "strip",
-        "A long run of front gardens seen straight from the front: low wooden picket fences "
-        "painted cream and sage, clipped hedges, flowering shrubs and small lychee trees, cut "
-        f"from layered card, {STRIP}",
+        "A long run of small front gardens seen straight from the front: low slatted timber "
+        "fences painted cream and sage, clipped hedges, flowering shrubs and small lychee trees, "
+        f"{CLEAN_STRIP}",
         (1536, 512),
         2.4,
     ),
-    layer(
+    village_layer(
         "near-hedges",
         "strip",
-        "A long row of clipped green hedges in low stone planters, with young palm trees and "
-        f"flowering hibiscus, seen straight from the front, cut from layered card, {STRIP}",
+        "A long row of clipped green hedges in low pale concrete planters, with young palm trees "
+        f"and flowering hibiscus, seen straight from the front, {CLEAN_STRIP}",
         (1536, 512),
         2.6,
     ),
-    layer(
+    village_layer(
         "ground-street",
         "ground",
-        "A long horizontal strip of street seen exactly from the side, cut from layered "
-        "cardboard: a sandy paved footpath on top, a kerb edge, and a band of grey road below, "
-        "running from the left edge of the frame to the right edge, on a plain white background.",
+        "A long horizontal strip of city street seen exactly from the side: a pale grey paved "
+        "footpath with a yellow strip of tactile paving on top, a granite kerb edge, and a band "
+        f"of dark grey asphalt road with a green painted cycle lane below, {GROUND}",
         (1536, 384),
         2.6,
+        cut=("banded",),
+        surface=0.06,
     ),
-    layer(
+    village_layer(
         "ground-plaza",
         "ground",
-        "A long horizontal strip of a town square's paving seen exactly from the side, cut from "
-        "layered cardboard: warm terracotta and sand paving tiles on top, a low step edge, and a "
-        "band of pale stone below, running from the left edge of the frame to the right edge, "
-        "on a plain white background.",
+        "A long horizontal strip of a modern plaza's paving seen exactly from the side: large "
+        "pale granite slabs on top with a thin inset line of warm lights, a low step edge, and a "
+        f"band of pale grey stone below, {GROUND}",
         (1536, 384),
         2.6,
+        cut=("banded",),
+        surface=0.08,
     ),
-    layer(
+    village_layer(
         "ground-park",
         "ground",
-        "A long horizontal strip of park seen exactly from the side, cut from layered card and "
-        "paper: a band of soft green grass with tiny daisies on top, a sandy path edge, and a "
-        "band of calm blue lake water below with round lotus pads and pink lotus flowers, "
-        "running from the left edge of the frame to the right edge, on a plain white background.",
+        "A long horizontal strip of park seen exactly from the side: a band of soft green grass "
+        "with tiny daisies on top, a pale paved path edge, and a band of calm blue lake water "
+        f"below with round lotus pads and pink lotus flowers, {GROUND}",
         (1536, 384),
         2.6,
+        cut=("banded",),
+        surface=0.03,
     ),
-    layer(
+    village_layer(
         "ground-promenade",
         "ground",
-        "A long horizontal strip of a riverside promenade seen exactly from the side, cut from "
-        "layered cardboard: a pale stone walkway on top, a low stone river wall, and a band of "
-        "calm blue-green river water below with a few round lotus pads, running from the left "
-        "edge of the frame to the right edge, on a plain white background.",
+        "A long horizontal strip of a riverside promenade seen exactly from the side: a pale "
+        "stone walkway on top, a low stone river wall, and a band of calm blue-green river water "
+        f"below with a few round lotus pads, {GROUND}",
         (1536, 384),
         2.6,
+        cut=("banded",),
+        surface=0.07,
     ),
-    layer(
+    village_layer(
         "front-plants",
         "strip",
-        "A long low row of big leafy tropical plants, ferns and banana leaves in dark green, cut "
-        f"from layered paper, {STRIP} No flowers, no pots.",
+        "A long low row of big leafy tropical plants, ferns and banana leaves in dark green, "
+        f"{CLEAN_STRIP} No flowers, no pots, no fence, no ground.",
         (1536, 512),
         2.0,
+        grey=True,
     ),
-    layer(
+    village_layer(
         "front-reeds",
         "strip",
         "A long low row of tall reeds, cattails and lotus flowers on long stems in dark green "
-        f"and pink, cut from layered paper, {STRIP}",
+        f"and pink, {CLEAN_STRIP} No water, no ground.",
         (1536, 512),
         2.0,
+        grey=True,
     ),
 ]
 NO_STREET = " No people, no trains, no trees, no sky, no buildings."
@@ -571,9 +613,21 @@ SEWER_LAYERS = [
         2.0,
     ),
 ]
-SLAB = paper(
-    "slab", "the cut edge of thick corrugated brown cardboard, a long band", (1024, 256), height=0.3
+SLAB = Painting(
+    "papers/slab",
+    "paper",
+    in_style(
+        CLEAN_LEAD + "A long horizontal band of smooth mid-grey concrete, the cut edge of a floor "
+        "slab seen exactly from the side, with a scratchy dark outline along its top and bottom "
+        "edges, running from the left edge of the frame to the right edge across the middle of "
+        "the frame, on a plain flat white background. Nothing else.",
+        "clean",
+    ),
+    (1024, 256),
+    (CLEAN_ROOMS,),
+    0.3,
 )
+"""Painted as a band and cut to it (`band_rows`), since a texture prompt paints it on grey."""
 
 
 class Moulding(NamedTuple):
@@ -1540,26 +1594,16 @@ def landmark_prompt(spec: Landmark) -> str:
     )
 
 
-def landmark_night_prompt(spec: Landmark) -> str:
-    return in_style(
-        "The same picture at night: warm yellow light glows from the lit windows and the red "
-        f"beacons on the spires, the {WORDS[spec.style].night} are in deep blue shadow, and the "
-        "background stays plain white. Keep every shape exactly where it is, and add nothing.",
-        spec.style,
-    )
-
-
 def landmarks(chosen: dict[str, Landmark] | None = None) -> list[Painting]:
-    """Each landmark and its glow map, redrawn from its plan in `skyline.py`."""
+    """Each landmark, redrawn from its plan in `skyline.py`, and its glow map, drawn from the
+    plan's lit windows on that painting."""
     out = []
     for name, spec in (LANDMARKS if chosen is None else chosen).items():
         size = skyline.plan(name).image.size
         key, refs = f"landmarks/{name}", (spec.ref,)
-        day, night = landmark_prompt(spec), landmark_night_prompt(spec)
+        day = landmark_prompt(spec)
         out.append(Painting(key, "landmark", day, size, refs, spec.height, landmark=name))
-        out.append(
-            Painting(f"glow/{name}", "glow", night, size, (), spec.height, key, landmark=name)
-        )
+        out.append(Painting(f"glow/{name}", "glow", "", size, (), spec.height, key, landmark=name))
     return out
 
 
