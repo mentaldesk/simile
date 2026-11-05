@@ -104,7 +104,7 @@ async def test_the_barista_takes_orders_at_the_till_and_makes_and_hands_over_bes
 
 
 async def test_off_shift_the_barista_sleeps_in_her_bed_until_she_wakes() -> None:
-    village = side_village(start=DAY.replace(hour=23, minute=30), purposes=True)
+    village = side_village(start=DAY.replace(hour=23, minute=30))
 
     def in_bed() -> bool:
         spot = village.movement.on_spot("bea")
