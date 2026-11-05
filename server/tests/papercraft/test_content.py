@@ -62,6 +62,7 @@ def test_every_lookup_names_a_piece() -> None:
         *(f["piece"] for f in MANIFEST_JSON["furniture"].values()),
         *(k for f in MANIFEST_JSON["furniture"].values() for k in f.get("variants", {}).values()),
         *MANIFEST_JSON["platforms"].values(),
+        *(key for below in MANIFEST_JSON["platforms_below"].values() for key in below.values()),
         MANIFEST_JSON["slab"],
         *(
             key

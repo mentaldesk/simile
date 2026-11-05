@@ -641,6 +641,17 @@
   "window": "platforms/window",
   "door": "platforms/door"
  },
+ "platforms_below": {
+  "metro": {
+   "ladder": "platforms/metro-ladder",
+   "steps": "platforms/metro-steps",
+   "ledge": "platforms/metro-ledge"
+  },
+  "sewers": {
+   "ladder": "platforms/sewers-ladder",
+   "ledge": "platforms/sewers-ledge"
+  }
+ },
  "slab": "papers/slab",
  "pieces": {
   "fronts/bakery": {
@@ -2995,6 +3006,48 @@
    ],
    "hash": "58a76375e88006be6741"
   },
+  "platforms/metro-ladder": {
+   "file": "platforms/metro-ladder.webp",
+   "size": [
+    76,
+    432
+   ],
+   "height": 3.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "871ce1b5ce18e91261bd"
+  },
+  "platforms/metro-ledge": {
+   "file": "platforms/metro-ledge.webp",
+   "size": [
+    340,
+    72
+   ],
+   "height": 0.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "bf8c2f2bfb548921d2cd"
+  },
+  "platforms/metro-steps": {
+   "file": "platforms/metro-steps.webp",
+   "size": [
+    298,
+    264
+   ],
+   "height": 2.2,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "2813e9554cfa1422e4bc"
+  },
   "platforms/rope_bridge": {
    "file": "platforms/rope_bridge.webp",
    "size": [
@@ -3078,6 +3131,34 @@
     1.0
    ],
    "hash": "f80bab77e3dc517b4701"
+  },
+  "platforms/sewers-ladder": {
+   "file": "platforms/sewers-ladder.webp",
+   "size": [
+    80,
+    432
+   ],
+   "height": 3.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "98a6741f91f6183a664d"
+  },
+  "platforms/sewers-ledge": {
+   "file": "platforms/sewers-ledge.webp",
+   "size": [
+    344,
+    72
+   ],
+   "height": 0.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "8a2844a55465351450ac"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",

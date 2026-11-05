@@ -6,7 +6,7 @@ import pytest
 from PIL import Image
 
 from simile.papercraft.build import CONTENT, MANIFEST
-from simile.papercraft.catalogue import EXTRAS, FURNITURE, PLATFORMS
+from simile.papercraft.catalogue import EXTRAS, FURNITURE, PLATFORMS, PLATFORMS_BELOW
 from simile.papercraft.fronts import GREY
 from simile.papercraft.sketches import SKETCHES
 
@@ -97,3 +97,14 @@ def test_the_painted_kitchen_has_nothing_above_its_worktop_where_a_stretch_repea
     end = round(width * STRETCH_CAP)
 
     assert not alpha[: worktop - 1, end : width - end].any()
+
+
+@pytest.mark.parametrize(
+    ("street", "name"), [(s, n) for s, pieces in PLATFORMS_BELOW.items() for n in pieces]
+)
+def test_a_tunnel_platform_is_sketched_to_the_villages_shape(street: str, name: str) -> None:
+    ours, village = PLATFORMS_BELOW[street][name], PLATFORMS[name]
+
+    assert ours.height == village.height
+    assert SKETCHES[ours.sketch]().size == SKETCHES[village.sketch]().size
+    assert drawn(ours.sketch).any(axis=0).sum() == drawn(village.sketch).any(axis=0).sum()
