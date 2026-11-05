@@ -136,6 +136,10 @@ const KINDS: Record<ItemKind, string> = {
   food: 'Food, to eat',
   lamp: 'Your lamp, to see by',
   part: 'A part, for a bionic',
+  material: 'Material, to print with',
+  weapon: 'A weapon, to fire',
+  rounds: 'Rounds, to load',
+  bionic: 'A salvaged bionic, to refit',
 };
 
 const listed = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0]);

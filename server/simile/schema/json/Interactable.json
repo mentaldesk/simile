@@ -32,7 +32,7 @@
     },
     "Item": {
       "additionalProperties": false,
-      "description": "Something the player carries.",
+      "description": "Something the player carries, or a stack of it.",
       "properties": {
         "id": {
           "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
@@ -51,9 +51,16 @@
           "type": "string"
         },
         "weight": {
-          "description": "In kg, counted against the carry limit.",
+          "description": "In kg, each, counted against the carry limit.",
           "minimum": 0,
           "title": "Weight",
+          "type": "number"
+        },
+        "amount": {
+          "default": 1.0,
+          "description": "How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.",
+          "exclusiveMinimum": 0,
+          "title": "Amount",
           "type": "number"
         },
         "charge": {
@@ -83,6 +90,73 @@
           "default": null,
           "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.",
           "title": "On"
+        },
+        "material": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Material"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else."
+        },
+        "rounds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.",
+          "title": "Rounds"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The most rounds a weapon holds. Left out for anything else.",
+          "title": "Capacity"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.",
+          "title": "Condition"
+        },
+        "bionic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Bionic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else."
         }
       },
       "required": [
@@ -97,14 +171,26 @@
       "type": "object"
     },
     "ItemKind": {
-      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit.",
+      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, a `part` to fit,\n`material` to print with, a `weapon` to fire, `rounds` to load it with, or a salvaged `bionic`\nto have refitted.",
       "enum": [
         "salvage",
         "food",
         "lamp",
-        "part"
+        "part",
+        "material",
+        "weapon",
+        "rounds",
+        "bionic"
       ],
       "title": "ItemKind",
+      "type": "string"
+    },
+    "Material": {
+      "description": "What the printer prints with, which decides how hard its weapons and rounds hit.",
+      "enum": [
+        "plastic"
+      ],
+      "title": "Material",
       "type": "string"
     },
     "Tile": {

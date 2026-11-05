@@ -66,9 +66,16 @@ export type JsonValue = unknown;
  */
 export type Face = 'south' | 'east';
 /**
- * What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit.
+ * What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, a `part` to fit,
+ * `material` to print with, a `weapon` to fire, `rounds` to load it with, or a salvaged `bionic`
+ * to have refitted.
  */
-export type ItemKind = 'salvage' | 'food' | 'lamp' | 'part';
+export type ItemKind =
+  'salvage' | 'food' | 'lamp' | 'part' | 'material' | 'weapon' | 'rounds' | 'bionic';
+/**
+ * What the printer prints with, which decides how hard its weapons and rounds hit.
+ */
+export type Material = 'plastic';
 /**
  * A part fitted in place of the player's own: a grade of the power cell, the legs or the
  * feet, the datajack or the eye.
@@ -516,9 +523,9 @@ export interface PlayerStateMessage {
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
  * a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
- * full health, no effects and nothing searched. A save holding the old 10 kg carry limit loads
- * with 15. Their humanity is derived from the bionics fitted and isn't a field, so the client
- * never sees it.
+ * full health, no effects, nothing searched and an empty stash. A save holding the old 10 kg
+ * carry limit loads with 15. Their humanity is derived from the bionics fitted and isn't a field,
+ * so the client never sees it.
  */
 export interface Player {
   /**
@@ -533,6 +540,7 @@ export interface Player {
    * The most they carry, in kg.
    */
   carry_limit: number;
+  stash?: Stash;
   body: Body;
   mind?: Mind;
   /**
@@ -571,7 +579,7 @@ export interface Player {
   searched?: string[];
 }
 /**
- * Something the player carries.
+ * Something the player carries, or a stack of it.
  */
 export interface Item {
   /**
@@ -584,9 +592,13 @@ export interface Item {
    */
   name: string;
   /**
-   * In kg, counted against the carry limit.
+   * In kg, each, counted against the carry limit.
    */
   weight: number;
+  /**
+   * How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.
+   */
+  amount?: number;
   /**
    * A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.
    */
@@ -595,6 +607,39 @@ export interface Item {
    * Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.
    */
   on: boolean | null;
+  /**
+   * What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else.
+   */
+  material?: Material | null;
+  /**
+   * The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.
+   */
+  rounds?: number | null;
+  /**
+   * The most rounds a weapon holds. Left out for anything else.
+   */
+  capacity?: number | null;
+  /**
+   * A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.
+   */
+  condition?: number | null;
+  /**
+   * What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else.
+   */
+  bionic?: Bionic | null;
+}
+/**
+ * What they keep at home. Left out while it's empty and at its starting limit.
+ */
+export interface Stash {
+  /**
+   * What's in it. Putting things in keeps their weight within `limit`.
+   */
+  items: Item[];
+  /**
+   * The most it holds, in kg.
+   */
+  limit: number;
 }
 /**
  * Each part of the player's body that can be sold or replaced: still `present`, `sold`, or

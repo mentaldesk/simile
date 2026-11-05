@@ -22,8 +22,9 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`,
-  `sales` and `searched`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
+  `long_summary`, a wall's `map`, a player's `stash`, `left`, `taken`, `mind`, `power`, `health`, `effects`,
+  `sales` and `searched`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
+  `bionic`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
   `player_state`'s `meal`, `shut`, `buyer`, `piles`, `recipes`, `bed` and `resting`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
@@ -280,7 +281,8 @@ change is sent at once. Clients that predate it ignore it.
 |---|---|---|
 | `money` | number | At least 0, in the same units as the residents' money. |
 | `items` | `Item[]` | What they carry. A new player carries only the lamp. |
-| `carry_limit` | number | The most they can carry, in kg. Picking things up keeps the items' total `weight` within it. |
+| `carry_limit` | number | The most they can carry, in kg. Picking things up keeps what the items weigh, each `weight` by its `amount`, within it. |
+| `stash` | `Stash` | What they keep at home, in Aris's lockers in the maker space: its `items`, and its `limit`, the most it holds in kg, 20 to start. Left out while it's empty and at that limit: read it as `player.stash ?? { items: [], limit: 20 }`. |
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
 | `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
 | `power` | number | Their power cell's charge, from 1, full, to 0, flat, when they collapse. They run on it in place of hunger once a cell is in their `stomach`, and it stays full without one. Left out while it's full: read it as `player.power ?? 1`. |
@@ -389,12 +391,24 @@ some of is in their `left` from then on, with what didn't fit. Salvage comes bac
 it's taken, in a later `player_state`, and a secret never does.
 
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
-which prices salvage; its `kind`, `"salvage"`, `"food"`, `"lamp"` or `"part"`, something found that
-the doctor fits with a bionic and nobody buys; its `name`, as the player sees it; its `weight` in
-kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a lamp is switched on,
-running its battery down. `charge` and `on` are `null` for anything else. The player switches the
-lamp with [`lamp`](#lamp). It runs down while it's on, and while they stand at a plug it charges, on
-or off. When its battery runs flat it goes off by itself.
+which prices salvage; its `kind`, `"salvage"`, `"food"`, `"lamp"`, `"part"`, something found that
+the doctor fits with a bionic and nobody buys, `"material"`, `"weapon"`, `"rounds"` or `"bionic"`,
+a salvaged bionic; its `name`, as the player sees it; its `weight` in kg, each; `charge`, a lamp's
+battery from 0 (flat) to 1 (full); and `on`, whether a lamp is switched on, running its battery
+down. `charge` and `on` are `null` for anything else. The player switches the lamp with
+[`lamp`](#lamp). It runs down while it's on, and while they stand at a plug it charges, on or off.
+When its battery runs flat it goes off by itself.
+
+Some kinds have more, each left out for every other kind:
+
+| Field | Type | |
+|---|---|---|
+| `amount` | number | How many in the stack. Only `"material"` and `"rounds"` stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1: read it as `item.amount ?? 1`. |
+| `material` | `Material` | What `"material"`, `"rounds"` or a `"weapon"` are made of, for now only `"plastic"`. A `"material"` item's `id` is this. |
+| `rounds` | number | The rounds loaded in a `"weapon"`, from 0 up to its `capacity`. |
+| `capacity` | number | The most rounds a `"weapon"` holds. |
+| `condition` | number | A `"weapon"`'s wear, from 1 (new) to 0 (worn out). |
+| `bionic` | `Bionic` | What a salvaged `"bionic"` refits as, grade and all (`"power_cell_2"`), which is also its `id`. |
 
 A `Pile` is things lying on a tile in the world for the player to pick up with
 [`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
