@@ -10,8 +10,10 @@ from simile.papercraft.catalogue import (
     EXTRAS,
     FURNITURE,
     PLATFORMS,
+    PLATFORMS_BELOW,
     WORDS,
     Moulding,
+    below,
     index,
     landmarks,
     paintings,
@@ -70,7 +72,7 @@ def underground_pieces() -> set[str]:
         spec = FURNITURE[name]
         keys.add(f"{spec.folder}/{name}")
         keys |= {f"{spec.folder}/{name}-{v}" for v in spec.variants}
-    return keys
+    return keys | {f"platforms/{name}" for name in below()}
 
 
 def style_of(key: str) -> str:
@@ -85,7 +87,7 @@ def style_of(key: str) -> str:
         return lead
     if folder == "layers":
         return next(s for s, w in WORDS.items() if PIECES[key].prompt.startswith(w.lead))
-    specs = {**FURNITURE, **EXTRAS, **PLATFORMS}
+    specs = {**FURNITURE, **EXTRAS, **PLATFORMS, **below()}
     return specs[name if name in specs else name.rsplit("-", 1)[0]].style
 
 
@@ -231,3 +233,34 @@ def test_a_landmark_is_listed_with_its_glow_and_where_it_stands(
         "apex": {"piece": "landmarks/apex", "glow": "glow/apex", "at": {"high_street": 0.6}}
     }
     assert not GRIME.findall(day.prompt + night.prompt)
+
+
+def drawn_below(street: str) -> set[str]:
+    """The platforms a street under the village draws: its ladders, its steps and its ledges."""
+    used = set()
+    for path in sorted(STREET_DIR.rglob(f"{street}.tmj")):
+        data = json.loads(path.read_text())
+        tiles = {t["id"] + 1: _props(t)["name"] for t in data["tilesets"][0]["tiles"]}
+        for layer in data["layers"]:
+            if layer["name"] == "climbable":
+                used |= {tiles[gid] for gid in set(layer.get("data", [])) if gid}
+            if layer["name"] == "solid" and any(layer.get("data", [])):
+                used.add("ledge")
+    return {{"stairs": "steps"}.get(kind, kind) for kind in used}
+
+
+@pytest.mark.parametrize("street", sorted(UNDERGROUND))
+def test_every_street_under_the_village_draws_its_own_platforms(street: str) -> None:
+    listed = index(LAYOUT)["platforms_below"][street]
+    style = {"metro": "cartoon", "sewers": "grimy"}[street]
+
+    assert set(listed) == drawn_below(street)
+    assert {PLATFORMS_BELOW[street][name].style for name in listed} == {style}
+    assert MANIFEST_JSON["platforms_below"][street] == listed
+
+
+def test_the_tunnels_platforms_are_painted_from_the_tunnels_references() -> None:
+    for name, spec in below().items():
+        piece = PIECES[f"platforms/{name}"]
+        assert piece.refs == (spec.ref,) == ("cartoon/street",)
+        assert piece.sketch == spec.sketch

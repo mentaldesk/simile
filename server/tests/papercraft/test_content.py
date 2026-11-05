@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pytest
 from PIL import Image
 
@@ -62,6 +63,7 @@ def test_every_lookup_names_a_piece() -> None:
         *(f["piece"] for f in MANIFEST_JSON["furniture"].values()),
         *(k for f in MANIFEST_JSON["furniture"].values() for k in f.get("variants", {}).values()),
         *MANIFEST_JSON["platforms"].values(),
+        *(key for below in MANIFEST_JSON["platforms_below"].values() for key in below.values()),
         MANIFEST_JSON["slab"],
         *(
             key
@@ -71,3 +73,24 @@ def test_every_lookup_names_a_piece() -> None:
     ]
 
     assert set(named) <= set(PIECES)
+
+
+LADDERS = [
+    MANIFEST_JSON["platforms"]["ladder"],
+    *(p["ladder"] for p in MANIFEST_JSON["platforms_below"].values() if "ladder" in p),
+]
+RAIL_M = 0.08
+RUNG_M = 0.3
+"""How wide the sketch draws each rail, and how far apart its rungs."""
+
+
+@pytest.mark.parametrize("key", LADDERS)
+def test_a_ladders_rails_and_rungs_are_opaque(key: str) -> None:
+    alpha = np.asarray(Image.open(CONTENT / PIECES[key]["file"]).convert("RGBA"))[..., 3]
+    width = alpha.shape[1]
+    across = np.median(alpha[:, width // 3 : 2 * width // 3], axis=1) >= 250
+    rungs = np.count_nonzero(np.diff(across.astype(int)) == 1)
+
+    for side in (alpha[:, : width // 4], alpha[:, -(width // 4) :]):
+        assert (np.median(side, axis=0) >= 250).sum() >= RAIL_M * PPM / 2
+    assert rungs >= round(PIECES[key]["height"] / RUNG_M) - 1

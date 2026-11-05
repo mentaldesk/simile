@@ -273,6 +273,7 @@ def street_scene(
     offset = round(camera * m["parallax"]["near"])
     put(tint(repeat(near, width, offset), t["tint"]), 0, ground_y + 4 * s, (0, 1), (5, 3), 0.3)
     places = {p.name: p for p in view.locations}
+    platforms = {**m["platforms"], **m.get("platforms_below", {}).get(view.id, {})}
 
     def ground_key(x: int) -> str:
         if view.ground(x) > ground_row:
@@ -300,13 +301,13 @@ def street_scene(
         for x in xs[1:]:
             runs[-1].append(x) if x == runs[-1][-1] + 1 else runs.append([x])
         for run in runs:
-            ledge = at("platforms/ledge", ppm)
+            ledge = at(platforms["ledge"], ppm)
             ledge = ledge.resize((round(len(run) * tile), ledge.height))
             put(tint(ledge, t["tint"]), run[0] * tile - camera, origin + y * tile, (0, 0))
     steps = sorted(c for c, kind in view.climbable.items() if kind == "stairs")
     if steps:
         (sx0, sy0), (sx1, sy1) = steps[0], steps[-1]
-        image = at("platforms/steps", ppm, (abs(sy1 - sy0) + 2) * TILE)
+        image = at(platforms["steps"], ppm, (abs(sy1 - sy0) + 2) * TILE)
         image = image.resize((round((abs(sx1 - sx0) + 2) * tile), image.height))
         if (sx1 - sx0) * (sy1 - sy0) > 0:
             image = ImageOps.mirror(image)
@@ -314,7 +315,7 @@ def street_scene(
         put(tint(image, t["tint"]), ((sx0 + sx1) / 2 + 0.5) * tile - camera, bottom, offset=None)
     for (x, y), kind in sorted(view.climbable.items()):
         if kind == "ladder":
-            image = at("platforms/ladder", ppm, TILE * 1.2)
+            image = at(platforms["ladder"], ppm, TILE * 1.2)
             put(tint(image, t["tint"]), (x + 0.5) * tile - camera, origin + (y + 1) * tile)
     for b in sorted(view.buildings, key=lambda b: b.x):
         key = m["buildings"][b.name]["front"]

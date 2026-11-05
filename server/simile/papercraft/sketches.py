@@ -332,6 +332,70 @@ def sewer_weir(width: float = 2.2, height: float = 3.36, footing: float = 2.2) -
     return s.image
 
 
+def metro_ladder(height: float = 3.6) -> Image.Image:
+    """The village's ladder in steel, with round rungs."""
+    s = Sheet(0.6, height, 200)
+    s.rect(0.0, 0.0, 0.08, height, STEEL, DARK_STEEL)
+    s.rect(0.52, 0.0, 0.6, height, STEEL, DARK_STEEL)
+    for y in np.arange(0.3, height - 0.1, 0.3):
+        s.rect(0.05, y - 0.025, 0.55, y + 0.025, DARK_STEEL)
+    return s.image
+
+
+def metro_flight(rise: float = 2.2, run: float = 2.2, count: int = 8) -> Image.Image:
+    """The village's steps rising to the right, in concrete with steel nosings over cream tiles."""
+    s = Sheet(run + 0.3, rise, 200, GREY)
+    h, d = rise / count, run / count
+    profile = [(0.0, 0.0)]
+    for i in range(count):
+        profile += [(i * d, (i + 1) * h), ((i + 1) * d, (i + 1) * h)]
+    s.polygon([*profile, (run + 0.3, rise), (run + 0.3, 0.0)], CREAM, DARK_STEEL)
+    for y in np.arange(0.3, rise - 0.1, 0.3):
+        s.rect(min(y / h, count) * d + 0.05, y - 0.012, run + 0.3, y + 0.012, (196, 188, 160))
+    for i in range(count):
+        s.rect(i * d, (i + 1) * h - 0.06, run + 0.3, (i + 1) * h, DARK_STEEL)
+    return s.image
+
+
+def metro_ledge(length: float = 3.0, height: float = 0.6) -> Image.Image:
+    """The village's ledge as a steel grating deck on angled steel brackets."""
+    s = Sheet(length, height, 300)
+    deck = 0.12
+    s.rect(0, height - deck, length, height, STEEL, DARK_STEEL)
+    for x in np.arange(0.15, length, 0.15):
+        s.rect(x - 0.012, height - deck, x + 0.012, height, DARK_STEEL)
+    for x in (0.45, length - 0.45):
+        s.polygon(
+            [(x - 0.3, height - deck), (x + 0.3, height - deck), (x + 0.04, 0), (x - 0.04, 0)],
+            DARK_STEEL,
+        )
+    return s.image
+
+
+def sewer_ladder(height: float = 3.6) -> Image.Image:
+    """The village's ladder in rusty iron, slimy at its foot."""
+    s = Sheet(0.6, height, 200)
+    s.rect(0.0, 0.0, 0.08, height, RUST, GRIME)
+    s.rect(0.52, 0.0, 0.6, height, RUST, GRIME)
+    for y in np.arange(0.3, height - 0.1, 0.3):
+        s.rect(0.05, y - 0.03, 0.55, y + 0.03, RUST, GRIME)
+    s.rect(0.0, 0.0, 0.08, 0.4, SLIME)
+    s.rect(0.52, 0.0, 0.6, 0.4, SLIME)
+    return s.image
+
+
+def sewer_ledge(length: float = 3.0, height: float = 0.6) -> Image.Image:
+    """The village's ledge as a concrete slab on rusty iron brackets."""
+    s = Sheet(length, height, 300)
+    deck = 0.16
+    s.rect(0, height - deck, length, height, CONCRETE, GRIME)
+    s.rect(0, height - deck - 0.04, length, height - deck, SLIME)
+    for x in (0.45, length - 0.45):
+        top = height - deck - 0.04
+        s.polygon([(x - 0.28, top), (x + 0.28, top), (x, 0)], RUST)
+    return s.image
+
+
 def bathtub() -> Image.Image:
     s = Sheet(1.7, 0.75, 400, GREY)
     s.polygon([(0.0, 0.62), (1.7, 0.62), (1.6, 0.2), (0.1, 0.2)], WHITE, (200, 196, 188))
@@ -586,6 +650,11 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "sewer_pier": sewer_pier,
     "sewer_vault": sewer_vault,
     "sewer_weir": sewer_weir,
+    "metro_ladder": metro_ladder,
+    "metro_flight": metro_flight,
+    "metro_ledge": metro_ledge,
+    "sewer_ladder": sewer_ladder,
+    "sewer_ledge": sewer_ledge,
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,

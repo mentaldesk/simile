@@ -47,6 +47,8 @@ const LADDER_ABOVE_M = 0.6;
 const SIGN_SCALE = 0.6;
 
 type Image = Phaser.GameObjects.Image;
+/** By street id, the platforms it draws in place of the village's. */
+type Below = SceneryManifest & { platforms_below?: Record<string, Record<string, string>> };
 
 type Layer = {
   name: LayerName;
@@ -142,7 +144,8 @@ export class StreetView {
     });
     const furniture = map.furniture.map((item) => furnitureKey(manifest, item, map.id));
     const grounds = groundRuns(map, manifest).map(({ key }) => key);
-    const climbs = [manifest.platforms.steps, manifest.platforms.ladder, manifest.platforms.ledge];
+    const platforms = StreetView.platformsOf(manifest, map);
+    const climbs = [platforms.steps, platforms.ladder, platforms.ledge];
     const landmarks = StreetView.landmarksOf(manifest, map).flatMap(({ piece, glow }) => [piece, glow]);
     const all = [...Object.values(layers), ...buildings, ...furniture, ...grounds, ...climbs, ...landmarks];
     return [...new Set(all)].filter((key): key is string => !!key && !!manifest.pieces[key]?.file);
@@ -152,6 +155,11 @@ export class StreetView {
   static layersOf(manifest: SceneryManifest, map: SideMap): Partial<SceneryManifest['streets'][string]> {
     const layers = manifest.streets[map.id] ?? {};
     return map.underground ? { ...layers, city: undefined } : layers;
+  }
+
+  /** Its own ladder, steps and ledge under the village, and the village's where it has none. */
+  static platformsOf(manifest: SceneryManifest, map: SideMap): Record<string, string> {
+    return { ...manifest.platforms, ...(manifest as Below).platforms_below?.[map.id] };
   }
 
   /** The landmarks standing along it, each with where. */
@@ -423,7 +431,7 @@ export class StreetView {
       const fill = this.own(scene.add.rectangle(x0, below, x1 - x0, GROUND_DEPTH_M * PPM).setOrigin(0, 0));
       this.tints.fill('ground', fill.setDepth(DEPTH.groundFill), textures.bottomColour(run.key));
     }
-    const ledge = manifest.platforms.ledge;
+    const { ledge } = StreetView.platformsOf(manifest, map);
     for (const { x0, x1, row } of ledges(map)) {
       const derived = textures.stretched(ledge, Math.round((x1 - x0) * TILE));
       for (const image of placeParts(scene, derived, textures.size(derived.name), [0, 0], x0 * TILE, row * TILE)) {
@@ -434,17 +442,18 @@ export class StreetView {
 
   private buildClimbs(): void {
     const { manifest, map, scene, textures } = this;
+    const platforms = StreetView.platformsOf(manifest, map);
     for (const { kind, path } of climbRuns(map)) {
       const [foot, head] = [path.points[0], path.points.at(-1)!];
       if (kind === 'stairs') {
-        const key = manifest.platforms.steps;
+        const key = platforms.steps;
         const image = scene.add.image(xOf((foot.x + head.x) / 2), feetOf(foot.y), textures.key(key));
         image.setOrigin(0.5, 1).setDisplaySize(Math.abs(head.x - foot.x) * TILE, (foot.y - head.y) * TILE);
         this.tints.add('ground', this.own(image.setFlipX(head.x < foot.x).setDepth(DEPTH.steps)));
       } else {
         const rungs = path.points.filter((point) => point.x === foot.x);
         const top = rungs[rungs.length - 1];
-        const key = manifest.platforms.ladder;
+        const key = platforms.ladder;
         const piece = manifest.pieces[key];
         const height = (foot.y - top.y) * TILE + LADDER_ABOVE_M * PPM;
         const image = scene.add.image(xOf(foot.x), feetOf(foot.y), textures.key(key)).setOrigin(0.5, 1);

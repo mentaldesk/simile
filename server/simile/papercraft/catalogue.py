@@ -1322,6 +1322,65 @@ PLATFORMS: dict[str, Item] = {
         folder="platforms",
     ),
 }
+PLATFORMS_BELOW: dict[str, dict[str, Item]] = {
+    "metro": {
+        "ladder": Item(
+            "a tall old maintenance ladder of dark gunmetal-grey painted steel: two flat rails and "
+            "round rungs",
+            3.6,
+            ref=TUNNELS,
+            sketch="metro_ladder",
+            folder="platforms",
+            style="cartoon",
+        ),
+        "steps": Item(
+            "a short flight of old metro station steps rising to the right: worn concrete treads "
+            "with dark steel nosings, over a solid side wall of grimy cream tiles",
+            2.2,
+            ref=TUNNELS,
+            sketch="metro_flight",
+            folder="platforms",
+            cut=("outline",),
+            style="cartoon",
+        ),
+        "ledge": Item(
+            "a long flat steel walkway: a deck of steel grating on two angled steel brackets",
+            0.6,
+            ref=TUNNELS,
+            sketch="metro_ledge",
+            folder="platforms",
+            cut=("outline",),
+            style="cartoon",
+        ),
+    },
+    "sewers": {
+        "ladder": Item(
+            "a tall old ladder of two rusty iron rails and round rusty iron rungs",
+            3.6,
+            ref=TUNNELS,
+            sketch="sewer_ladder",
+            folder="platforms",
+            style="grimy",
+        ),
+        "ledge": Item(
+            "a long narrow ledge of stained concrete on two rusty iron brackets, with slime "
+            "dripping from its edge",
+            0.6,
+            ref=TUNNELS,
+            sketch="sewer_ledge",
+            folder="platforms",
+            cut=("outline",),
+            style="grimy",
+        ),
+    },
+}
+"""The tunnels' own ladders, steps and ledges, by street, in place of the village's
+`PLATFORMS`. The sewers have no steps."""
+
+
+def below() -> dict[str, Item]:
+    """`PLATFORMS_BELOW` by name: `<street>-<platform>`."""
+    return {f"{s}-{n}": spec for s, pieces in PLATFORMS_BELOW.items() for n, spec in pieces.items()}
 
 
 def item(name: str, spec: Item, layout: Layout) -> Painting:
@@ -1384,7 +1443,7 @@ def items(layout: Layout) -> list[Painting]:
     unknown = sorted(set(layout.furniture) - set(FURNITURE) - set(EXTRAS))
     if unknown:
         raise KeyError(f"no painting for the maps' furniture: {', '.join(unknown)}")
-    specs = {**used(layout), **EXTRAS, **PLATFORMS}
+    specs = {**used(layout), **EXTRAS, **PLATFORMS, **below()}
     bases = {name: item(name, spec, layout) for name, spec in specs.items()}
     return [*bases.values(), *(v for n, s in specs.items() for v in variants(s, bases[n]))]
 
@@ -1717,6 +1776,10 @@ def index(layout: Layout | None = None) -> dict:
             name: f"platforms/{name}"
             for name, spec in {**used(layout), **PLATFORMS}.items()
             if spec.folder == "platforms"
+        },
+        "platforms_below": {
+            street: {name: f"platforms/{street}-{name}" for name in pieces}
+            for street, pieces in sorted(PLATFORMS_BELOW.items())
         },
         "slab": SLAB.key,
     }

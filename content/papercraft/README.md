@@ -155,6 +155,9 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   `ladder`, `steps` (stone steps rising to the right), `ledge` (stretch it by repeating its
   middle), `lift` (the car), `lift_shaft` (one storey of it, to stack), and an inside `window`
   and `door` for back walls.
+- **`platforms_below`** (optional): by street map id, the platforms a street under the village
+  draws in place of those in `platforms`, each named as there: the metro's `ladder`, `steps` and
+  `ledge`, and the sewers' `ladder` and `ledge`. A platform a street leaves out is the village's.
 - **`slab`**: the corrugated card band for floor slabs and the dollhouse's sides.
 - **`parallax`** and **`times`**: what the previews use, as a starting point for part 5.
   `parallax` has the six layers, and `city` is required whenever any street has a city layer. A
@@ -184,8 +187,7 @@ with today's subjects, painted from `references/clean/` and, where it's pale or 
 pieces residents sit or lie on, the picture frame, the kitchen and the window are redrawn from
 sketches (`sketches.py`), so their seats, mattress, moulding and width stay where the client
 expects them. The kitchen's sink and hob are in the ends a stretch keeps, so a long run repeats
-only plain cupboards. The tunnels keep their own pieces, but still climb the village's ladder,
-steps and ledge until they get their own.
+only plain cupboards. The tunnels keep their own pieces, ladders, steps and ledges among them.
 
 The village's street layers, room papers, slab and sky are `clean` (`village_layer`), with today's
 subjects. The ground strips are painted on grey and cut to their own band (`banded`), so they're
@@ -210,8 +212,9 @@ The rest of the pipeline is the same, with three additions:
   client draws 2.75 m up. It's cut as a `ground` piece, keyed on its top row's colour (`cut`
   `above`), since the wall fills its sides.
 - The clinic's `Look` is `whole`: one painting however wide, with no seam where units would meet.
-- The metro's catwalks and steps are furniture drawn over the street's own ledges and steps, which
-  stay papercraft.
+- The metro's catwalks and steps are furniture drawn over the street's own ledges and steps.
+- Its ladder, steps and ledge are its own (`PLATFORMS_BELOW`), in steel and concrete, sketched to
+  the village's shapes so they fit the same cells.
 
 ## The sewers
 
@@ -223,7 +226,9 @@ levels' solid cells are redrawn from sketches, so they fit their cells and their
 the player stands: `sewer_vault` along the top, `sewer_walkway` and `sewer_pipe` over the slabs,
 stretched to their length, `sewer_pier` over each wall on a tier, and `sewer_weir` over the gate's
 weir. `maintenance_hatch`, `sewer_outfall` and `sewer_lamp` dress the rooms, with the metro's
-`breaker_box`, `rubble`, `crates`, `bedroll`, `pipes` and `freight_lift`.
+`breaker_box`, `rubble`, `crates`, `bedroll`, `pipes` and `freight_lift`. Their ladder and the
+ledge under the walkways are their own too (`PLATFORMS_BELOW`), in rusty iron and concrete. The
+sewers have no steps.
 
 `layout.json` reads every level: they share the map id `sewers`, so its width is the widest
 level's.
