@@ -26,7 +26,7 @@ GitHub "blocked by" links.
 
 ## Decisions
 
-The first five are the user's. The rest are proposals, marked *proposed*, for the user to confirm
+The first seven are the user's. The rest are proposals, marked *proposed*, for the user to confirm
 or change before the tasks are filed.
 
 | Decision | Choice |
@@ -36,11 +36,11 @@ or change before the tasks are filed.
 | **Rounds** | Printed, not bought. Printing takes material, and the material decides the damage: plastic first, then carbon fibre, eventually metal. |
 | **The recycler** | The maker space's second machine. It turns scrap into the printer's material. |
 | **Implant parts** | The printer doesn't make them yet. |
+| **Death** | Death replaces stage 2's collapse. Health at none is death. Hunger at none starts to hurt: you take damage regularly until you eat, and starve to death if you don't. Once the power cell is in, power at none is death too, since you can't move. |
+| **The new body** | You wake in your bed in a whole, organic body with no bionics, as the design says. Everything in it can be sold again, so the kidney is always a little cash to start over with. |
 | **Material** *(proposed)* | An item you carry and stash, by kind (`plastic` for now) and amount. A pistol costs 6 plastic and a magazine of 6 rounds costs 2. Aris's spool holds 8. The recycler turns each kilo of scrap into 1 plastic. |
 | **Wear** *(proposed)* | A plastic pistol wears out after 30 rounds, as the [design](game-design.md#dangers) has it ("lasts a few shots"), so plastic stays a beginner's gun. Its condition shows on the item. |
 | **Recycler bots** *(proposed)* | They take 6 rounds, a whole magazine, and drop everything they collected when destroyed. Height is still the cheap way past them. |
-| **Death** *(proposed)* | Health at none is death. Hunger and power running out stay a collapse, as in stage 2, since starving in a tunnel isn't the run the design means. |
-| **The new body** *(proposed)* | You wake in your bed in a whole, organic body with no bionics, as the design says. The organs you sold don't come back to sell twice: they're marked `regrown`, and the clinic won't buy them. So a death costs you your bionics until you get them back, not your income. |
 | **Your corpse** *(proposed)* | It stays where you died, with your money, everything you carried and every bionic you had fitted. Dying again before you reach it leaves a second corpse, and both stay. |
 | **Salvaging your own body** *(proposed)* | E at your corpse takes the money and the items. Bionics come out as parts you carry: `bionic` items with their grade. The clinic refits a salvaged bionic for a fitting fee, with no recipe parts, since its recipe is still in your mind. |
 | **The stash** *(proposed)* | Your home is the maker space, so the stash is Aris's lockers there. E puts things in and takes them out. It holds 20 kg to start. Fitting it out to hold more is a later task. |
@@ -68,9 +68,9 @@ They share files, so they go one at a time.
 
 | ID | Task | Done when |
 |---|---|---|
-| Q1 | **Items, material and weapons:** stackable items with an amount; `material` and `weapon` kinds; a weapon's rounds loaded and condition; `bionic` items with a grade, for salvaged bionics; `regrown` organs on the body; the stash's contents and limit on the player. | Schema, protocol and generated types merged. Stage 2 saves load. |
+| Q1 | **Items, material and weapons:** stackable items with an amount; `material` and `weapon` kinds; a weapon's rounds loaded and condition; `bionic` items with a grade, for salvaged bionics; the stash's contents and limit on the player. | Schema, protocol and generated types merged. Stage 2 saves load. |
 | Q2 | **Machines and corpses:** a machine's kind, state and repair parts; what a working machine makes and for how much material; a corpse holding money, items and bionics. In the snapshot and in delta messages. | Schema and protocol merged, with fixtures. |
-| Q3 | **Shooting and death:** the client's `fire`, `reload`, `repair`, `make` and `stash` messages; a hit event; creature health in the creature delta; `player_died` in place of `player_collapsed` when health runs out. | Schema and protocol merged. |
+| Q3 | **Shooting and death:** the client's `fire`, `reload`, `repair`, `make` and `stash` messages; a hit event; creature health in the creature delta; `player_died` in place of `player_collapsed`. | Schema and protocol merged. |
 
 ### Then, in parallel where their paths allow
 
@@ -82,7 +82,7 @@ They share files, so they go one at a time.
 | Q7 | World | **Parts in the world:** the metal sheet and the linear actuator where stage 2's bionics reach (the sheet in the metro, the actuator in sewers zone 0 or 1); the recycler's parts deeper in. Generated sewers checked to hold each where it's reachable. | Q2 |
 | Q8 | Combat, client | **Shooting:** fire and reload keys; the server's hitscan along the row; damage by material; creature health (a rat takes 1 round, a dog 3, a bot 6, and kicks still hurt as in stage 2); a muzzle flash, a hit flash and a flinch; the pistol wearing out. | Q1, Q3 |
 | Q9 | World | **Destroying recycler bots:** a destroyed bot drops everything it collected as a pile. | Q8 |
-| Q10 | Player | **Death and the corpse:** health at none leaves a corpse with your money, items and bionics where you fell; you wake in your bed in a whole organic body, with regrown organs the clinic won't buy; hunger and power still collapse. | Q1, Q2, Q3 |
+| Q10 | Player | **Death and the corpse:** death replaces collapse. Starving hurts regularly until you eat, and power at none kills. A death leaves a corpse with your money, items and bionics where you fell, and you wake in your bed in a whole organic body whose parts can all be sold again. | Q1, Q2, Q3 |
 | Q11 | Player, clinic | **Salvaging your own body:** E at your corpse takes everything, bionics as parts; the clinic refits a salvaged bionic for a fitting fee. | Q10 |
 | Q12 | Player, client | **The stash:** E at the maker space's lockers stores and takes things, up to its limit; what's in it shows on the character screen. | Q1 |
 | Q13 | Art | **Machines, weapons and corpses:** the printer and recycler, broken and working, in the village's clean style; icons for the pistol, rounds, plastic, metal sheet, linear actuator and salvaged bionics; the player's figure holding and firing the pistol; your corpse. | Q1, Q2 |
