@@ -126,6 +126,7 @@ sets F3's snapshot to the NPCs' real positions.
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
   people they dislike repel, and a crowd draws high-Connection NPCs and puts off low ones. Nobody
   seeks someone asleep, at home, talking, out strolling or who refused them in the last 45 minutes.
+  Someone who seeks a resident already on their way to them waits where they are for them.
 - **The player's bionics.** The `unease` hook (S11's sightings) says how much what a resident has
   seen of the player's bionics puts them off, 0 to 1. It takes `unease_weight` (1) times that off
   their affinity for the player, so they stay away from where the player is, leave when the player

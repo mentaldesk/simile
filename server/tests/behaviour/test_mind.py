@@ -370,6 +370,57 @@ def test_seekers_ask_to_talk_and_both_pause_when_accepted() -> None:
     assert village.movement.distance(a, b) <= DEFAULT_CONFIG.talk_range
 
 
+@pytest.mark.parametrize(
+    "placed",
+    [
+        {"ana": "square", "ben": "park"},
+        {
+            "ana": MapTile(map="coffee_shop_floor_1", x=3, y=2),
+            "ben": MapTile(map="coffee_shop_floor_0", x=10, y=2),
+        },
+    ],
+    ids=["same map", "different floors"],
+)
+def test_residents_seeking_each_other_meet(placed: dict[str, str | MapTile]) -> None:
+    requests: list[tuple[str, str]] = []
+    village = Village([ANA, BEN], start=at(11), config=keen(A.SEEK), placed=placed)
+
+    def accept(a: str, b: str) -> bool:
+        requests.append((a, b))
+        return True
+
+    village.behaviour.hooks.set(request_conversation=accept)
+    village.run_until(lambda: bool(requests), minutes=5)
+
+    assert requests == [("ana", "ben")]
+    assert village.behaviour.goal("ana") == Goal(A.TALK, "ben")
+    assert village.behaviour.goal("ben") == Goal(A.TALK, "ana")
+
+
+def test_a_seeker_finds_someone_on_another_floor_of_the_same_building() -> None:
+    requests: list[tuple[str, str]] = []
+    village = Village(
+        [ANA, BEN],
+        start=at(11),
+        config=keen(A.IDLE),
+        placed={
+            "ana": MapTile(map="coffee_shop_floor_1", x=3, y=2),
+            "ben": MapTile(map="coffee_shop_floor_0", x=10, y=2),
+        },
+    )
+
+    def accept(a: str, b: str) -> bool:
+        requests.append((a, b))
+        return True
+
+    village.behaviour.hooks.set(request_conversation=accept)
+    village.behaviour.nudge("ben", Goal(A.SEEK, "ana"), 100)
+    village.run_until(lambda: bool(requests), minutes=5)
+
+    assert requests == [("ben", "ana")]
+    assert village.movement.position("ben").map == "coffee_shop_floor_1"
+
+
 def test_seekers_hang_around_when_declined_and_do_not_ask_again_soon() -> None:
     requests: list[tuple[str, str]] = []
     config = keen(A.SEEK, seek_cooldown=45)
