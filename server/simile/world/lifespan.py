@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
-    from simile.behaviour.events import GoalChosen
     from simile.persistence import player_of
     from simile.protocol import PlayerMoveMessage, hub_of
     from simile.schema import PLAYER_ID, Bionic, Id
@@ -19,7 +18,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.street.sewers import SEWERS
     from simile.world.map import world_level
     from simile.world.movement import Point, movement_of
-    from simile.world.spots import indifferent, purpose_of
+    from simile.world.spots import indifferent
 
     world, movement, hub = world_of(app), movement_of(app), hub_of(app)
     level, snapshot = world_level(), hub.snapshot
@@ -44,9 +43,6 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             return
         movement.track(PLAYER_ID, Point(position.x, position.y, position.map))
 
-    def on_goal(event: GoalChosen) -> None:
-        movement.intend(event.npc, purpose_of(event.activity, event.target))
-
     def affinity(a: Id, b: Id) -> float:
         """B1's affinity, as places score it, once behaviour is running."""
         from simile.behaviour.scoring import affinity as score
@@ -64,7 +60,6 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     stops = [
         world.loop.register(movement),
         hub.subscribe(PlayerMoveMessage, on_player_move),
-        world.bus.subscribe(GoalChosen, on_goal),
     ]
     yield
     for stop in reversed(stops):
