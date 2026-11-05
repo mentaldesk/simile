@@ -47,7 +47,7 @@ CUES: dict[Cue, str] = {
     Cue.REFUSE: "You'd rather not talk to {other}. Turn them down in a few words, and leave it "
     "there.",
 }
-BLUNT = "Tell them why in one curt line: you don't hold with bionics."
+BLUNT = "Tell them why in one curt line: you don't hold with what you can see on them."
 POLITE = "Keep it polite, and keep your reason to yourself."
 COVERED = "If they asked what one of your cover stories answers, give it as you turn them down."
 JOKE = "Work a joke into this line, in your own humour."

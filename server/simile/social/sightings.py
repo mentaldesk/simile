@@ -10,15 +10,18 @@ from simile.schema import (
     Bionic,
     Body,
     Id,
+    InteractionEvent,
+    Item,
     Memory,
     MemoryKind,
     Npc,
     Relationship,
 )
 from simile.sim import Clock
-from simile.social.bionics import looks, seen_in, sighting, tolerance, unease
+from simile.social.bionics import against, looks, seen_in, sighting, tolerance, unease
 from simile.social.config import DEFAULT_BIONICS, BionicsConfig
 from simile.social.relationship import apply_events, as_of, meet
+from simile.social.weapons import armed, carrying, noticed, wariness, wary
 from simile.voicing.distance import apart
 from simile.world.movement import Movement
 
@@ -40,7 +43,8 @@ class Store(Protocol):
 
 
 class Sightings:
-    """Residents seeing the player's bionics, each one once. Tick it on the sim loop."""
+    """Residents seeing the player's bionics, each one once, and any weapon they carry. Tick it
+    on the sim loop."""
 
     def __init__(
         self,
@@ -51,6 +55,7 @@ class Sightings:
         body: Callable[[], Body],
         awake: Callable[[Id], bool],
         *,
+        carried: Callable[[], Sequence[Item]] = lambda: (),
         config: BionicsConfig = DEFAULT_BIONICS,
     ) -> None:
         self.store = store
@@ -59,8 +64,10 @@ class Sightings:
         self.movement = movement
         self.body = body
         self.awake = awake
+        self.carried = carried
         self.config = config
         self._seen: dict[Id, dict[Bionic, datetime]] = {}
+        self._noticed: set[Id] = set()
         self._elapsed = 0.0
 
     def tick(self, dt: float) -> None:
@@ -70,15 +77,20 @@ class Sightings:
             self.look()
 
     def look(self) -> None:
-        """Each resident awake within sight of the player sees the bionics new to them."""
-        fitted = self.body().bionics
-        if not fitted:
+        """Each resident awake within sight of the player sees the bionics new to them, and the
+        weapon if they haven't since the player last put it away."""
+        fitted, is_armed = self.body().bionics, armed(self.carried())
+        if not is_armed:
+            self._noticed.clear()
+        if not fitted and not is_armed:
             return
         for npc in self.npcs:
             if not self.in_sight(npc):
                 continue
             if new := [bionic for bionic in fitted if bionic not in self.seen(npc)]:
                 self.see(npc, new)
+            if is_armed and npc not in self._noticed:
+                self.notice(npc)
 
     def in_sight(self, npc: Id) -> bool:
         """Whether `npc` is awake and can see the player now."""
@@ -90,14 +102,26 @@ class Sightings:
 
     def see(self, npc: Id, bionics: Sequence[Bionic]) -> Relationship:
         """`npc` sees `bionics` for the first time, and returns how they now feel about them."""
-        now, resident = self.clock.now, self.npcs[npc]
-        events, memory = sighting(resident, bionics, now, self.config)
-        stored = self.store.relationship(npc, PLAYER_ID)
-        before = as_of(stored, now) if stored else meet(resident, PLAYER_ID)
-        after = apply_events(before, events, now)
+        now = self.clock.now
+        events, memory = sighting(self.npcs[npc], bionics, now, self.config)
+        after = self._felt(npc, events)
         self.store.add(memory, after)
         self.seen(npc).update(dict.fromkeys(bionics, now))
         return after
+
+    def notice(self, npc: Id) -> None:
+        """`npc` sees the player armed. It leaves no memory, so the pistol is out of their prompts
+        once it's put away, only a dent in the trust of anyone wary."""
+        self._noticed.add(npc)
+        resident = self.npcs[npc]
+        if wary(resident, self.config):
+            self.store.add(self._felt(npc, [noticed(resident, self.clock.now, self.config)]))
+
+    def _felt(self, npc: Id, events: Sequence[InteractionEvent]) -> Relationship:
+        now = self.clock.now
+        stored = self.store.relationship(npc, PLAYER_ID)
+        before = as_of(stored, now) if stored else meet(self.npcs[npc], PLAYER_ID)
+        return apply_events(before, events, now)
 
     def seen(self, npc: Id) -> dict[Bionic, datetime]:
         """When `npc` first saw each bionic, read from their memories the first time it's asked."""
@@ -113,7 +137,18 @@ class Sightings:
         return self._seen[npc]
 
     def unease(self, npc: Npc) -> float:
-        """B1's `unease` hook: how much the bionics `npc` has seen or sees now put them off."""
+        """B1's `unease` hook: how much the bionics `npc` has seen or sees now, and the weapon
+        they've seen on this outing or see now, put them off, up to 1."""
+        return min(self._bionics_unease(npc) + self._weapon_unease(npc), 1.0)
+
+    def _weapon_unease(self, npc: Npc) -> float:
+        if not armed(self.carried()):
+            return 0.0
+        if npc.id not in self._noticed and not self.in_sight(npc.id):
+            return 0.0
+        return against(-wariness(npc.values, self.config), self.config)
+
+    def _bionics_unease(self, npc: Npc) -> float:
         fitted = self.body().bionics
         if not fitted:
             return 0.0
@@ -125,7 +160,14 @@ class Sightings:
         return unease(feeling, known, self.config)
 
     def looks(self, npc: Id) -> str | None:
-        """What `npc` can see of the player face to face, for a prompt, or None without bionics."""
+        """What `npc` can see of the player face to face, for a prompt, or None if there's nothing
+        out of the ordinary."""
+        parts = [self._bionics_looks(npc)]
+        if armed(self.carried()):
+            parts.append(carrying(self.config.player_name, self.npcs[npc], self.config))
+        return " ".join(filter(None, parts)) or None
+
+    def _bionics_looks(self, npc: Id) -> str | None:
         fitted = self.body().bionics
         if not fitted:
             return None
@@ -150,5 +192,6 @@ def sightings_of(app: Starlette) -> Sightings:
             behaviour.movement,
             lambda: player_of(app).body,
             lambda npc: behaviour.goal(npc).activity is not Activity.SLEEP,
+            carried=lambda: player_of(app).items,
         )
     return app.state.sightings

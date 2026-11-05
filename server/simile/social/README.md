@@ -128,3 +128,31 @@ S11: the village reacts to the player's bionics (`bionics.py`, `sightings.py`). 
 
 `sightings_of(app)` is the server's `Sightings`, which the lifespan ticks and plugs into B1, and
 B2's lifespan points `engine.looks` at.
+
+## The pistol
+
+Q14: a weapon the player carries, an `Item` of kind `weapon`, is something residents see too
+(`weapons.py`). Only `player.items` counts: one in the stash or left in a pile doesn't, and rounds
+alone don't. `Sightings` handles it beside the bionics, with the same `mildly`, `strongly`, `sight`
+and `look_every`.
+
+- **Wariness.** `wariness(values)` is how far a resident distrusts it, from 0 to 1:
+  `sum(weight * max(value - 0.5, 0))`, up to 1, with Tradition and Security weighing 1. Only scores
+  above the middle count, so low Tradition doesn't excuse high Security, and nobody warms to a gun,
+  however they take to bionics. In today's village Tobias (0.86) and Raymond (0.54) are strongly
+  against, Mirela (0.32), Henrietta (0.29) and Lachlan (0.17) against, and the rest barely mind.
+- **What they see.** `looks(npc)` adds it after any bionics, only while it's carried: "Visitor is
+  carrying a pistol. A gun on someone makes you wary, and you trust them less for it." It says
+  pistol rather than the item's name, since "plastic pistol" could read as a toy.
+- **Trust.** Each wary resident who sees it, as for a sighting, takes an R1 event from the player on
+  trust alone, with valence their wariness and magnitude `sighting`, not stored. A resident notices
+  it once until the player puts it away, so turning up armed again dents trust again. Who has
+  noticed isn't saved, so a restart while armed counts one more.
+- **No memory.** Unlike a bionic's sighting, it leaves no `observation` memory, because a prompt
+  mentions the pistol only while it's carried, and a memory would stay on their mind and pass on in
+  scenes with other residents. What's said about it in a conversation can still be remembered, as
+  anything said is.
+- **Unease.** `unease` adds what the wariness gives, its share of the way from `mildly` to 1, up to
+  1 with any bionics': 0.84 for Tobias, 0.46 for Raymond, 0.2 for Mirela. It counts while the
+  resident can see it or has noticed it this outing, and is gone as soon as it's put away. So the
+  wary keep away and turn the player down, as they do for bionics.
