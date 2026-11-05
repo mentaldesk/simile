@@ -1,7 +1,7 @@
 # Side
 
 The village from the side (#306): part 2's maps ([`content/street/`](../../../content/street/README.md)),
-part 3's papercraft scenery ([`content/papercraft/`](../../../content/papercraft/README.md)) and
+part 3's painted scenery ([`content/papercraft/`](../../../content/papercraft/README.md)) and
 the residents' painted figures ([`../dolls/`](../dolls/README.md)), drawn by `SideScene`, the game's
 world scene. The menu starts it (`?play` skips the menu).
 
