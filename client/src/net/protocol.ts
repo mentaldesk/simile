@@ -269,7 +269,8 @@ export interface Machine {
   makes: Product[];
 }
 /**
- * Something a working machine makes, and what it takes.
+ * Something a working machine makes: the `item` that comes out, stack and all, such as 6
+ * rounds, and what it takes.
  */
 export interface Product {
   item: Item;
@@ -641,7 +642,7 @@ export interface Player {
   /**
    * What they carry. Picking things up keeps their weight within `carry_limit`.
    */
-  items: Item1[];
+  items: Item[];
   /**
    * The most they carry, in kg.
    */
@@ -693,63 +694,13 @@ export interface Player {
   repaired?: string[];
 }
 /**
- * Something the player carries, or a stack of it.
- */
-export interface Item1 {
-  /**
-   * What it is, the same for every one of its kind, e.g. "copper_wire" or "lamp". Salvage is priced by it.
-   */
-  id: string;
-  kind: ItemKind;
-  /**
-   * What the player sees, e.g. "Copper wire".
-   */
-  name: string;
-  /**
-   * In kg, each, counted against the carry limit.
-   */
-  weight: number;
-  /**
-   * How many in the stack. Only material and rounds stack: rounds come whole, and material in any amount, since it comes from scrap by weight. Left out while it's 1.
-   */
-  amount?: number;
-  /**
-   * A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.
-   */
-  charge: number | null;
-  /**
-   * Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.
-   */
-  on: boolean | null;
-  /**
-   * What material, rounds or a weapon are made of. A material's `id` is this. Left out for anything else.
-   */
-  material?: Material | null;
-  /**
-   * The rounds loaded in a weapon, up to its `capacity`. Left out for anything else.
-   */
-  rounds?: number | null;
-  /**
-   * The most rounds a weapon holds. Left out for anything else.
-   */
-  capacity?: number | null;
-  /**
-   * A weapon's wear, from 1 (new) to 0 (worn out). Left out for anything else.
-   */
-  condition?: number | null;
-  /**
-   * What a salvaged bionic refits as, grade and all, which is also its `id`. Left out for anything else.
-   */
-  bionic?: Bionic | null;
-}
-/**
  * What they keep at home. Left out while it's empty and at its starting limit.
  */
 export interface Stash {
   /**
    * What's in it. Putting things in keeps their weight within `limit`.
    */
-  items: Item1[];
+  items: Item[];
   /**
    * The most it holds, in kg.
    */
@@ -813,7 +764,7 @@ export interface Effect {
  */
 export interface Pile {
   at: MapTile;
-  items: Item1[];
+  items: Item[];
   /**
    * Cash lying there, which weighs nothing. Left out while there's none.
    */
@@ -848,7 +799,7 @@ export interface Corpse {
   /**
    * What it still carries.
    */
-  items: Item1[];
+  items: Item[];
   /**
    * The bionics still in it, which come out as `bionic` items.
    */
@@ -858,7 +809,7 @@ export interface Corpse {
  * Something the player sold that its buyer keeps for them to buy back.
  */
 export interface Sale {
-  item: Item1;
+  item: Item;
   /**
    * The buyer that has it, by its place, e.g. "scrap_stall".
    */
@@ -1002,7 +953,7 @@ export interface Fitting {
  * Something a buyer sells, by `buy`, for its `price`.
  */
 export interface Offer {
-  item: Item1;
+  item: Item;
   price: number;
 }
 /**

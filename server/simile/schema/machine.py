@@ -22,9 +22,10 @@ class MachineState(StrEnum):
 
 
 class Product(Model):
-    """Something a working machine makes, and what it takes."""
+    """Something a working machine makes: the `item` that comes out, stack and all, such as 6
+    rounds, and what it takes."""
 
-    item: Item = Field(description="What comes out, stack and all, such as 6 rounds.")
+    item: Item
     uses: Material | Literal["scrap"] = Field(
         description="What it's made from: a material they carry, or scrap, by weight."
     )

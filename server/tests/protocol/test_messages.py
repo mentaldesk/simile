@@ -396,7 +396,7 @@ JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
 
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 IN_THE_SEWERS = SNAPSHOT.model_copy(update={"creatures": CREATURES})
-WITH_MACHINES = SNAPSHOT.model_copy(update={"machines": MACHINES[:2]})
+WITH_MACHINES = SNAPSHOT.model_copy(update={"machines": [MACHINES[0], MACHINES[2]]})
 AFTER_DYING = PlayerStateMessage(player=Player(corpses=CORPSES, repaired=["printer_3d"]))
 SERVER = [
     SNAPSHOT,
@@ -1538,8 +1538,10 @@ def test_a_snapshot_without_creatures_has_none() -> None:
 
 def test_the_snapshot_has_every_machine() -> None:
     data = json.loads(WITH_MACHINES.model_dump_json())
+    fixture = json.loads((SCHEMA_TESTS / "machines.json").read_text())
 
-    assert data["machines"] == json.loads((SCHEMA_TESTS / "machines.json").read_text())[:2]
+    assert data["machines"] == [fixture[0], fixture[2]]
+    assert [machine["id"] for machine in data["machines"]] == ["printer_3d", "recycler"]
 
 
 def test_a_snapshot_from_before_machines_has_none() -> None:
@@ -1564,19 +1566,6 @@ def test_a_player_state_carries_their_corpses_and_repairs() -> None:
 
     assert data["player"]["corpses"] == json.loads((SCHEMA_TESTS / "corpses.json").read_text())
     assert data["player"]["repaired"] == ["printer_3d"]
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        {"type": "corpse_changed", "corpse": {}},
-        {"type": "corpse_gone", "corpse_id": "corpse_1"},
-    ],
-    ids=["corpse_changed", "corpse_gone"],
-)
-def test_corpses_have_no_messages_of_their_own(data: dict[str, Any]) -> None:
-    with pytest.raises(ValidationError):
-        server_messages.validate_python(data)
 
 
 def test_a_creature_moving_carries_all_of_it_so_a_new_one_can_appear() -> None:

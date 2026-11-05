@@ -200,11 +200,10 @@
     },
     "Product": {
       "additionalProperties": false,
-      "description": "Something a working machine makes, and what it takes.",
+      "description": "Something a working machine makes: the `item` that comes out, stack and all, such as 6\nrounds, and what it takes.",
       "properties": {
         "item": {
-          "$ref": "#/$defs/Item",
-          "description": "What comes out, stack and all, such as 6 rounds."
+          "$ref": "#/$defs/Item"
         },
         "uses": {
           "anyOf": [
