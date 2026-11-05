@@ -99,8 +99,8 @@ face, in the maps' `spots` layer ([`content/street/README.md`](../../../content/
 | `bed` | `sleeping` | On the head of the bed in each house and in the barista's flat |
 
 **Taking one.** `intend(entity, purpose)` says what they're at their next place for, a
-`simile.world.spots.Purpose`. The world's lifespan sets it from B1's `GoalChosen`, which behaviour
-publishes before it starts the walk (`purpose_of`): the coffee shop is for a drink, the noodle bar
+`simile.world.spots.Purpose`. Behaviour sets it (`purpose_of`) for each goal, before it publishes
+`GoalChosen` and starts the walk: the coffee shop is for a drink, the noodle bar
 for eating, a terminal for reading, the maker space and making something for making, the gallery for
 looking, the park for relaxing, the square for lingering and home at bedtime for sleeping. At work
 it's what the place is for, except at the café and the noodle bar, whose staff serve rather than

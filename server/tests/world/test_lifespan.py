@@ -6,7 +6,6 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.behaviour import GoalChosen
 from simile.memory import memory_of
 from simile.npc import load_npcs
 from simile.persistence import player_of
@@ -15,9 +14,6 @@ from simile.schema import PLAYER_ID, Bionic, Body, MapTile
 from simile.sim import world_of
 from simile.social import meet
 from simile.world import Point, movement_of
-from simile.world.map import SpotKind, load_maps
-
-MAPS = load_maps()
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -169,20 +165,6 @@ def test_stops_on_shutdown(make_package: MakePackage) -> None:
 
     assert movement.position("mei") == Point(start.x, start.y, start.map)
     assert not walk.done
-
-
-def test_residents_take_a_spot_for_the_goal_behaviour_publishes(make_package: MakePackage) -> None:
-    app = create_app(make_package(WORLD_LIFESPAN))
-
-    with TestClient(app):
-        movement = movement_of(app)
-        movement.place("mei", "square")
-        world_of(app).bus.publish(GoalChosen("mei", "noodle_bar", "noodle_bar"))
-        walk = movement.walk_to("mei", "noodle_bar")
-
-    assert walk.destination is not None
-    spot = MAPS[walk.destination.map].spot_at(walk.destination.x, walk.destination.y)
-    assert spot is not None and spot.kind is SpotKind.SEAT
 
 
 def test_spots_go_by_behaviours_affinity_once_it_runs(make_package: MakePackage) -> None:
