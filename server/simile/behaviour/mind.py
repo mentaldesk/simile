@@ -1129,7 +1129,8 @@ class Behaviour:
                 else:
                     self._walk(mind, tile)
             case Activity.SEEK:
-                self._walk(mind, self._tile_of(goal.target))
+                coming = self._coming(mind, goal.target)
+                self._walk(mind, None if coming else self._tile_of(goal.target))
             case Activity.EXERCISE:
                 mind.route = self._route(mind, goal)
                 self._walk(mind, mind.route[0])
@@ -1332,12 +1333,23 @@ class Behaviour:
                 return True
             mind.cooldowns[other] = self.clock.now + timedelta(minutes=self.config.seek_cooldown)
             return False
+        if self._coming(mind, other):
+            return False
         if mind.chases < self.config.chases:
             mind.chases += 1
             self._walk(mind, self._tile_of(other))
             return True
         self._give_up(mind, other)
         return True
+
+    def _coming(self, mind: Mind, other: Id | None) -> bool:
+        """Whether `other` is on their way to seek them out, so they should wait for them."""
+        theirs = self.minds.get(other) if other is not None else None
+        return (
+            theirs is not None
+            and theirs.walk is not None
+            and theirs.goal == Goal(Activity.SEEK, mind.npc.id)
+        )
 
     def _give_up(self, mind: Mind, other: Id) -> None:
         mind.cooldowns[other] = self.clock.now + timedelta(minutes=self.config.seek_cooldown)
