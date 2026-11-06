@@ -121,6 +121,18 @@
         {
           "height": 32,
           "id": 5,
+          "name": "fridge",
+          "properties": [],
+          "rotation": 0,
+          "type": "fridge",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 6,
           "name": "loom",
           "properties": [],
           "rotation": 0,
@@ -132,7 +144,7 @@
         },
         {
           "height": 32,
-          "id": 6,
+          "id": 7,
           "name": "sewing_machine",
           "properties": [],
           "rotation": 0,
@@ -156,7 +168,7 @@
       "objects": [
         {
           "height": 48,
-          "id": 7,
+          "id": 8,
           "name": "maker_space",
           "properties": [
             {
@@ -212,7 +224,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 8,
+          "id": 9,
           "name": "maker_space",
           "properties": [
             {
@@ -250,7 +262,7 @@
         },
         {
           "height": 16,
-          "id": 9,
+          "id": 10,
           "name": "maker_space_stairs",
           "properties": [
             {
@@ -300,7 +312,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 10,
+          "id": 11,
           "name": "maker_space_bench",
           "properties": [
             {
@@ -328,7 +340,7 @@
         },
         {
           "height": 32,
-          "id": 11,
+          "id": 12,
           "name": "laser_cutter",
           "properties": [
             {
@@ -351,7 +363,7 @@
         },
         {
           "height": 32,
-          "id": 12,
+          "id": 13,
           "name": "printer_3d",
           "properties": [
             {
@@ -374,7 +386,30 @@
         },
         {
           "height": 32,
-          "id": 13,
+          "id": 14,
+          "name": "recycler",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Recycler"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "1,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "machine",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 15,
           "name": "loom",
           "properties": [
             {
@@ -397,7 +432,7 @@
         },
         {
           "height": 32,
-          "id": 14,
+          "id": 16,
           "name": "sewing_machine",
           "properties": [
             {
@@ -420,7 +455,7 @@
         },
         {
           "height": 16,
-          "id": 15,
+          "id": 17,
           "name": "maker_space_plug",
           "properties": [
             {
@@ -455,7 +490,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 16,
+          "id": 18,
           "name": "desk-3-5",
           "properties": [
             {
@@ -473,7 +508,7 @@
         },
         {
           "height": 16,
-          "id": 17,
+          "id": 19,
           "name": "desk-4-5",
           "properties": [
             {
@@ -491,7 +526,7 @@
         },
         {
           "height": 16,
-          "id": 18,
+          "id": 20,
           "name": "desk-3-7",
           "properties": [
             {
@@ -509,7 +544,7 @@
         },
         {
           "height": 16,
-          "id": 19,
+          "id": 21,
           "name": "desk-4-7",
           "properties": [
             {
@@ -527,7 +562,7 @@
         },
         {
           "height": 16,
-          "id": 20,
+          "id": 22,
           "name": "desk-2-3",
           "properties": [
             {
@@ -545,7 +580,7 @@
         },
         {
           "height": 16,
-          "id": 21,
+          "id": 23,
           "name": "desk-3-3",
           "properties": [
             {
@@ -563,7 +598,7 @@
         },
         {
           "height": 16,
-          "id": 22,
+          "id": 24,
           "name": "desk-6-3",
           "properties": [
             {
@@ -581,7 +616,7 @@
         },
         {
           "height": 16,
-          "id": 23,
+          "id": 25,
           "name": "desk-10-3",
           "properties": [
             {
@@ -599,7 +634,7 @@
         },
         {
           "height": 16,
-          "id": 24,
+          "id": 26,
           "name": "desk-11-3",
           "properties": [
             {
@@ -617,7 +652,7 @@
         },
         {
           "height": 16,
-          "id": 25,
+          "id": 27,
           "name": "desk-15-3",
           "properties": [
             {
@@ -664,7 +699,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 26,
+  "nextobjectid": 28,
   "orientation": "orthogonal",
   "properties": [
     {

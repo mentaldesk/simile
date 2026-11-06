@@ -35,6 +35,7 @@ describe('interactablesOf', () => {
       "Search Aris's bench",
       'Use the laser cutter',
       'Use the 3D printer',
+      'Use the recycler',
       'Use the loom',
       'Use the sewing machine',
       'Plug',
