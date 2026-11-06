@@ -5,6 +5,7 @@ from collections.abc import Collection
 from simile.clinic.config import DEFAULT_CONFIG
 from simile.machines.materials import plastic
 from simile.machines.workshop import Offer, Workshop
+from simile.player.pickups import joined
 from simile.schema import Id, Item, ItemKind, Player, Product
 
 logger = logging.getLogger(__name__)
@@ -26,13 +27,9 @@ def _make(player: Player, kept: Collection[Id]) -> bool:
     press = _press(player, kept)
     if press is None or player.load - press.cost + press.item.load > player.carry_limit + 1e-9:
         return False
-    items = [item for item in player.items if not _is_scrap(item, kept)]
-    stack = next((item for item in items if item.id == press.item.id), None)
-    if stack is None:
-        player.items = [*items, press.item]
-    else:
-        joined = stack.model_copy(update={"amount": stack.amount + press.item.amount})
-        player.items = [joined if item is stack else item for item in items]
+    player.items = joined(
+        (item for item in player.items if not _is_scrap(item, kept)), [press.item]
+    )
     logger.info("The player recycles %s kg of scrap", press.cost)
     return True
 

@@ -191,6 +191,15 @@ def test_what_it_makes_joins_the_plastic_they_carry_where_it_is() -> None:
     assert player.items == [plastic(2.5), lamp()]
 
 
+def test_what_it_makes_joins_only_the_first_of_two_stacks_even_of_one_object() -> None:
+    stack = plastic(2.0)
+    player, shop = working([stack, stack, BOARD])
+
+    assert shop.make(RECYCLER, "plastic")
+
+    assert player.items == [plastic(2.5), plastic(2.0)]
+
+
 def test_a_fractional_press_is_sent_with_its_amount() -> None:
     _, shop = working([BOARD])
 
