@@ -4,7 +4,7 @@ import { pictureOf, PICTURES } from './character-body';
 import './clinic-panel.css';
 import { iconUrl } from './icons';
 import { pressedNewsKey } from './keys';
-import { amount, counted, listed } from './salvage';
+import { amount, counted, listed, loadOf, totalLoad } from './salvage';
 import { NEWS_KEY } from './tuning';
 
 const KEY = NEWS_KEY.toUpperCase();
@@ -98,12 +98,12 @@ export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: re
   for (const { first, count } of kinds(sold, ({ id }) => id)) {
     found.push({ kind: 'item', name: first.name, label: `Sell one: ${first.name}`, price: buyer.prices[first.id]!, item: first.id, count });
   }
-  const room = player.carry_limit - player.items.reduce((load, { weight }) => load + weight, 0);
+  const room = player.carry_limit - totalLoad(player.items);
   for (const { first: offer, count } of kinds(buyer.stock ?? [], ({ item }) => item.id)) {
     const { item, price } = offer;
     const label = `Buy back: ${item.name}${count > 1 ? ` ×${count}` : ''}`;
-    const short = player.money < price - 1e-9 ? 'money' : item.weight > room + 1e-9 ? 'weight' : undefined;
-    found.push({ kind: 'buy', name: item.name, label, price, item: item.id, count, weight: item.weight, ...(short && { short }) });
+    const short = player.money < price - 1e-9 ? 'money' : loadOf(item) > room + 1e-9 ? 'weight' : undefined;
+    found.push({ kind: 'buy', name: item.name, label, price, item: item.id, count, weight: loadOf(item), ...(short && { short }) });
   }
   for (const [part, price] of Object.entries(buyer.parts ?? {}) as [BodyPart, number][]) {
     found.push({ kind: 'part', name: upperFirst(PARTS[part]), label: `Sell ${PARTS[part]}`, price, part });

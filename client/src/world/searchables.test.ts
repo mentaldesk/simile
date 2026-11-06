@@ -45,6 +45,14 @@ describe('searchable things', () => {
     expect(listed([battery, battery, coil, battery])).toBe('three old batteries and a copper coil');
   });
 
+  it('say how much of a stack E finds, and Aris left her spool on the bench', () => {
+    const spool = thing('maker_space_floor_0', 'maker_space_spool');
+    expect(foundIn(spool)).toBe('You find 8 plastic.');
+    expect(usedByE(at('maker_space_floor_0', 4), { ...reachables, searched: () => [] })).toMatchObject({ kind: 'searchable', interactable: { id: 'maker_space_spool' } });
+    const rounds = { id: 'plastic_rounds', kind: 'rounds', name: 'Plastic rounds', weight: 0.02, amount: 6, material: 'plastic', charge: null, on: null } as const;
+    expect(listed([rounds, { ...rounds, amount: 1 }])).toBe('7 plastic rounds');
+  });
+
   it('read the cash in them from the maps, and say it', () => {
     const mattress = thing('house_2_floor_1', 'house_2_bed');
     const tin = thing('house_2_floor_0', 'house_2_kitchen');

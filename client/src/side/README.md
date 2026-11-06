@@ -222,7 +222,7 @@ roof, and the metro's jumps up to its secrets, walks off the clock house's roof 
 down into the metro, through it into the clinic and back up to Banyan Row, walks into the metro's
 dark west tunnel, lights the lamp with L and walks on to the plug, checking the darkness and the
 gauge's hints, checks Aris's notes are drawn in the maker space and glow only while the player
-stands by them, searches Aris's bench and checks it's drawn searched, rests on E at the loft's bed,
+stands by them, searches Aris's bench and checks it's drawn searched, then her spool, rests on E at the loft's bed,
 checking they lie down and get up at full health or on a key, checks a run jump at the metro's
 high ledge falls short, lands on the high ledge's secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto

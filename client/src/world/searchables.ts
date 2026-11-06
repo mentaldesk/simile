@@ -19,8 +19,15 @@ const NUMBERS = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
 
 const counted = (items: readonly Item[]): string[] => {
   const counts = new Map<string, number>();
-  for (const { name } of items) counts.set(named(name), (counts.get(named(name)) ?? 0) + 1);
-  return [...counts].map(([name, n]) => (n === 1 ? `${article(name)} ${name}` : `${NUMBERS[n] ?? n} ${plural(name)}`));
+  const stacks = new Map<string, number>();
+  for (const { name, kind, amount = 1 } of items) {
+    const into = kind === 'material' || kind === 'rounds' ? stacks : counts;
+    into.set(named(name), (into.get(named(name)) ?? 0) + amount);
+  }
+  return [
+    ...[...counts].map(([name, n]) => (n === 1 ? `${article(name)} ${name}` : `${NUMBERS[n] ?? n} ${plural(name)}`)),
+    ...[...stacks].map(([name, n]) => `${Number(n.toFixed(2))} ${name}`),
+  ];
 };
 const joined = (each: string[]) => (each.length > 1 ? `${each.slice(0, -1).join(', ')} and ${each.at(-1)}` : (each[0] ?? ''));
 const credits = (money: number) => `${Number(money.toFixed(2))} ${money === 1 ? 'credit' : 'credits'}`;

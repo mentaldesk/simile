@@ -5,7 +5,7 @@ import pytest
 
 from simile.loop.player import LoopPlayer
 from simile.protocol import PlayerStateMessage
-from simile.schema import Bionic, Body, DoorKind, Player
+from simile.schema import Bionic, Body, DoorKind, Item, ItemKind, Material, Player
 from simile.street.charge import CLIMB
 from simile.street.jump import LEGS
 from simile.world.map import load_maps
@@ -57,6 +57,26 @@ def test_bionic_legs_climb_and_cross_floors_faster_by_their_climb(
 
     assert fitted.step(a, b) == pytest.approx(own.step(a, b) / LEGS[legs].climb)
     assert fitted.crossing(end) == pytest.approx(own.crossing(end) / LEGS[legs].climb)
+
+
+def test_what_they_gained_includes_a_stack_that_grew_and_fits_weighs_a_whole_stack() -> None:
+    player = player_on(None)
+    plastic = Item(
+        id="plastic",
+        kind=ItemKind.MATERIAL,
+        name="Plastic",
+        weight=0.5,
+        amount=2.0,
+        material=Material.PLASTIC,
+    )
+    bun = Item(id="bun", kind=ItemKind.FOOD, name="Bun", weight=0.2)
+    before = [plastic]
+    player.player.items = [plastic.model_copy(update={"amount": 10.0}), bun]
+
+    assert player.gained(before) == ["Plastic", "Bun"]
+    player.player.items = []
+    assert player.fits([plastic.model_copy(update={"amount": 30.0})])
+    assert not player.fits([plastic.model_copy(update={"amount": 30.5})])
 
 
 def test_a_door_takes_as_long_on_any_legs() -> None:

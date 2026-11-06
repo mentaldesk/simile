@@ -219,7 +219,8 @@ def test_the_cell_and_the_datajack_are_found_at_home_and_on_the_metro_on_foot() 
             for thing in MAPS[map_id].interactables
             if map_id != METRO or thing.area.x < DEPOT_END
         ]
-        return Counter(item.id for thing in things for item in thing.items)
+        parts = (item for thing in things for item in thing.items if item.id != "plastic")
+        return Counter(item.id for item in parts)
 
     home = [f"maker_space_floor_{n}" for n in range(3)]
     [bench] = [t for t in MAPS[home[0]].interactables if t.teaches is not None]

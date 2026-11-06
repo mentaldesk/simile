@@ -143,6 +143,7 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | Where | Id | What it is | Holds | Teaches |
 |---|---|---|---|---|
 | The maker space, ground floor (5–6) | `maker_space_bench` | Aris's bench, the `workbench` | | `datajack` |
+| The maker space, ground floor (4) | `maker_space_spool` | Aris's spool, on the same `workbench` | 8 plastic | |
 | The maker space, first floor (11–14) | `maker_space_spares` | A `workbench` | lithium cell, charge controller | |
 | The maker space's loft (11–14) | `maker_space_shelf` | The storage `shelf` | USB-C connector, copper wire | |
 | The metro's ticket hall (15, row 12) | `metro_ticket_machine` | The dead `ticket_machine` | copper wire, lithium cell | |

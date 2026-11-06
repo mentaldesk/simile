@@ -145,6 +145,12 @@ describe('selling', () => {
 });
 
 describe('buying back', () => {
+  it('leaves room by what a stack weighs in all', () => {
+    const stack: Item = { id: 'plastic', kind: 'material', name: 'Plastic', weight: 0.5, amount: 20, material: 'plastic', charge: null, on: null };
+    const stall: Buyer = { ...SELLS, prices: {}, stock: [{ item: LENS, price: 1 }] };
+    expect(deals(stall, player(30, [stack]))).toMatchObject([{ kind: 'buy', short: 'weight' }]);
+  });
+
   it('offers each part once, at the cheapest, with how many there are', () => {
     expect(deals(TRADER, player(50))).toEqual([
       { kind: 'buy', name: 'USB-C connector', label: 'Buy back: USB-C connector ×2', price: 10, item: 'usb_c_connector', count: 2, weight: 0.1 },

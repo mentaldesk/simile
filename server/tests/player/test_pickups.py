@@ -11,8 +11,8 @@ from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE, Salvage
 from simile.player.hunger import Hunger
-from simile.player.pickups import Pickups
-from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Pile, Player, lamp
+from simile.player.pickups import Pickups, joined
+from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Material, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.metro import DEPOT_END
 from simile.world import Movement, Point
@@ -392,3 +392,22 @@ def test_nothing_is_picked_up_out_of_reach(x: float, map: str) -> None:
 
 def test_nothing_is_picked_up_before_the_server_knows_where_they_are() -> None:
     assert not Tunnels(Player(left=piles(("kapok_walk", 12)))).pickups.pick_up()
+
+
+def spooled(amount: float) -> Item:
+    return Item(
+        id="plastic",
+        kind=ItemKind.MATERIAL,
+        name="Plastic",
+        weight=0.5,
+        amount=amount,
+        material=Material.PLASTIC,
+    )
+
+
+def test_a_stack_they_pick_up_joins_the_first_of_its_id() -> None:
+    assert joined([spooled(2.0), BUN], [spooled(1.5), BUN]) == [spooled(3.5), BUN, BUN]
+
+
+def test_only_material_and_rounds_join() -> None:
+    assert joined([BUN], [BUN]) == [BUN, BUN]

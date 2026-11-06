@@ -109,7 +109,7 @@ class Trade:
         if sale is None:
             return False
         price = sale.price * self.economy.config.buy_back
-        heavy = self.player.load + sale.item.weight > self.player.carry_limit + 1e-9
+        heavy = self.player.load + sale.item.load > self.player.carry_limit + 1e-9
         if price > self.player.money + 1e-9 or heavy:
             return False
         self.economy.pay(PLAYER, OUTSIDE, price, Kind.PURCHASE, buyer.place)

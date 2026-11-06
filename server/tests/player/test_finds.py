@@ -6,6 +6,7 @@ from simile.behaviour import Behaviour
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy import PLAYER, Kind
 from simile.economy.economy import Economy
+from simile.machines.materials import plastic
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.finds import Finds
@@ -24,11 +25,12 @@ from simile.schema import (
     Player,
     Tile,
     TileArea,
+    lamp,
 )
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.finds import COPPER_WIRE, USB_C_CONNECTOR
 from simile.street.metro import DEAD_TERMINAL, LIFT
-from simile.street.village import SHELF
+from simile.street.village import ARIS_SPOOL, SHELF
 from simile.world import Movement, Point
 from simile.world.map import TownMap, load_maps
 
@@ -244,3 +246,48 @@ def test_only_a_searchable_or_a_jack_is_searched() -> None:
     searching.e(BENCH)
 
     assert searching.player.searched == []
+
+
+SPOOL = Point(4, 2, "maker_space_floor_0")
+
+
+def test_aris_spool_is_found_on_the_bench_even_by_a_save_that_searched_it_already() -> None:
+    searching = Searching(Player(searched=["maker_space_bench"]))
+
+    searching.e(SPOOL)
+
+    assert searching.player.searched == ["maker_space_bench", ARIS_SPOOL]
+    assert [(item.id, item.amount) for item in searching.player.items[1:]] == [("plastic", 8)]
+
+
+def test_the_spool_stands_apart_from_the_bench() -> None:
+    searching = Searching()
+
+    searching.e(BENCH)
+    assert searching.player.items == Player().items
+
+    searching.e(SPOOL)
+    searching.e(SPOOL)
+    assert searching.player.searched == ["maker_space_bench", ARIS_SPOOL]
+    assert sum(item.amount for item in searching.player.items if item.id == "plastic") == 8
+
+
+def test_the_spool_joins_plastic_they_carry() -> None:
+    searching = Searching(Player(items=[plastic(1.5)]))
+
+    searching.e(SPOOL)
+
+    assert searching.player.items == [plastic(9.5)]
+
+
+def test_a_stack_too_heavy_for_what_they_carry_is_left_whole_by_its_weight() -> None:
+    searching = Searching(Player(items=[lamp(), ANVIL, ANVIL]))
+
+    searching.e(SPOOL)
+
+    assert [item.id for item in searching.player.items] == ["lamp", "anvil", "anvil"]
+    [left] = searching.player.left
+    assert left.items == [plastic(8.0)]
+    searching.player.items = [lamp()]
+    searching.e(SPOOL)
+    assert searching.player.items == [lamp(), plastic(8.0)]

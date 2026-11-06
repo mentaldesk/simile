@@ -1,7 +1,7 @@
 import heapq
 import math
 from collections import Counter, deque
-from collections.abc import Collection, Iterator
+from collections.abc import Collection, Iterator, Sequence
 from datetime import datetime, timedelta
 from itertools import pairwise
 
@@ -576,18 +576,24 @@ class LoopPlayer:
         return here if map == self.at.map else 1000 + here
 
     def fits(self, items: Collection[Item]) -> bool:
-        weight = sum(item.weight for item in items)
+        weight = sum(item.load for item in items)
         return weight <= self.player.carry_limit - self.player.load + 1e-9
 
     async def take(self, pickup: Pickup) -> None:
         await self.to(Spot(pickup.map, pickup.x, pickup.y))
-        money, items = self.money, len(self.player.items)
+        money, items = self.money, list(self.player.items)
         self.send(PickUpMessage())
-        if (self.money, len(self.player.items)) == (money, items):
+        if (self.money, self.player.items) == (money, items):
             raise Refused(f"Nothing was picked up at {pickup.id}")
-        taken = [item.name for item in self.player.items[items:]]
+        taken = self.gained(items)
         found = [f"{self.money - money:g} in cash"] if self.money > money else []
         self.note(f"Picked up {', '.join([*found, *taken])} at {pickup.id}")
+
+    def gained(self, before: Sequence[Item]) -> list[str]:
+        """The names of what's new since `before`, a stack that's grown among them."""
+        now = self.player.items
+        grown = [item.name for item, was in zip(now, before, strict=False) if item != was]
+        return [*grown, *(item.name for item in now[len(before) :])]
 
     def thing(self, id: Id) -> Interactable:
         towns = self.movement.maps.values()
@@ -600,11 +606,11 @@ class LoopPlayer:
             await self.sell()
         stands = [Spot(thing.map, tile.x, tile.y) for tile in thing.stand]
         await self.to(next(spot for spot in stands if spot in self.reach()))
-        items, known = len(self.player.items), list(self.player.mind.recipes)
+        items, known = list(self.player.items), list(self.player.mind.recipes)
         self.send(PickUpMessage())
         if id not in self.player.searched:
             raise Refused(f"{id} wasn't searched")
-        found = [item.name for item in self.player.items[items:]]
+        found = self.gained(items)
         found += [
             f"the {bionic} recipe" for bionic in self.player.mind.recipes if bionic not in known
         ]

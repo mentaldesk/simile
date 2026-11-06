@@ -11,7 +11,7 @@ from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE
 from simile.player.trade import Trade, counted
 from simile.protocol import Buyer, Offer
-from simile.schema import PLAYER_ID, Item, ItemKind, Player, Sale, lamp
+from simile.schema import PLAYER_ID, Item, ItemKind, Material, Player, Sale, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -184,6 +184,22 @@ def test_a_part_sold_is_bought_back_at_twice_what_it_fetched(at: Point, place: s
         24,
     )
     assert platform.balanced()
+
+
+def test_buying_back_a_stack_counts_its_whole_weight() -> None:
+    stack = Item(
+        id="plastic",
+        kind=ItemKind.MATERIAL,
+        name="Plastic",
+        weight=0.5,
+        amount=4.0,
+        material=Material.PLASTIC,
+    )
+    platform = Platform(Player(money=100, carry_limit=1.0))
+    platform.stand(STALL)
+    platform.player.sales = [Sale(item=stack, place=platform.trade.buyer().place, price=1)]
+
+    assert not platform.trade.buy("plastic")
 
 
 def test_only_what_was_sold_is_on_offer_and_only_where_it_was_sold() -> None:
