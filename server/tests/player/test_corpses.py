@@ -286,7 +286,7 @@ def test_the_id_skips_any_already_taken() -> None:
     at = MapTile(map="metro", x=3, y=15)
     corpse = Corpse(id="corpse_2", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
 
-    assert next_corpse([corpse]) not in {"corpse_2"}
+    assert next_corpse([corpse]) == "corpse_3"
     with pytest.raises(ValidationError, match="own id"):
         Player(corpses=[corpse, corpse])
 
@@ -330,7 +330,6 @@ def test_a_save_with_piles_from_before_corpses_loads_and_gives_them_up() -> None
     fall = Fall(player)
     pickups = Pickups(player, fall.movement, fall.economy, fall.world.clock)
 
-    fall.economy.ledger.entries.clear()
     fall.stand(30, 15, "kapok_walk")
     assert pickups.pick_up()
     assert player.money == 12
