@@ -151,6 +151,11 @@ TOLERANCE_WEIGHTS: dict[CoreValue, float] = {
     CoreValue.OPEN_MINDEDNESS: 2 / 3,
 }
 
+WEAPON_WEIGHTS: dict[CoreValue, float] = {
+    CoreValue.TRADITION: 1.0,
+    CoreValue.SECURITY: 1.0,
+}
+
 STANDS_OUT: dict[Bionic, float] = {
     Bionic.INFRARED_EYE: 1.0,
     **dict.fromkeys(BIONIC_LEGS, 0.75),
@@ -161,7 +166,7 @@ STANDS_OUT: dict[Bionic, float] = {
 
 
 class BionicsConfig(BaseModel):
-    """Every constant of how residents take to the player's bionics."""
+    """Every constant of how residents take to the player's bionics and a weapon they carry."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -177,6 +182,11 @@ class BionicsConfig(BaseModel):
     strongly: float = Field(
         default=0.5, gt=0, le=1, description="How far from 0 a tolerance is strongly so."
     )
+    weapon_weights: dict[CoreValue, float] = Field(
+        default=WEAPON_WEIGHTS,
+        description="How far each core value above 0.5 makes a resident distrust a weapon: "
+        "sum(weight * max(value - 0.5, 0)), up to 1.",
+    )
     stands_out: dict[Bionic, Unit] = Field(
         default=STANDS_OUT,
         description="How much each bionic catches the eye: the eye most, the power cell least.",
@@ -185,8 +195,9 @@ class BionicsConfig(BaseModel):
         default=0.3,
         gt=0,
         le=1,
-        description="The magnitude of R1's event for seeing a bionic that stands out fully. Its "
-        "valence is the resident's tolerance, and it moves like, trust and respect.",
+        description="The magnitude of R1's event for seeing a bionic that stands out fully, on "
+        "like, trust and respect with their tolerance as its valence, or a weapon, on trust with "
+        "their wariness against it.",
     )
     salience: float = Field(
         default=0.3, ge=0, le=1, description="The salience of the memory of a sighting."

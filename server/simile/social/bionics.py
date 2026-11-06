@@ -87,12 +87,16 @@ def stands_out(bionics: Sequence[Bionic], config: BionicsConfig = DEFAULT_BIONIC
     return min(sum(config.stands_out.get(bionic, 0.0) for bionic in bionics), 1.0)
 
 
+def against(tolerance: float, config: BionicsConfig = DEFAULT_BIONICS) -> float:
+    """How far `tolerance` puts them off: none within `mildly` of 0, then up to 1."""
+    return max(-tolerance - config.mildly, 0.0) / (1 - config.mildly)
+
+
 def unease(
     tolerance: float, seen: Sequence[Bionic], config: BionicsConfig = DEFAULT_BIONICS
 ) -> float:
-    """How much the bionics they've seen put them off: none within `mildly` of 0, then up to 1."""
-    against = max(-tolerance - config.mildly, 0.0) / (1 - config.mildly)
-    return against * stands_out(seen, config)
+    """How much the bionics they've seen put them off."""
+    return against(tolerance, config) * stands_out(seen, config)
 
 
 def looks(
