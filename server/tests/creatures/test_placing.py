@@ -73,9 +73,10 @@ def race(maps: dict[str, TownMap], level: int, map_id: str, arrival: Cell) -> di
     lying = {(p.x, p.y): p.id for p in town.pickups if p.kind is PickupKind.SALVAGE}
     taken: dict[str, float] = {}
 
-    def collect(pickup: str) -> None:
+    def collect(pickup: str) -> tuple[()]:
         taken[pickup] = creatures.now
         del lying[next(cell for cell, id in lying.items() if id == pickup)]
+        return ()
 
     creatures = Creatures(
         maps,

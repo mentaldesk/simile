@@ -40,7 +40,7 @@ The tunnels' kinds are in `kinds.py` (below).
 | Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks, floor)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted, floor)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
 | Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up | 3, and 12 chasing: faster than any legs but the best (13). It flies, and thinks every 0.15 s |
 | Attack | Bites, `bite(0.12)`, from 0.9 tiles after a 0.3 s windup, then scurries home and rests 6 s before the next | `hurt(0.35)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
-| Health | 1, and it's back whole 120 s later | 6, and it stays down until the server restarts | 3, as the bot | 1, as the bot |
+| Health | 1, and it's back whole 120 s later | 6, then it drops its haul (below) and is gone for good | 3, then gone for good | 1, then gone for good |
 | Landed on | Goes down, and it's back 120 s later | Nothing: landing on one is landing in its reach | As the bot | Never: it flies |
 | Climbs | No ladders | No ladders or stairs, and never drops off its floor | No, and takes no door | Flies |
 
@@ -75,8 +75,8 @@ starts, its kind, the area it keeps to and the span it patrols. The `running` ho
 one on the maps the world plays (`placing.py`) and removes them when it stops.
 
 `creatures_of(app).spawn(kind, MapTile(...))` puts one in the world, from any module's lifespan,
-since `creatures_of` makes the engine on first use. Creatures aren't saved: they're spawned again
-each time the server starts. Options:
+since `creatures_of` makes the engine on first use. They're spawned again each time the server
+starts, but for what's *Saved* (below). Options:
 
 - `area`, a `TileArea` it never leaves, for a den or a cave.
 - `route`, the cells it patrols, or else the floor (or air) `span` (5) cells either side of where it
@@ -139,6 +139,29 @@ lying at each map's pickups from `simile.player`'s `Pickups`, and a take records
 `Player.taken`, as the player's own does: it lies there again on the same clock, it's saved, and the
 client stops showing it. Creatures sense salvage only while the player is on their map, so a bot
 races them for it rather than clearing it while they're away.
+
+## A haul
+
+What a creature takes goes in its `haul`. When it goes down it drops all of it as one pile, on the
+cell it's in, in `Player.left`. The player picks that up with E as any pile they left, and what
+doesn't fit stays there. A creature holding nothing leaves no pile, and salvage it was still taking
+stays lying.
+
+It holds only what it reached. The metro's bots have no salvage in reach (`content/street/README.md`),
+so they drop nothing. A sewers bot drifts to the one salvage on its floor, if it has one in reach,
+and takes another only when that lies there again, a sim day later.
+
+## Saved
+
+`saving()` goes in the world's save, as `SavedWorld.creatures`, by creature id: those gone for good,
+and the wounds and haul of those that aren't whole or empty-handed. A restart spawns the gone no
+more, and the rest back where they started with their wounds and haul. A creature that respawns
+is never gone, so a rat that's down at a restart is simply back.
+
+The save goes by id alone, and ids repeat across levels: `sewers_bot_1` is on all 8, at different
+cells. A world whose level changes, as one can when the number of levels does, applies a saved
+death, wound or haul to the new level's creature with that id. An id this level doesn't use is
+kept and ignored, and applies if the world later plays a level that does.
 
 ## Landing on one
 

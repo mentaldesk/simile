@@ -15,6 +15,7 @@ FRESH_ENV = "SIMILE_FRESH"
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import behaviour_of
+    from simile.creatures.engine import creatures_of
     from simile.memory import memory_of
     from simile.persistence.saver import Saver
     from simile.persistence.state import investigation_of, player_of, restore
@@ -26,12 +27,13 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         return
     behaviour = behaviour_of(app)
     economy = getattr(app.state, "economy", None)
+    creatures = creatures_of(app)
     with WorldStore(memory) as store:
         if os.environ.get(FRESH_ENV) == "1":
             store.clear()
             logger.info("%s  Starting a fresh village in %s", behaviour.clock, store.path)
         elif (world := store.load()) is not None:
-            restore(world, behaviour, economy, player_of(app), investigation_of(app))
+            restore(world, behaviour, economy, player_of(app), investigation_of(app), creatures)
             logger.info("%s  Resumed the village from %s", behaviour.clock, store.path)
         app.state.persistence = Saver(
             store,
@@ -39,6 +41,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             economy=economy,
             player=lambda: player_of(app),
             investigation=lambda: investigation_of(app),
+            creatures=creatures,
         )
         yield
 

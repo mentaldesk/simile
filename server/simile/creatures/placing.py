@@ -26,10 +26,10 @@ def spawns(directory: Path = MAP_DIR, level: int = 0) -> list[tuple[str, Spawn]]
 
 
 def populate(creatures: Creatures, placed: list[tuple[str, Spawn]]) -> list[Creature]:
-    """Spawns each on a map the creatures have."""
+    """Spawns each on a map the creatures have, but for those gone for good."""
     made = []
     for map_id, spawn in placed:
-        if map_id not in creatures.maps:
+        if map_id not in creatures.maps or creatures.is_gone(spawn.id):
             continue
         placing = KINDS[spawn.kind]
         at = MapTile(map=map_id, x=spawn.x, y=spawn.y)

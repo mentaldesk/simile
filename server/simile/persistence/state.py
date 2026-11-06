@@ -6,6 +6,7 @@ from pydantic import Field, field_validator
 from starlette.applications import Starlette
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
+from simile.creatures.saved import SavedCreature
 from simile.economy import Batch
 from simile.persistence.old_cells import moved
 from simile.schema import (
@@ -23,6 +24,7 @@ from simile.schema import (
 from simile.world.movement import Movement, Point, cell_of
 
 if TYPE_CHECKING:
+    from simile.creatures.engine import Creatures
     from simile.economy.economy import Economy
 
 
@@ -70,6 +72,8 @@ class SavedWorld(Model):
     """The player. A save from before the player has the starting player."""
     investigation: Investigation = Field(default_factory=Investigation)
     """The disappearance and the journal. A save from before them has neither."""
+    creatures: dict[Key, SavedCreature] = {}
+    """Those gone for good, wounded or holding a haul. A save from before them has none."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -82,6 +86,7 @@ def capture(
     economy: "Economy | None" = None,
     player: Player | None = None,
     investigation: Investigation | None = None,
+    creatures: "Creatures | None" = None,
 ) -> SavedWorld:
     """The world as it is now, with copies of `player` and `investigation`, or the starting
     player and an empty investigation without them."""
@@ -114,6 +119,7 @@ def capture(
         investigation=Investigation()
         if investigation is None
         else investigation.model_copy(deep=True),
+        creatures=creatures.saving() if creatures else {},
     )
 
 
@@ -123,6 +129,7 @@ def restore(
     economy: "Economy | None" = None,
     player: Player | None = None,
     investigation: Investigation | None = None,
+    creatures: "Creatures | None" = None,
 ) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
     money they had, what was in their fridges and what they'd said they'd do, and set `player`
@@ -171,6 +178,8 @@ def restore(
         restored = world.investigation.model_copy(deep=True)
         for field in Investigation.model_fields:
             setattr(investigation, field, getattr(restored, field))
+    if creatures is not None:
+        creatures.saved = dict(world.creatures)
 
 
 def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
