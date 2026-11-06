@@ -54,6 +54,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.economy.economy import economy_of
     from simile.persistence import player_of
     from simile.player.pickups import Pickups
+    from simile.schema import Item, Pile
     from simile.sim import world_of
     from simile.world import movement_of
     from simile.world.map import PickupKind, TownMap, world_level
@@ -70,13 +71,20 @@ async def running(app: Starlette) -> AsyncIterator[None]:
             if pickup.kind is PickupKind.SALVAGE and (pickup.x, pickup.y) in lying
         }
 
-    def collect(pickup: str) -> None:
+    def collect(pickup: str) -> list[Item]:
+        pile = pickups.lying.get(pickup)
+        if pile is None or pile not in pickups.piles():
+            return []
         player.taken = {**player.taken, pickup: clock.now}
+        return pile.items
 
-    kept = creatures.salvage, creatures.collect
-    creatures.salvage, creatures.collect = salvage, collect
+    def drop(pile: Pile) -> None:
+        player.left = [*player.left, pile]
+
+    kept = creatures.salvage, creatures.collect, creatures.drop
+    creatures.salvage, creatures.collect, creatures.drop = salvage, collect, drop
     placed = populate(creatures, spawns(level=world_level()))
     yield
     for creature in placed:
         creatures.remove(creature.id)
-    creatures.salvage, creatures.collect = kept
+    creatures.salvage, creatures.collect, creatures.drop = kept

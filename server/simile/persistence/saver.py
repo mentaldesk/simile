@@ -12,6 +12,7 @@ from simile.reflection import Reflector
 from simile.schema import Investigation, Player
 
 if TYPE_CHECKING:
+    from simile.creatures.engine import Creatures
     from simile.economy.economy import Economy
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class Saver:
         economy: "Economy | None" = None,
         player: Callable[[], Player] = Player,
         investigation: Callable[[], Investigation] = Investigation,
+        creatures: "Creatures | None" = None,
     ) -> None:
         self.store = store
         self.behaviour = behaviour
@@ -38,12 +40,15 @@ class Saver:
         self.player = player
         """The player as they are now, looked up at each save."""
         self.investigation = investigation
+        self.creatures = creatures
         self._stopping = asyncio.Event()
         self._ledgered = 0
         """How many of the ledger's entries are saved."""
 
     async def save(self) -> SavedWorld:
-        world = capture(self.behaviour, self.economy, self.player(), self.investigation())
+        world = capture(
+            self.behaviour, self.economy, self.player(), self.investigation(), self.creatures
+        )
         entries = self.economy.ledger.entries[self._ledgered :] if self.economy else []
         await asyncio.to_thread(self.store.save, world, entries)
         self._ledgered += len(entries)

@@ -55,7 +55,8 @@ export function rowsOf(machine: Machine, items: readonly Item[], limit = Infinit
   if (machine.state === 'working') {
     return machine.makes.map((product) => {
       const have = product.uses === 'scrap' ? product.cost : carried(product.uses, items);
-      const made = product.item.amount && product.item.amount > 1 ? `${product.item.name} ×${amount(product.item.amount)}` : product.item.name;
+      const stack = product.item.amount ?? 1;
+      const made = stack === 1 ? product.item.name : `${product.item.name} ×${amount(stack)}`;
       const after = loadAfter(product, items);
       const heavy = after > limit + 1e-9 ? `You'd end up carrying ${amount(after)} kg, and you can carry ${amount(limit)}.` : undefined;
       return { kind: 'make', id: product.item.id, name: made, product, have, short: have < product.cost - 1e-9, ...(heavy && { heavy }) };
