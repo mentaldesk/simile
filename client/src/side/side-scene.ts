@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
 import { addFigureAtlas } from '../dolls/sprite-figure';
-import { playerState, server, type Position } from '../net';
+import { playerState, server, type Position, type SideFacing } from '../net';
 import { hurts } from '../ui/hurt';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
@@ -19,7 +19,7 @@ import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
-import { eachOnce, JUMP_KEYS, JumpKeys, readControls, RunToggle, type Held } from './input';
+import { eachOnce, FIRE_KEY, JUMP_KEYS, JumpKeys, onPress, readControls, RELOAD_KEY, RunToggle, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt, lightBelow, UNDERGROUND } from './light';
 import { cellOf, type Link, type Village } from './maps';
@@ -32,6 +32,7 @@ import { drawSockets } from './plugs';
 import { sideResidents } from './residents';
 import { bedAt, hiddenInFront, seatHeight } from './poses';
 import { MoveReport } from './report';
+import { firing, reloading, ShotView, sideOf, weaponLine } from './shooting';
 import { SideDoll } from './side-doll';
 import { stompedOn } from './stomp';
 import { StreetView, type Content } from './street-view';
@@ -73,6 +74,8 @@ export class SideScene extends Phaser.Scene {
   private creatures!: CreatureView;
   private blood!: BloodView;
   private usables!: UsableView;
+  private shots!: ShotView;
+  private aim: SideFacing = 'east';
   private street?: StreetView;
   private dark?: DarkView;
   private sockets: Phaser.GameObjects.Graphics[] = [];
@@ -114,6 +117,7 @@ export class SideScene extends Phaser.Scene {
     this.creatures = new CreatureView(this);
     this.blood = new BloodView(this);
     this.usables = new UsableView(this, this.pictures);
+    this.shots = new ShotView(this);
     this.sleep = this.add.graphics().setDepth(DEPTH.fade - 1);
     this.sleepTime = this.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '18px', color: '#e8ecf4' });
     this.sleepTime.setOrigin(0.5, 0).setDepth(DEPTH.fade - 1).setVisible(false);
@@ -125,6 +129,8 @@ export class SideScene extends Phaser.Scene {
     this.jumping = new JumpKeys(JUMP_KEYS.map((key) => keyboard.addKey(key, false)));
     for (const key of JUMP_KEYS) keyboard.on(`keydown-${key}`, this.jumping.keyDown);
     keyboard.on('keydown-L', eachOnce((event: KeyboardEvent) => !event.repeat && this.switchLamp()));
+    keyboard.on(`keydown-${FIRE_KEY}`, onPress(() => this.fire()));
+    keyboard.on(`keydown-${RELOAD_KEY}`, onPress(() => this.reload()));
     keyboard.on('keydown', eachOnce((event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat)));
     keyboard.on('keyup', eachOnce((event: KeyboardEvent) => this.running.keyUp(event.key)));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
@@ -156,6 +162,7 @@ export class SideScene extends Phaser.Scene {
       () => this.creatures.destroy(),
       () => this.blood.destroy(),
       () => this.usables.destroy(),
+      () => this.shots.destroy(),
       () => this.pictures.destroy(),
       () => this.sleep.destroy(),
       () => this.sleepTime.destroy(),
@@ -239,7 +246,10 @@ export class SideScene extends Phaser.Scene {
       street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
-    this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt);
+    this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt, player.at.x);
+    this.aim = sideOf(player.facing, this.aim);
+    const shown = this.figures.get(PLAYER_ID)?.shown ? player.at : undefined;
+    this.shots.update(dt, shown, this.aim, weaponLine(playerState.latest?.player.items), this.view, this.cameras.main.zoom);
     this.blood.update(dt, street.tints.colours);
     this.usables.update(content, street, this.passing ? undefined : player.mapPosition, time / 1000);
     this.report(player.mapPosition, time / 1000);
@@ -285,6 +295,19 @@ export class SideScene extends Phaser.Scene {
 
   private switchLamp(): void {
     const message = switchLamp(lampOf(playerState.latest));
+    if (message) server.send(message);
+  }
+
+  private fire(): void {
+    const { player } = this;
+    if (!player || this.passing || player.climbing || player.drawn.bed > 0) return;
+    const messages = firing(this.moves, player.mapPosition, this.time.now / 1000, playerState.latest?.player.items, this.aim);
+    for (const message of messages) server.send(message);
+    if (messages.length) this.shots.fired();
+  }
+
+  private reload(): void {
+    const message = reloading(playerState.latest?.player.items);
     if (message) server.send(message);
   }
 

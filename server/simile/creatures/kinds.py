@@ -38,6 +38,7 @@ BOT = Kind(
     windup=0.3,
     lunges=True,
     rest=2.0,
+    health=6,
     ways=(
         Chase(sight=5.0, pace=1.5, memory=3.0, when=fitted, floor=True),
         Collect(within=14.0, pace=0.2),
@@ -54,6 +55,7 @@ DOG = Kind(
     lunges=True,
     damage=0.1,
     rest=0.9,
+    health=3,
     ways=(Chase(sight=10.0, pace=4.0, memory=3.0), Patrol(pause=2.0)),
 )
 BAT = Kind(

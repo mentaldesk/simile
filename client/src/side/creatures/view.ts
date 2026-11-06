@@ -4,9 +4,10 @@ import { DEPTH } from '../depths';
 import { feetOf, PPM, xOf } from '../layout';
 import type { Village } from '../maps';
 import { sideCreatures, type Creatures } from './creatures';
-import { creatureFigures, frameOf, goingDown, placedOf, type CreatureManifest } from './figures';
+import { creatureFigures, flinchOf, frameOf, goingDown, placedOf, type CreatureManifest } from './figures';
 
 const HURT_TINT = 0xff9a8a;
+const FLASH_TINT = 0xffffff;
 
 function addAtlas(scene: Phaser.Scene, key: string, figure: CreatureManifest): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -37,7 +38,8 @@ export class CreatureView {
     this.creatures = creatures;
   }
 
-  update(village: Village, street: string, tint: number, dt: number): void {
+  /** `from` is the street cell a hit knocks them back from: the player's. */
+  update(village: Village, street: string, tint: number, dt: number, from: number): void {
     this.creatures.update(dt);
     for (const [id, image] of this.images) {
       if (!this.creatures.all.has(id)) {
@@ -58,7 +60,10 @@ export class CreatureView {
       const frame = frameOf(figure, tracked);
       const { originX, originY, flip } = placedOf(figure, frame, tracked.facing);
       const going = tracked.down === undefined ? undefined : goingDown(figure, tracked.facing, tracked.down);
-      const x = xOf(map.offset.x + tracked.at.x);
+      const { back, flash } = flinchOf(tracked.hit);
+      const across = map.offset.x + tracked.at.x;
+      const away = Math.sign(across - from) || (tracked.facing === 'east' ? -1 : 1);
+      const x = xOf(across + back * away);
       const y = feetOf(map.offset.y + tracked.at.y + (going?.drop ?? 0));
       const depth = map.kind === 'floor' ? DEPTH.insideDoll : DEPTH.doll;
       drawn
@@ -71,6 +76,7 @@ export class CreatureView {
         .setAngle(going?.angle ?? 0)
         .setAlpha(going?.alpha ?? 1)
         .setTint(tracked.state === 'hurt' ? HURT_TINT : tint);
+      if (flash) drawn.setTintFill(FLASH_TINT);
     }
   }
 

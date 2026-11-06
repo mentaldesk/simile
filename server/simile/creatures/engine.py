@@ -13,7 +13,13 @@ from simile.creatures.grid import Cell, Edge, Grid, sees
 from simile.creatures.kind import Kind
 from simile.creatures.ways import Aim, Senses
 from simile.protocol import Creature as Shown
-from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, Position, ServerMessage
+from simile.protocol import (
+    CreatureGoneMessage,
+    CreatureHitMessage,
+    CreatureMovedMessage,
+    Position,
+    ServerMessage,
+)
 from simile.schema import CreatureState, DoorKind, MapTile, Player, SideFacing, TileArea
 from simile.sim import Clock
 from simile.world.map import TownMap
@@ -34,6 +40,8 @@ JUMPS_OVER = 0.8
 """Tiles above a walking creature the player's feet are out of its reach."""
 COLLECTING = 4.0
 """Sim seconds a creature spends at salvage before it's taken, for the player to beat it."""
+KICK = 1
+"""Points of its kind's `health` that the player landing on it takes."""
 
 
 class Leg(NamedTuple):
@@ -81,6 +89,8 @@ class Creature:
     """The pickup it's taking, and when it's taken."""
     down: float | None = None
     """When it went down, while it's gone."""
+    wounds: int = 0
+    """Points of its kind's `health` it has lost, so three thirds come to exactly none."""
     sent: Shown | None = None
     sent_at: float = -math.inf
 
@@ -120,7 +130,12 @@ class Creature:
             y -= 1.0 if self.state is CreatureState.ROOSTING else 0.5
         position = Position(x=round(self.x, 2), y=round(y, 2), map=self.map)
         return Shown(
-            id=self.id, kind=self.kind.id, position=position, facing=self.facing, state=self.state
+            id=self.id,
+            kind=self.kind.id,
+            position=position,
+            facing=self.facing,
+            state=self.state,
+            health=(self.kind.health - self.wounds) / self.kind.health,
         )
 
 
@@ -248,7 +263,7 @@ class Creatures:
                 and abs(after.x - creature.x) <= STOMP_REACH
             ):
                 self._log("A %s is stomped", creature)
-                self._go_down(creature)
+                self.hurt(creature, KICK)
 
     def _step(self, creature: Creature, senses: Senses, dt: float) -> None:
         kind = creature.kind
@@ -341,9 +356,23 @@ class Creatures:
         creature.state = state
         self._send(creature)
 
+    def hurt(self, creature: Creature, points: int) -> None:
+        """Takes `points` of its health, and it goes down at none. The client hears of the hit
+        first, so it still has the creature to draw it on."""
+        self.send(CreatureHitMessage(creature_id=creature.id))
+        creature.wounds = min(creature.wounds + points, creature.kind.health)
+        if creature.wounds == creature.kind.health:
+            self._go_down(creature)
+        else:
+            self._send(creature)
+
     def _send(self, creature: Creature) -> None:
         shown, sent = creature.shown(), creature.sent
-        if sent is not None and (shown.state, shown.facing) == (sent.state, sent.facing):
+        if sent is not None and (shown.state, shown.facing, shown.health) == (
+            sent.state,
+            sent.facing,
+            sent.health,
+        ):
             if shown.position == sent.position:
                 return
             if not creature.resting and self.now - creature.sent_at < SEND - 1e-9:
@@ -371,6 +400,7 @@ class Creatures:
         creature.x, creature.y = map(float, creature.home)
         creature.state, creature.leg, creature.paused = CreatureState.IDLE, 0, None
         creature.rested = creature.thinks = 0.0
+        creature.wounds = 0
         self._send(creature)
 
     def _log(self, text: str, creature: Creature) -> None:

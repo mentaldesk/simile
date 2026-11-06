@@ -1,5 +1,5 @@
 import type { CreatureKind, CreatureState, SideFacing } from '../../net';
-import { DOWN_SECONDS, type Tracked } from './creatures';
+import { DOWN_SECONDS, HIT_SECONDS, type Tracked } from './creatures';
 
 /** `content/creatures/<kind>.json`: README.md there. */
 export type CreatureManifest = {
@@ -100,4 +100,15 @@ export function goingDown(figure: CreatureManifest, facing: SideFacing, down: nu
     alpha: 1 - t * t,
     drop: DOWN_DROP[figure.moves] * eased,
   };
+}
+
+/** Tiles it's knocked back at the height of a flinch. */
+export const FLINCH_TILES = 0.25;
+/** How long a hit shows it all white. */
+export const FLASH_SECONDS = 0.1;
+
+/** Tiles back from the shot and whether it's flashing, `hit` seconds after it was hit. */
+export function flinchOf(hit: number | undefined): { back: number; flash: boolean } {
+  if (hit === undefined) return { back: 0, flash: false };
+  return { back: FLINCH_TILES * Math.sin((Math.PI * hit) / HIT_SECONDS), flash: hit < FLASH_SECONDS };
 }

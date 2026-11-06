@@ -21,7 +21,14 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 | `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
+| `pistol` | Gives the player a loaded plastic pistol and 8 spare rounds, and puts a rat, a dog and a bot along their row, to shoot as the server would have it. |
 | `city=sketch` | A city and the Apex towers on every street above ground, plain silhouettes drawn in code, for a manifest that has none yet. |
+
+X fires the way the player last faced sideways, and R reloads (`shooting.ts`). A press sends any
+position the throttle is holding back first, as the server shoots from the last one it kept. Neither
+goes with nothing to fire or reload, and fire doesn't go on a ladder, stairs or the lift, in bed or
+through a door. A plain pistol and flash show for a moment after each shot, the placeholders until
+Q13 paints them, and a line in the corner gives the weapon's rounds and condition while they carry one.
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
 or PageUp jumps (`jump.ts`, below). E takes the door or street way you're on, whatever else is in reach. It
