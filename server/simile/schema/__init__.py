@@ -24,6 +24,7 @@ from simile.schema.common import (
 from simile.schema.conversation import Conversation, Line
 from simile.schema.creature import CreatureKind, CreatureState
 from simile.schema.intention import Intention, IntentionKind
+from simile.schema.machine import Machine, MachineKind, MachineState, Product
 from simile.schema.news import NewsItem
 from simile.schema.npc import (
     Accessory,
@@ -55,6 +56,7 @@ from simile.schema.player import (
     Bionic,
     Body,
     BodyPart,
+    Corpse,
     Effect,
     EffectKind,
     Item,
@@ -135,6 +137,8 @@ MODELS: tuple[type[Model], ...] = (
     Player,
     Item,
     Recipe,
+    Corpse,
+    Machine,
     Disappearance,
     Fact,
     JournalEntry,
@@ -171,6 +175,7 @@ __all__ = [
     "Colour",
     "Conversation",
     "CoreValue",
+    "Corpse",
     "CreatureKind",
     "CreatureState",
     "Craft",
@@ -207,6 +212,9 @@ __all__ = [
     "Line",
     "Location",
     "LocationKind",
+    "Machine",
+    "MachineKind",
+    "MachineState",
     "MapArea",
     "MapTile",
     "Material",
@@ -223,6 +231,7 @@ __all__ = [
     "Pile",
     "Player",
     "Pose",
+    "Product",
     "Recipe",
     "Relationship",
     "Sale",

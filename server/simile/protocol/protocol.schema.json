@@ -406,6 +406,56 @@
       "title": "ConversationStartedMessage",
       "type": "object"
     },
+    "Corpse": {
+      "additionalProperties": false,
+      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It can\nhold nothing at all: it stays whatever it holds, unlike a `Pile`.",
+      "properties": {
+        "id": {
+          "description": "Which corpse, as two can lie on one tile.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "owner": {
+          "description": "Whose body it was: `\"player\"` for the player's own.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "at": {
+          "$ref": "#/$defs/MapTile"
+        },
+        "money": {
+          "description": "The cash still on it.",
+          "minimum": 0,
+          "type": "number"
+        },
+        "items": {
+          "description": "What it still carries.",
+          "items": {
+            "$ref": "#/$defs/Item"
+          },
+          "type": "array"
+        },
+        "bionics": {
+          "description": "The bionics still in it, which come out as `bionic` items.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "owner",
+        "at",
+        "money",
+        "items",
+        "bionics"
+      ],
+      "title": "Corpse",
+      "type": "object"
+    },
     "Creature": {
       "additionalProperties": false,
       "description": "A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking\nkind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one\nroosting the ceiling it hangs from. Creatures are only on side-view maps, so each faces right\nor left.",
@@ -1157,6 +1207,91 @@
       "title": "ListWorksMessage",
       "type": "object"
     },
+    "Machine": {
+      "additionalProperties": false,
+      "description": "The state of a machine you repair and then use. Where it stands and what it's called are\non the map, in the `Interactable` with the same `id`.",
+      "properties": {
+        "id": {
+          "description": "Its interactable's id, e.g. \"printer_3d\".",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/MachineKind"
+        },
+        "state": {
+          "$ref": "#/$defs/MachineState"
+        },
+        "parts": {
+          "additionalProperties": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "default": {},
+          "description": "What repairing it uses up while it's broken, how many of each by item `id`, e.g. `{\"copper_wire\": 2}`. Empty once it works.",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "type": "object"
+        },
+        "makes": {
+          "default": [],
+          "description": "What it can make while it works, whether or not they have what it takes, each item once. Empty while it's broken, and it can be empty while it works.",
+          "items": {
+            "$ref": "#/$defs/Product"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "state",
+        "parts",
+        "makes"
+      ],
+      "title": "Machine",
+      "type": "object"
+    },
+    "MachineChangedMessage": {
+      "additionalProperties": false,
+      "description": "A machine changed, such as one just repaired: all of it, to replace what the client has.",
+      "properties": {
+        "type": {
+          "const": "machine_changed",
+          "default": "machine_changed",
+          "type": "string"
+        },
+        "machine": {
+          "$ref": "#/$defs/Machine"
+        }
+      },
+      "required": [
+        "type",
+        "machine"
+      ],
+      "title": "MachineChangedMessage",
+      "type": "object"
+    },
+    "MachineKind": {
+      "description": "What a machine in the maker space is: Aris's 3D `printer`, or the `recycler`.",
+      "enum": [
+        "printer",
+        "recycler"
+      ],
+      "title": "MachineKind",
+      "type": "string"
+    },
+    "MachineState": {
+      "description": "Whether it needs repairing first.",
+      "enum": [
+        "broken",
+        "working"
+      ],
+      "title": "MachineState",
+      "type": "string"
+    },
     "MapTile": {
       "additionalProperties": false,
       "description": "A tile on a given map: the village or an interior, or in side view a street or a floor.",
@@ -1572,7 +1707,7 @@
     },
     "Player": {
       "additionalProperties": false,
-      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects, nothing searched and an empty stash. A save holding the old 10 kg\ncarry limit loads with 15. Their humanity is derived from the bionics fitted and isn't a field,\nso the client never sees it.",
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects, nothing searched, an empty stash, no corpses and nothing repaired. A\nsave holding the old 10 kg carry limit loads with 15. Their humanity is derived from the bionics\nfitted and isn't a field, so the client never sees it.",
       "properties": {
         "money": {
           "default": 0.0,
@@ -1640,6 +1775,14 @@
           },
           "type": "array"
         },
+        "corpses": {
+          "default": [],
+          "description": "Their own bodies, oldest first, each where they died. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Corpse"
+          },
+          "type": "array"
+        },
         "taken": {
           "additionalProperties": {
             "format": "date-time",
@@ -1663,6 +1806,16 @@
         "searched": {
           "default": [],
           "description": "The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none.",
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "repaired": {
+          "default": [],
+          "description": "The machines they've repaired, by interactable id, in the order they repaired them, saved here and shown by the snapshot and `machine_changed`. Left out while there's none.",
           "items": {
             "maxLength": 64,
             "pattern": "^[a-z][a-z0-9_]*$",
@@ -1881,6 +2034,39 @@
         "y"
       ],
       "title": "Position",
+      "type": "object"
+    },
+    "Product": {
+      "additionalProperties": false,
+      "description": "Something a working machine makes: the `item` that comes out, stack and all, such as 6\nrounds, and what it takes.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Item"
+        },
+        "uses": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Material"
+            },
+            {
+              "const": "scrap",
+              "type": "string"
+            }
+          ],
+          "description": "What it's made from: a material they carry, or scrap, by weight."
+        },
+        "cost": {
+          "description": "How much of it: a material's amount, or kilos of scrap.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "item",
+        "uses",
+        "cost"
+      ],
+      "title": "Product",
       "type": "object"
     },
     "ReadNewsMessage": {
@@ -2108,6 +2294,7 @@
           "entity_moved": "#/$defs/EntityMovedMessage",
           "journal": "#/$defs/JournalMessage",
           "line": "#/$defs/LineMessage",
+          "machine_changed": "#/$defs/MachineChangedMessage",
           "murals": "#/$defs/MuralsMessage",
           "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
@@ -2134,6 +2321,9 @@
         },
         {
           "$ref": "#/$defs/CreatureGoneMessage"
+        },
+        {
+          "$ref": "#/$defs/MachineChangedMessage"
         },
         {
           "$ref": "#/$defs/ConversationStartedMessage"
@@ -2271,6 +2461,14 @@
           "description": "Every creature on every map. The server always sends it, and missing, there are none.",
           "items": {
             "$ref": "#/$defs/Creature"
+          },
+          "type": "array"
+        },
+        "machines": {
+          "default": [],
+          "description": "Every machine you repair and then use. The server always sends it, and missing, there are none.",
+          "items": {
+            "$ref": "#/$defs/Machine"
           },
           "type": "array"
         }

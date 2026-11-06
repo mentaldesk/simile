@@ -18,6 +18,7 @@ from simile.schema import (
     JournalEntry,
     Key,
     Line,
+    Machine,
     MapTile,
     Model,
     Pile,
@@ -103,7 +104,7 @@ class Creature(Model):
 class SnapshotMessage(Model):
     """The whole world, sent on connect. Replaces anything the client had."""
 
-    model_config = ConfigDict(json_schema_extra=_not_required("level", "creatures"))
+    model_config = ConfigDict(json_schema_extra=_not_required("level", "creatures", "machines"))
 
     type: Literal["snapshot"] = "snapshot"
     time: Timestamp = Field(description="Sim time.")
@@ -122,6 +123,11 @@ class SnapshotMessage(Model):
         default=[],
         description="Every creature on every map. The server always sends it, and missing, "
         "there are none.",
+    )
+    machines: list[Machine] = Field(
+        default=[],
+        description="Every machine you repair and then use. The server always sends it, and "
+        "missing, there are none.",
     )
 
 
@@ -162,6 +168,13 @@ class CreatureGoneMessage(Model):
 
     type: Literal["creature_gone"] = "creature_gone"
     creature_id: Id
+
+
+class MachineChangedMessage(Model):
+    """A machine changed, such as one just repaired: all of it, to replace what the client has."""
+
+    type: Literal["machine_changed"] = "machine_changed"
+    machine: Machine
 
 
 class ConversationStartedMessage(Model):
@@ -717,6 +730,7 @@ type ServerMessage = Annotated[
     | EntityMovedMessage
     | CreatureMovedMessage
     | CreatureGoneMessage
+    | MachineChangedMessage
     | ConversationStartedMessage
     | ConversationEndedMessage
     | LineMessage

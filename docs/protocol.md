@@ -22,8 +22,8 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `stash`, `left`, `taken`, `mind`, `power`, `health`, `effects`,
-  `sales` and `searched`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
+  `long_summary`, a wall's `map`, a player's `stash`, `left`, `corpses`, `taken`, `mind`, `power`, `health`,
+  `effects`, `sales`, `searched` and `repaired`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
   `bionic`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
   `player_state`'s `meal`, `shut`, `buyer`, `piles`, `recipes`, `bed` and `resting`, below.
@@ -113,6 +113,7 @@ client replaces whatever it had.
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 | `level` | number | Which of the generated levels in `content/street/levels/` this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers. The client bundles every level and plays this one's maps. The server always sends it; missing, it's 0. |
 | `creatures` | `Creature[]` | Every creature on every map. The server always sends it; missing, there are none. |
+| `machines` | `Machine[]` | Every machine you repair and then use. The server always sends it; missing, there are none. |
 
 A `Creature` is one of the tunnels' dangers, which the sim runs and the client draws and animates.
 It has its `id`; its `kind`, named as its figure is in `content/creatures/`: `"rat"`, `"bot"` (a
@@ -131,6 +132,23 @@ side-view maps; and its `state`, what it's doing, which picks the pose its figur
 A walking kind's position is the ground under it, its figure's anchor, and a bat's is the middle of
 it in the air, or the ceiling it hangs from while it roosts. How a creature moves and what it does
 on contact stay on the server.
+
+A `Machine` is the state of a machine you repair and then use, such as the maker space's printer.
+Where it stands and what it's called are on the map, in the `Interactable` with the same `id`, so
+the client finds it from the `stand` tile the player is on. An interactable of kind `"machine"` with
+no `Machine`, such as the loom, is only scenery for now.
+
+| Field | Type | |
+|---|---|---|
+| `id` | string | Its interactable's id, e.g. `"printer_3d"`. |
+| `kind` | string | `"printer"` or `"recycler"`. |
+| `state` | string | `"broken"` or `"working"`. |
+| `parts` | object | What repairing it uses up, how many of each by item `id`, as in a `Recipe`'s `parts`: `{"metal_sheet": 1, "linear_actuator": 1, "copper_wire": 2}`. Never empty while it's broken, and empty once it works. |
+| `makes` | `Product[]` | What it can make, each item once, whether or not they have what it takes. Empty while it's broken, and it can be empty while it works. |
+
+A `Product` has its `item`, the whole `Item` that comes out, with its `amount` for a stack, such as 6
+rounds; `uses`, what it's made from, a `Material` they carry or `"scrap"`; and `cost`, how much of
+that: a material's `amount`, or kilos of scrap. The recycler's is 1 plastic for 1 kg of scrap.
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one
@@ -177,6 +195,11 @@ client adds it.
 
 `creature_id`: a creature that's gone from the world, such as a rat the player jumps on. The client
 removes it.
+
+### `machine_changed`
+
+`machine`: a `Machine`, all of it, as in the [`snapshot`](#snapshot). The server sends it when a
+machine changes, such as one just repaired, and the client replaces the one with that `id`.
 
 ### `conversation_started`
 
@@ -290,9 +313,11 @@ change is sent at once. Clients that predate it ignore it.
 | `effects` | `Effect[]` | Their ailments, in the order they got them, each kind once. Left out while there's none. |
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
+| `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. Each `player_state` has all of them, so read them from here: a corpse no longer in the list is gone. Left out while there's none. |
 | `taken` | object | When each pickup in the world was last emptied, by the player or a recycler bot, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
 | `searched` | `string[]` | The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none. |
+| `repaired` | `string[]` | The machines they've repaired, by interactable id, in the order they repaired them. It's here because `Player` is what's saved. A machine's state comes from the [`snapshot`](#snapshot) and [`machine_changed`](#machine_changed). Left out while there's none. |
 
 Power is what hunger becomes once the power cell is fitted, but it's a field of its own rather than
 hunger read the other way. It runs from full to flat like the lamp's `charge`, and charges at a
@@ -415,6 +440,12 @@ A `Pile` is things lying on a tile in the world for the player to pick up with
 `x` and `y`, whole tiles). It holds at least one item or some money, and `money` is left out while
 it's 0. What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
 the ground below it. Salvage and secrets, in `piles`, are another.
+
+A `Corpse` is one of their own bodies, in `corpses`, with what was on it. It has its `id`, as two
+can lie on one tile; its `owner`, whose body it was, `"player"` for the player's own; `at`, a
+`MapTile`, the tile they fell on or the ground below it; `money`; `items`, what it still carries;
+and `bionics`, each `Bionic` still in it. Unlike a `Pile`, it stays whatever it holds, and can hold
+nothing at all.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney`,
 `right_kidney`, `stomach` and `feet`. Each is `"present"`, `"sold"`, or the bionic fitted in its
