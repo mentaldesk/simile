@@ -55,7 +55,7 @@ side-view maps through [`old_cells.csv`](old_cells.csv), a table from each walka
 maps, in runs along each row, to a cell on the new ones, with what matched it:
 
 - `spot <id>`, `door <id>` or `interactable <id>`: the spot, the door's end on the same side, or
-  the stand, with the same id. Every id is kept on the new maps.
+  the stand, with the same id. Every id is kept on the new maps but `desk-13-8`, now the lockers' stand.
 - `location <id>`: the entry of the location it was in, the smallest if there are two.
 - `near door <id>` or `near location <id>`: the nearest door, or place, on the iso map, and its
   door's end or entry on a street, or for a house, the street in front of its front door.

@@ -955,6 +955,35 @@ async function traderLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 200);
 }
 
+/** E at a broken machine lists what it needs, and the panel keeps the keys until Esc closes it, without the pause menu. */
+async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the broken printer';
+  const at = { map: 'maker_space_floor_0', x: 9, y: 2 };
+  await teleport(page, api, at, name);
+  await page.evaluate(async () => {
+    const net = '/src/net/index.ts';
+    const { server } = await import(/* @vite-ignore */ net);
+    const machine = { id: 'printer_3d', kind: 'printer', state: 'broken', parts: { metal_sheet: 1, copper_wire: 2 }, makes: [] };
+    server.dispatch(JSON.stringify({ type: 'machine_changed', machine }));
+  });
+  await run(page, 300);
+  const hint = await shown(page, '.counter-hint');
+  if (hint !== 'Press E to use the 3D printer.') throw new Error(`${name}: the hint is ${hint}`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const panel = await shown(page, '.machine-panel');
+  if (!['3D printer', 'Metal sheet', 'Copper wire', '/2', 'Repair it'].every((text) => panel?.includes(text))) {
+    throw new Error(`${name}: E didn't list what it needs: ${panel}`);
+  }
+  await press(page, 'ArrowRight', 'ArrowLeft');
+  if (!near(await api.state(), at)) throw new Error(`${name}: the arrows moved the player`);
+  await shot(page, index, name);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, '.machine-panel')) !== null) throw new Error(`${name}: Esc didn't close it`);
+  if ((await shown(page, '.pause')) !== null) throw new Error(`${name}: Esc opened the pause menu too`);
+}
+
 const root = new URL('../..', import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { port: 0 } });
 await server.listen();
@@ -1009,6 +1038,7 @@ try {
     ['E at the clinic', (i) => clinicLeg(page, api, i)],
     ["E at the scrap trader's stall", (i) => traderLeg(page, api, i)],
     ['firing and reloading', () => shootingLeg(open)],
+    ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();

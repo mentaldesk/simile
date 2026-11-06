@@ -49,6 +49,8 @@ ARIS_BENCH = "maker_space_bench"
 """Aris's bench downstairs in the maker space, with her schematic for the datajack."""
 SPARES = "maker_space_spares"
 SHELF = "maker_space_shelf"
+LOCKERS = "lockers"
+"""Aris's lockers in the loft, the player's stash."""
 
 
 def street(map_id: str, label: str, width: int) -> Plan:
@@ -207,25 +209,34 @@ def table(plan: Plan, name: str, x: int, old: tuple[int, int]) -> None:
     plan.spot(f"seat-{old_x + 1}-{old_y}", SEAT, x + 1, FLOOR_ROW, W)
 
 
-def workbench(plan: Plan, x: int, old: tuple[int, int]) -> None:
+def workbench(plan: Plan, x: int, old: tuple[int, int], clear: int = 0) -> None:
     """A bench along the back wall with four desks in front, keeping the desk ids of today's
-    workbench at `old`, worked from both long sides."""
+    workbench at `old`, worked from both long sides, less its first `clear` cells."""
     old_x, old_y = old
-    plan.piece("workbench", x, FLOOR_ROW, 4, 1)
+    plan.piece("workbench", x + clear, FLOOR_ROW, 4 - clear, 1)
     ids = [f"desk-{old_x + i}-{old_y + dy}" for dy in (-1, 1) for i in (0, 1)]
     for i, spot_id in enumerate(ids):
-        plan.spot(spot_id, DESK, x + i, FLOOR_ROW, N)
+        if i >= clear:
+            plan.spot(spot_id, DESK, x + i, FLOOR_ROW, N)
 
 
-def machine(plan: Plan, item_id: str, label: str, x: int, width: int, *desk_ids: str) -> None:
+def machine(
+    plan: Plan,
+    item_id: str,
+    label: str,
+    x: int,
+    width: int,
+    *desk_ids: str,
+    picture: str | None = None,
+) -> None:
     area = TileArea(x=x, y=FLOOR_ROW - 1, width=width, height=2)
     stand = [Tile(x=x + i, y=FLOOR_ROW) for i in range(width)]
     kind = InteractableKind.MACHINE
     plan.interactables.append(
         Interactable(id=item_id, label=label, kind=kind, map=plan.id, area=area, stand=stand)
     )
-    plan.piece(item_id, x, FLOOR_ROW - 1, width, 2)
-    for tile, spot_id in zip(stand, desk_ids, strict=True):
+    plan.piece(picture or item_id, x, FLOOR_ROW - 1, width, 2)
+    for tile, spot_id in zip(stand, desk_ids, strict=bool(desk_ids)):
         plan.spot(spot_id, DESK, tile.x, tile.y, N)
 
 
@@ -383,7 +394,7 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
 
 def maker_space(street: Plan, x: int) -> list[Plan]:
     """The machines and a workbench downstairs, three workbenches above, and a loft up a ladder
-    with two more."""
+    with two more and Aris's lockers."""
     kind = LocationKind.MAKER_SPACE
     rooms = ("workshop", "workshop", "loft")
     shop = Building(street, "maker_space", "Spark Maker Space", kind, x, 16, rooms)
@@ -398,6 +409,7 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     ground.piece("pegboard", 3, 0, 4, 1)
     machine(ground, "laser_cutter", "Laser cutter", 7, 2, "desk-2-3", "desk-3-3")
     machine(ground, "printer_3d", "3D printer", 9, 1, "desk-6-3")
+    machine(ground, "recycler", "Recycler", 1, 1, picture="fridge")
     machine(ground, "loom", "Loom", 10, 2, "desk-10-3", "desk-11-3")
     machine(ground, "sewing_machine", "Sewing machine", 12, 1, "desk-15-3")
     wall_plug(ground, "maker_space_plug", 13)
@@ -405,8 +417,9 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
         workbench(first, at, old)
     spares = TileArea(x=11, y=FLOOR_ROW, width=4, height=1)
     searchable(first, SPARES, "Workbench", spares, under(spares), [LITHIUM_CELL, CHARGE_CONTROLLER])
-    for at, old in ((1, (13, 6)), (7, (13, 9))):
-        workbench(loft, at, old)
+    workbench(loft, 1, (13, 6))
+    workbench(loft, 7, (13, 9), clear=1)
+    machine(loft, LOCKERS, "Lockers", 7, 1, picture="wardrobe")
     loft.piece("bed", 5, FLOOR_ROW)
     loft.piece("shelf", 11, FLOOR_ROW - 1, 4, 2)
     shelf = TileArea(x=11, y=FLOOR_ROW - 1, width=4, height=2)
