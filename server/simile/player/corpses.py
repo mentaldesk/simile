@@ -46,9 +46,9 @@ class Death:
         self.health = health
 
     def die(self, cause: Vital) -> None:
-        """Leaves their money, all but the lamp and every bionic on a corpse where they are, or in
-        their bed if the server doesn't know where that is, and wakes them with no effects in a
-        whole organic body. What they know, stash, sold and repaired stays theirs."""
+        """Leaves their money, all but the lamp and every bionic on a corpse where they are, or
+        where they wake if the server doesn't know where that is, and wakes them with no effects
+        in a whole organic body. What they know, stash, sold and repaired stays theirs."""
         player = self.player
         home = self._waking()
         fell = here(self.movement) or Point(home.x, home.y, home.map)

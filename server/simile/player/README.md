@@ -47,8 +47,8 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 
 - **The corpse.** A new `Corpse` goes at the end of `Player.corpses`, assigned as a new list so its
   validator checks the id: `next_corpse` gives an id none of the saved ones has, so a reload can't
-  reuse one. It lies on the tile they fell on or the ground below it, or in their bed if the server
-  doesn't yet know where they are, holding their money, through the ledger as `dropped`, everything
+  reuse one. It lies on the tile they fell on or the ground below it, or where they wake if the
+  server doesn't yet know where they are, so a new body never takes the old one's bionics with it, holding their money, through the ledger as `dropped`, everything
   they carried but the lamp, and every bionic fitted. It stays whatever it holds, and a second death
   leaves a second. Taking from it is Q11's.
 - **The lamp** stays with them, switched off, as stage 2's collapse had it, so they can see to go

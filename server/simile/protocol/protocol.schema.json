@@ -1935,7 +1935,7 @@
     },
     "PlayerDiedMessage": {
       "additionalProperties": false,
-      "description": "The player died of `cause`: they starved, their power cell ran flat, or they had no health\nleft. They wake in their bed, at `position`, in a whole organic body. Their corpse stays where\nthey fell, at the end of `player_state`'s `corpses`.",
+      "description": "The player died of `cause`: they starved, their power cell ran flat, or they had no health\nleft. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a\nwhole organic body. Their corpse stays where they fell, or where they wake if the server didn't\nknow where that was, at the end of `player_state`'s `corpses`.",
       "properties": {
         "type": {
           "const": "player_died",

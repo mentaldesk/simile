@@ -495,8 +495,9 @@ never sent: the player sees it only in how residents treat them.
 cell ran flat; or `"health"`, they had none left.
 The client puts them at `position`, snapping there as through a door, and can say what happened.
 The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
-`corpses`, where they fell, with their money, everything they carried but the lamp and every bionic
-they had fitted, and a whole organic `body`. With nothing on them they still leave a corpse. They
+`corpses`, where they fell, or where they wake if the server didn't know where that was, with their
+money, everything they carried but the lamp and every bionic they had fitted, and a whole organic
+`body`. With nothing on them they still leave a corpse. They
 keep the lamp, switched off, so they can see to go back. They wake with no effects, full `power`,
 `hunger` of 0.75 at most, and a little `health`, resting in their bed if they have one. What they
 know, what they keep in the `stash`, what they've sold, what they've `repaired` and what's in `left`

@@ -291,7 +291,7 @@ def test_the_id_skips_any_already_taken() -> None:
         Player(corpses=[corpse, corpse])
 
 
-def test_dying_before_the_server_knows_where_they_are_leaves_the_corpse_in_their_bed() -> None:
+def test_dying_before_the_server_knows_where_they_are_leaves_the_corpse_where_they_wake() -> None:
     fall = Fall(Player(money=5, items=[lamp(), WIRE], body=FITTED))
 
     fall.death.die(Vital.HEALTH)
