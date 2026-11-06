@@ -404,7 +404,7 @@ def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_resting_in_
         client.portal.call(lambda: setattr(player, "health", 0.01))
         client.portal.call(lambda: setattr(player, "money", 12.0))
         client.portal.call(health_of(app).bite, TAKES)
-        collapsed = next_of(ws, "player_collapsed")
+        collapsed = next_of(ws, "player_died")
         client.portal.call(world_of(app).loop.tick)
         woken = next_of(ws, "player_state")
         state, ticks = woken, 1

@@ -178,7 +178,7 @@ class Stash(Model):
 
 class Pile(Model):
     """Items, money or both lying `at` a tile in the world for the player to pick up, such as
-    salvage, a secret's cash, or what they left when they collapsed."""
+    salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed."""
 
     model_config = CHECKED
 
@@ -402,8 +402,8 @@ class Recipe(Model):
 
 
 class Mind(Model):
-    """What the player knows, which they keep when they collapse, and later when they die. Left
-    out of `Player` while they know no recipe."""
+    """What the player knows, which they keep when they die. Left out of `Player` while they know
+    no recipe."""
 
     model_config = CHECKED
 
@@ -498,18 +498,20 @@ class Player(Model):
     )
     body: Body = Field(default_factory=Body)
     mind: Mind = Field(default_factory=Mind, exclude_if=lambda mind: not mind.recipes)
-    hunger: Unit = Field(default=0.0, description="0 is fed and 1 is starving: they collapse.")
+    hunger: Unit = Field(
+        default=0.0, description="0 is fed and 1 is starving, which hurts until they eat."
+    )
     power: Unit = Field(
         default=1.0,
         exclude_if=_full,
-        description="Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which "
+        description="Their power cell's charge, from 1 (full) to 0 (flat: they die), which "
         "they run on in place of hunger once a cell is in their stomach. It stays full without "
         "one. Left out while it's full.",
     )
     health: Unit = Field(
         default=1.0,
         exclude_if=_full,
-        description="From 1, unhurt, to 0, when they collapse. Left out while it's full.",
+        description="From 1, unhurt, to 0, when they die. Left out while it's full.",
     )
     effects: list[Effect] = Field(
         default=[],
@@ -521,8 +523,9 @@ class Player(Model):
         default=[],
         exclude_if=lambda left: not left,
         description="What they left lying in the world, oldest first: what they carried when they "
-        "collapsed, on the tile they fell on or the ground below it, and anything of a pickup that "
-        "didn't fit when they took from it. Left out while there's none.",
+        "collapsed, on the tile they fell on or the ground below it, a destroyed bot's haul, on "
+        "the cell it went down in, and anything of a pickup that didn't fit when they took from "
+        "it. Left out while there's none.",
     )
     corpses: list[Corpse] = Field(
         default=[],

@@ -7,8 +7,7 @@ to its own origin and Vite proxies `/ws` to the server on port 8000.
 - **Binary frames** go from the server to the client only, and are always an [`audio_chunk`](#audio_chunk).
 
 The server is authoritative, except for the player's position, which the client sends. The server
-moves the player only when they collapse ([`player_collapsed`](#player_collapsed)) or die
-([`player_died`](#player_died)).
+moves the player only when they die ([`player_died`](#player_died)).
 
 The message models are in [`server/simile/protocol/messages.py`](../server/simile/protocol/messages.py),
 built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types in
@@ -317,12 +316,12 @@ change is sent at once. Clients that predate it ignore it.
 | `carry_limit` | number | The most they can carry, in kg. Picking things up keeps what the items weigh, each `weight` by its `amount`, within it. |
 | `stash` | `Stash` | What they keep at home, in Aris's lockers in the maker space: its `items`, and its `limit`, the most it holds in kg, 20 to start. Left out while it's empty and at that limit: read it as `player.stash ?? { items: [], limit: 20 }`. |
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
-| `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
-| `power` | number | Their power cell's charge, from 1, full, to 0, flat, when they collapse. They run on it in place of hunger once a cell is in their `stomach`, and it stays full without one. Left out while it's full: read it as `player.power ?? 1`. |
-| `health` | number | From 1, unhurt, to 0, when they collapse. Left out while it's full: read it as `player.health ?? 1`. |
+| `hunger` | number | From 0, fed, to 1, starving, which hurts until they eat. |
+| `power` | number | Their power cell's charge, from 1, full, to 0, flat, when they die. They run on it in place of hunger once a cell is in their `stomach`, and it stays full without one. Left out while it's full: read it as `player.power ?? 1`. |
+| `health` | number | From 1, unhurt, to 0, when they die. Left out while it's full: read it as `player.health ?? 1`. |
 | `effects` | `Effect[]` | Their ailments, in the order they got them, each kind once. Left out while there's none. |
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
-| `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
+| `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, a destroyed bot's haul, and anything of a pickup that didn't fit. Left out while there's none. |
 | `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. Each `player_state` has all of them, so read them from here: a corpse no longer in the list is gone. Left out while there's none. |
 | `taken` | object | When each pickup in the world was last emptied, by the player or a recycler bot, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
@@ -415,7 +414,7 @@ It has `bed`: the cell of the player's own bed at home where they stand, a `MapT
 `{"map": "maker_space_floor_2", "x": 5, "y": 2}`, the camp bed in the maker space's loft. It's
 left out everywhere else. There they can lie down in it with [`rest`](#rest). And it has
 `resting`, `true` while they're resting in that bed: from a `rest` that lies them down until
-they're fully healed, move off the bed, collapse, or get up with `rest`. It's left out unless
+they're fully healed, move off the bed, die, or get up with `rest`. It's left out unless
 they're resting, and never sent without `bed`. The server sends a new `player_state` as soon as
 either changes.
 
@@ -448,8 +447,9 @@ Some kinds have more, each left out for every other kind:
 A `Pile` is things lying on a tile in the world for the player to pick up with
 [`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
 `x` and `y`, whole tiles). It holds at least one item or some money, and `money` is left out while
-it's 0. What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
-the ground below it. Salvage and secrets, in `piles`, are another.
+it's 0. What's theirs is one kind, in `left`: what they carried when they collapsed, on the tile
+they fell on or the ground below it, a destroyed bot's haul, on the cell it went down in, and what
+of a pickup didn't fit. Salvage and secrets, in `piles`, are another.
 
 A `Corpse` is one of their own bodies, in `corpses`, with what was on it. It has its `id`, as two
 can lie on one tile; its `owner`, whose body it was, `"player"` for the player's own; `at`, a
@@ -471,7 +471,7 @@ Three bionics come in a line of grades, each grade better than the one before:
 - the legs, for speed: `"bionic_legs"`, `"bionic_legs_2"` and `"bionic_legs_3"`.
 - the feet, for jump height: `"spring_feet"` and `"spring_feet_2"`.
 
-`mind` is what they know, a `Mind`. They keep it when they collapse, and later when they die. It has
+`mind` is what they know, a `Mind`. They keep it when they die. It has
 `recipes`, the recipes they know, each by the `Bionic` it builds, in the order they learned them;
 and `sold`, those they've sold to the clinic, in the order they sold them. They still know a recipe
 they've sold, and can't sell it again. `sold` is left out while there's none, and `mind` while they
@@ -488,27 +488,25 @@ no effects and nothing to buy back. One from before searching has searched nothi
 humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
 never sent: the player sees it only in how residents treat them.
 
-### `player_collapsed`
-
-`position`: where the player wakes, at home. `cause`: the `Vital` that ran out, why they
-collapsed: `"hunger"`, they starved; `"power"`, their power cell ran flat; or `"health"`, they had
-none left. The client puts them at `position`, snapping there as through a door, and can say what
-happened. They wake with their lamp, switched off, so they can see to go back once they switch it on. Everything else they carried stays where they
-fell: the [`player_state`](#player_state) that follows has it in a new `Pile` at the end of `left`.
-With nothing but the lamp, they leave no pile. Clients that predate it ignore it.
-
-[`player_died`](#player_died) replaces this message when collapse becomes death in Q10 (#606), which
-removes it. Until then the server sends this one, and never `player_died`.
-
 ### `player_died`
 
-`position`: where the player wakes, in their bed. `cause`: the `Vital` that ran out, why they died:
-`"hunger"`, they starved; `"power"`, their power cell ran flat; or `"health"`, they had none left.
+`position`: where the player wakes, in their bed, or at the entry of `home` if it has no bed.
+`cause`: the `Vital` that ran out, why they died: `"hunger"`, they starved; `"power"`, their power
+cell ran flat; or `"health"`, they had none left.
 The client puts them at `position`, snapping there as through a door, and can say what happened.
 The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
 `corpses`, where they fell, with their money, everything they carried and every bionic they had
 fitted, and a whole organic `body`. What they know, what they keep in the `stash` and what they've
 `repaired` stay theirs.
+
+Until Q10 (#606) makes this a death, the server sends it for stage 2's collapse, so this section's
+corpse and whole organic `body`, and `hunger`'s hurting in [`player_state`](#player_state), describe
+Q10. Today:
+
+- `corpses` stays empty and `body` doesn't change: a fitted `stomach` of `"power_cell"` stays fitted.
+- They wake with their lamp, switched off. Their money and whatever else they carried are in a new
+  `Pile` at the end of `left`. With nothing but the lamp, they leave no pile.
+- `hunger` reaching 1 collapses them at once, nothing hurts first, and they wake at 0.75.
 
 ### `journal`
 

@@ -135,7 +135,7 @@ def test_starving_wakes_them_in_bed_and_they_pick_up_what_they_left(
         client.portal.call(lambda: setattr(player, "money", 20.0))
         client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
         client.portal.call(tick)
-        collapsed = next_of(ws, "player_collapsed")
+        collapsed = next_of(ws, "player_died")
         woken = next_of(ws, "player_state")
         home = client.portal.call(movement_of(app).position, PLAYER_ID)
 
@@ -168,7 +168,7 @@ def starve(client: TestClient, app: Starlette, ws: Any) -> dict[str, Any]:
     client.portal.call(lambda: setattr(player, "health", 0.5))
     client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
     client.portal.call(world_of(app).loop.tick)
-    next_of(ws, "player_collapsed")
+    next_of(ws, "player_died")
     return next_of(ws, "player_state")
 
 

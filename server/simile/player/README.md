@@ -33,7 +33,7 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
   in a `Pile` where they fell, on the ground below if they were mid-air or partway up stairs or a
   ladder, at the end of `Player.left`, the money through the ledger as `dropped`, and every
   effect clears. They wake in their bed at home, already resting (see *Resting*), or at the entry
-  of `home` if it has no bed, with hunger `waking` (0.75), and the client gets `player_collapsed`
+  of `home` if it has no bed, with hunger `waking` (0.75), and the client gets `player_died`
   to put them there, with `cause` `hunger`. The lamp stays with them, so they can see to go back
   for the rest. A collapse for health or power takes the same path.
 - **Once a power cell is in** their stomach, hunger is 0 for good and nothing is on offer to eat:

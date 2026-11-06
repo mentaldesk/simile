@@ -40,11 +40,11 @@ describe('getting hurt', () => {
     expect(hits).toEqual([]);
   });
 
-  it('is collapsing from their wounds, at full strength, but not from hunger', () => {
+  it('is dying of their wounds, at full strength, but not from hunger', () => {
     const { hits, send } = watch();
     const position = { x: 1, y: 1, map: 'house_1_floor_0' };
-    send({ type: 'player_collapsed', cause: 'hunger', position });
-    send({ type: 'player_collapsed', cause: 'health', position });
+    send({ type: 'player_died', cause: 'hunger', position });
+    send({ type: 'player_died', cause: 'health', position });
     expect(hits).toEqual([{ size: FULL_HIT, strength: 1 }]);
   });
 });

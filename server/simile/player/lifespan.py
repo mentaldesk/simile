@@ -26,7 +26,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         JournalMessage,
         LampMessage,
         PickUpMessage,
-        PlayerCollapsedMessage,
+        PlayerDiedMessage,
         PlayerMoveMessage,
         Position,
         RestMessage,
@@ -48,7 +48,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         health.rest(True, woken=True)
         lamp.switch(False)
         position = Position(x=home.x, y=home.y, map=home.map)
-        hub.broadcast(PlayerCollapsedMessage(position=position, cause=cause))
+        hub.broadcast(PlayerDiedMessage(position=position, cause=cause))
 
     pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))

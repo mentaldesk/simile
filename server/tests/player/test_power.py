@@ -181,7 +181,7 @@ def test_a_flat_cell_collapses_them_for_power_and_the_plug_downstairs_charges_it
         client.portal.call(lambda: setattr(player, "body", THREE))
         client.portal.call(lambda: setattr(player, "power", 1e-9))
         client.portal.call(tick)
-        collapsed = next_of(ws, "player_collapsed")
+        collapsed = next_of(ws, "player_died")
         woken = next_of(ws, "player_state")
         ws.send_json({"type": "player_move", "position": {"x": 13, "y": 2, "map": HOME.map}})
         while client.portal.call(movement_of(app).entities).get(PLAYER_ID) != HOME:

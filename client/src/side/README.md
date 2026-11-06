@@ -191,11 +191,11 @@ The Phaser-free halves are tested under vitest.
   lands with a squash over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with
   height. The camera stays at the height the jump left from, following only a fall below it
   (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
-- When the player collapses from hunger, `player_collapsed` puts them at home, as through a door,
+- When the player collapses from hunger, `player_died` puts them at home, as through a door,
   once the street is shown and any door they're going through is done. It's also where the scene
   starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed.
   After every `snapshot` the scene sends the player's position again, so a restarted server knows
-  where they are. From `player_collapsed` until it has placed them where the server woke them, the
+  where they are. From `player_died` until it has placed them where the server woke them, the
   scene sends no position (`report.ts`), so a move the throttle held back can't take them off the
   bed they wake in.
 - The jump is the player's own, by the legs and feet fitted (`jumpOf`): `content/street/jump.json`'s
