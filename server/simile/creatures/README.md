@@ -160,8 +160,8 @@ is never gone, so a rat that's down at a restart is simply back.
 
 The save goes by id alone, and ids repeat across levels: `sewers_bot_1` is on all 8, at different
 cells. A world whose level changes, as one can when the number of levels does, applies a saved
-death, wound or haul to the new level's creature with that id. Only an id that no level uses is
-kept and ignored.
+death, wound or haul to the new level's creature with that id. An id this level doesn't use is
+kept and ignored, and applies if the world later plays a level that does.
 
 ## Landing on one
 
