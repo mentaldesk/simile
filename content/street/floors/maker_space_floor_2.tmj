@@ -217,7 +217,7 @@
         {
           "height": 32,
           "id": 7,
-          "name": "maker_space_lockers",
+          "name": "lockers",
           "properties": [
             {
               "name": "label",

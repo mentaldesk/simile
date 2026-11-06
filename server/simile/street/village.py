@@ -49,7 +49,7 @@ ARIS_BENCH = "maker_space_bench"
 """Aris's bench downstairs in the maker space, with her schematic for the datajack."""
 SPARES = "maker_space_spares"
 SHELF = "maker_space_shelf"
-LOCKERS = "maker_space_lockers"
+LOCKERS = "lockers"
 """Aris's lockers in the loft, the player's stash."""
 
 
