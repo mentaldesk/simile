@@ -21,7 +21,8 @@ since been retired. It's a screenshot of the client, taken by hand: take it agai
 item, and nearly nothing.
 
 **`corpse`** is an edit of the whole player's lying frame (the entry's `over`) rather than a picture
-in the tunnels' style, so it's you. Draw it about 0.6 m tall.
+in the tunnels' style, so it's you. Draw it about 0.6 m tall. Its hash covers the player's, so
+painting the player again means painting it again: `uv run simile icons paint corpse`.
 
 ## Files
 

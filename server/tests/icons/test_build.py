@@ -63,6 +63,20 @@ def listed(tmp_path: Path) -> dict:
     return json.loads((tmp_path / "out" / MANIFEST).read_text())
 
 
+def test_an_icons_hash_follows_the_doll_it_is_painted_over_and_no_other_icons_does(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpse, other = ICONS["corpse"], ICONS["plastic"]
+    before = fingerprint(corpse), fingerprint(other)
+    who = json.loads((build.DOLLS / "player.json").read_text())
+    (tmp_path / "player.json").write_text(json.dumps(who | {"hash": "painted again"}))
+
+    monkeypatch.setattr(build, "DOLLS", tmp_path)
+
+    assert fingerprint(corpse) != before[0]
+    assert fingerprint(other) == before[1]
+
+
 def test_an_icon_over_a_dolls_frame_is_painted_from_it_rather_than_the_reference() -> None:
     icon = ICONS["corpse"]
     frame = build.doll_frame(icon.over)

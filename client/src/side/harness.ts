@@ -13,6 +13,7 @@ import './harness.css';
 import { glowAround, sightOf } from './darkness';
 import { scenery } from './content';
 import { lampHere } from './lamp';
+import { feetOf, PPM, xOf } from './layout';
 import { cellOf, isSolid, isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
 import type { MapPosition, SidePlayer } from './player';
@@ -593,6 +594,13 @@ function exposeWalk(scene: SideScene, village: Village): void {
         return { rounds: weapon?.rounds ?? null, condition: weapon?.condition ?? null };
       },
       shot: () => scene.shotView.drawn(),
+      flashFromFeet: () => {
+        const flash = scene.children.list.find((child) => child instanceof Phaser.GameObjects.Image && child.visible && child.texture.key.includes('muzzle_flash'));
+        const at = scene.playing?.at;
+        if (!flash || !at) return null;
+        const { x, y } = flash as Phaser.GameObjects.Image;
+        return { ahead: Math.abs(x - xOf(at.x)) / PPM, up: (feetOf(at.y) - y) / PPM };
+      },
       playerFrame: () => {
         const dolls = scene.children.list.filter((child) => child instanceof SpriteFigure);
         const player = dolls.find((doll) => isPlayerFigure(doll.figure.id));

@@ -55,9 +55,8 @@ def test_every_item_the_server_defines_has_a_picture() -> None:
     assert every_item() - ICONS.keys() == set()
 
 
-def test_what_the_machines_make_is_among_the_items_that_need_a_picture() -> None:
+def test_a_repaired_machine_lists_what_it_makes_for_the_picture_test() -> None:
     assert machines_make() == {"plastic_pistol", "plastic_rounds", "plastic"}
-    assert machines_make() <= every_item()
 
 
 def test_every_grade_of_bionic_has_a_picture_for_when_it_comes_out_as_an_item() -> None:

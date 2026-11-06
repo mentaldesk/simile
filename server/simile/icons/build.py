@@ -63,6 +63,8 @@ def fingerprint(icon: Icon) -> str:
         "size": SIZE,
         "side": SIDE,
     }
+    if icon.over:
+        inputs["from"] = json.loads((DOLLS / f"{icon.over.split('/')[0]}.json").read_text())["hash"]
     return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -124,8 +126,7 @@ def doll_frame(over: str, dolls: Path = DOLLS) -> Image.Image:
 def paint(
     icon: Icon, painter: Cached, cut: Cut = cut_out, log: Callable[[str], None] = print
 ) -> Painted:
-    """Paints `icon` in the style of the tunnels' reference, or over a doll's frame, until nothing's
-    wrong with it, at most `tries` times, keeping the one with fewest problems."""
+    """Paints `icon` at most `tries` times, keeping the try with fewest problems."""
     from simile.papercraft.painter import reference
 
     style = [doll_frame(icon.over) if icon.over else reference(REFERENCE)]

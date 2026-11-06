@@ -109,13 +109,13 @@ export class ShotView {
     return { gun: this.since < GUN_SECONDS, flash: this.since < FLASH_SECONDS, line: this.line.visible ? this.line.text : null };
   }
 
-  /** How the player is drawn: aiming the way they fired, for a moment after a shot. */
+  /** How the player is drawn: aiming the way they face now, for a moment after a shot. */
   pose<T extends { pose: DollPose; facing: Facing }>(drawn: T, facing: SideFacing): T {
     return this.since < GUN_SECONDS && AIMS_FROM.has(drawn.pose) ? { ...drawn, pose: 'aiming', facing } : drawn;
   }
 
   /** `at` is the player in street cells, while they're shown, as `figure`. */
-  update(dt: number, at: { x: number; y: number } | undefined, facing: SideFacing, line: string | undefined, view: Phaser.Geom.Rectangle, zoom: number, figure?: FigureManifest): void {
+  update(dt: number, at: { x: number; y: number } | undefined, facing: SideFacing, line: string | undefined, view: Phaser.Geom.Rectangle, zoom: number, figure: FigureManifest | undefined): void {
     this.since += dt;
     this.drawFlash(at, facing, figure);
     this.line.setVisible(!!line);
@@ -130,7 +130,7 @@ export class ShotView {
     this.line.destroy();
   }
 
-  private drawFlash(at: { x: number; y: number } | undefined, facing: SideFacing, figure?: FigureManifest): void {
+  private drawFlash(at: { x: number; y: number } | undefined, facing: SideFacing, figure: FigureManifest | undefined): void {
     const { flash } = this;
     if (!flash) return;
     const shown = !!at && this.since < FLASH_SECONDS;

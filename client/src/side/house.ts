@@ -70,7 +70,6 @@ export class House {
   private readonly tints: Tints;
   private readonly moulding: Moulding;
   private readonly machines: { name: string; working: Phaser.GameObjects.Image[]; broken: Phaser.GameObjects.Image[] }[] = [];
-  private states?: MachineStates;
   private shown = true;
   private carKey?: string;
 
@@ -123,12 +122,10 @@ export class House {
       for (const part of [hung.frame, hung.shadow, hung.image]) part?.setVisible(shown);
     }
     if (!shown) for (const image of this.riding) image.setVisible(false);
-    if (this.states) this.showMachines(this.states);
   }
 
   /** Draws each machine you repair on these floors as it stands, broken or working. */
   showMachines(states: MachineStates): void {
-    this.states = states;
     if (!this.shown) return;
     for (const { name, working, broken } of this.machines) {
       const down = isBroken(states.get(name));

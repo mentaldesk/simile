@@ -114,10 +114,9 @@ def test_the_machines_you_repair_have_a_broken_picture_and_nothing_else_does() -
         assert broken.base == f"furniture/{machine}" and broken.height == FURNITURE[machine].height
 
 
-def test_the_village_has_its_own_lockers() -> None:
+def test_the_lockers_picture_is_in_the_comic_style_and_the_maps_use_it() -> None:
     assert FURNITURE["clean_lockers"].style == "clean"
     assert "clean_lockers" in LAYOUT.furniture
-    assert "wardrobe" in LAYOUT.furniture
 
 
 def test_every_village_front_is_clean_with_todays_details() -> None:

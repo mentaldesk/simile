@@ -5,7 +5,7 @@ import type { Item } from '../net';
 import { onPress } from './input';
 import { MoveReport } from './report';
 import type { FigureManifest } from '../dolls/manifest';
-import { PPM } from './layout';
+import { feetOf, PPM, xOf } from './layout';
 import { canFire, firesNext, firing, muzzleOf, reloading, ShotView, shotAt, sideOf, weaponLine } from './shooting';
 
 const pistol = (rounds = 6, condition = 1): Item => ({
@@ -156,7 +156,7 @@ describe('the shot’s view', () => {
 
   it('shows no flash before a shot, and draws them as they were', () => {
     const { shots: view_, flash } = shots();
-    view_.update(1 / 60, at, 'east', undefined, view, 1);
+    view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
     expect(flash.setVisible).toHaveBeenLastCalledWith(false);
     expect(view_.pose(standing, 'west')).toBe(standing);
   });
@@ -166,8 +166,7 @@ describe('the shot’s view', () => {
     view_.fired();
     view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
     expect(flash.setVisible).toHaveBeenLastCalledWith(true);
-    const { x, y } = shotAt(at, 'east', aimer);
-    expect(flash.setPosition).toHaveBeenLastCalledWith(x, y);
+    expect(flash.setPosition).toHaveBeenLastCalledWith(xOf(at.x) + 1 * PPM, feetOf(at.y) - 0.5 * PPM);
     expect(flash.setOrigin).toHaveBeenLastCalledWith(0, 0.5);
     expect(view_.pose(standing, 'east').pose).toBe('aiming');
 
@@ -199,17 +198,17 @@ describe('the shot’s view', () => {
   it('shows no flash while they aren’t shown', () => {
     const { shots: view_, flash } = shots();
     view_.fired();
-    view_.update(1 / 60, undefined, 'east', undefined, view, 1);
+    view_.update(1 / 60, undefined, 'east', undefined, view, 1, aimer);
     expect(flash.setVisible).toHaveBeenLastCalledWith(false);
     expect(flash.setPosition).not.toHaveBeenCalled();
   });
 
   it('shows the weapon’s line only while there is one', () => {
     const { shots: view_, line } = shots();
-    view_.update(1 / 60, at, 'east', 'X  Plastic pistol', view, 1);
+    view_.update(1 / 60, at, 'east', 'X  Plastic pistol', view, 1, aimer);
     expect(line.setVisible).toHaveBeenLastCalledWith(true);
     expect(line.setText).toHaveBeenCalledWith('X  Plastic pistol');
-    view_.update(1 / 60, at, 'east', undefined, view, 1);
+    view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
     expect(line.setVisible).toHaveBeenLastCalledWith(false);
   });
 });

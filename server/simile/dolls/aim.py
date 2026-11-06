@@ -1,5 +1,4 @@
-"""The player aiming the pistol: one painting, an edit of their standing frame, with what each
-figure of theirs has fitted laid over it from that figure's own standing frame."""
+"""The player aiming the pistol: one painting, with each figure's own parts laid over it."""
 
 import hashlib
 import io
@@ -139,8 +138,7 @@ def near_parts(stand: Image.Image, combination: Combination) -> NDArray[np.bool_
 def fitted_over(
     aimed: Image.Image, stand: Image.Image, feet: tuple[float, float], combination: Combination
 ) -> Image.Image:
-    """`aimed` with what `stand` shows of `combination`: everything below `LOWER_FROM` for a part
-    of the lower body, so none of the trousers show round it, and the head's parts as they are."""
+    """`aimed` with what `stand` shows of `combination`, so no trousers show round the parts."""
     if not combination:
         return aimed
     on = stood(stand, feet)
@@ -157,8 +155,7 @@ def fitted_over(
 
 
 def add_frame(body: dict, aimed: Image.Image) -> bytes:
-    """Says in `body` that `aimed`, cropped, is its aim, and returns the aim's own atlas, lossless:
-    its parts are from an atlas already saved lossily, and a second time would wash them out."""
+    """Says in `body` that `aimed` is its aim, and returns the aim's own lossless atlas."""
     box = aimed.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
     box = (max(0, box[0] - PAD), max(0, box[1] - PAD), box[2] + PAD, box[3] + PAD)
     picture = aimed.crop(box)
@@ -198,8 +195,7 @@ def aim(
     cut: Cut = cut_out,
     log: Callable[[str], None] = print,
 ) -> Image.Image:
-    """Paints the aim once and adds it to every figure of the player's, keeping their other frames.
-    Returns the painting."""
+    """Paints the aim once, adds it to each of the player's figures, and returns the painting."""
     who = json.loads((directory / f"{PLAYER_ID}.json").read_text())
     with Image.open(directory / who["painted"]) as opened:
         stand = frame_of(opened.convert("RGBA"), who["frames"]["stand"])

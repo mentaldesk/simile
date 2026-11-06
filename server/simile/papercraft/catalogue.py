@@ -616,7 +616,8 @@ class Item:
     """A run, like a counter, drawn as wide as its cells by repeating its middle."""
     cut: tuple[str, ...] = ()
     """What else to cut away: a kind of painted shadow from `cutout.SHADOWS`, `gaps` of backdrop
-    showing through the object, and for a sketched piece `outline`, all that's off its sketch."""
+    showing through the object, and for a sketched piece `outline`, all that's off its sketch.
+    `solid` fills what that leaves see-through inside an object with no real gaps."""
     reseed: int = 0
     ref: str = CLEAN_ROOMS
     sketch: str | None = None
@@ -794,9 +795,11 @@ FURNITURE: dict[str, Item] = {
         cut=("gaps",),
         broken=(
             "Make the 3D printer broken and dead: no spool and no boat, an empty bed, the print "
-            "head of dark steel hanging down loose on its wires, a snapped drive belt dangling "
-            "from it and the green lamp dark grey. The frame, the bed and the stand stay solid "
-            "black metal."
+            "head of dark steel hanging down loose on its wires and a snapped drive belt dangling "
+            "from it. The tiny green ball lamp on its short orange wire, just inside the left post "
+            "of the frame, stays exactly there and exactly as tiny, but is now a plain solid dark "
+            "grey ball. Nothing sticks out past the frame. The frame, the bed and the stand stay "
+            "solid black metal."
         ),
     ),
     "recycler": clean(
@@ -808,10 +811,10 @@ FURNITURE: dict[str, Item] = {
         (512, 768),
         broken=(
             "Make the recycling machine broken and dead: the round window smashed open with "
-            "loose coloured wires spilling out, no pellets and an empty tray. The machine has "
-            "no power: nothing on it is lit, and the bright green lamp at the top right of the "
-            "cabinet is now plain black, the same as the lamp beside it. Only one funnel, as it "
-            "is."
+            "loose coloured wires spilling out, no pellets and an empty tray of solid dark grey "
+            "steel. The machine has no power: nothing on it is lit, and the bright green lamp at "
+            "the top right of the cabinet is now plain black, the same as the lamp beside it. "
+            "Only one funnel, as it is."
         ),
     ),
     "clean_lockers": clean(
@@ -821,7 +824,7 @@ FURNITURE: dict[str, Item] = {
         1.9,
         (512, 768),
         grey=True,
-        cut=("shadows",),
+        cut=("shadows", "solid"),
     ),
     "loom": clean(
         "a wooden floor loom of pale wood with colourful warp threads in rainbow stripes and a "

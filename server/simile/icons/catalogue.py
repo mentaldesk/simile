@@ -341,7 +341,8 @@ USABLES = (
         "lying flat and limp on their back, seen from the side, the head on the left and the "
         "feet on the right, the legs straight out and one arm flopped on the ground. The eyes "
         "are two small black crosses and the mouth hangs open, the skin has gone a sickly pale "
-        "grey, and a small pool of dark red blood lies on the ground under the body.",
+        "grey, and a small pool of dark red blood lies directly under the body. No ground, no "
+        "floor and no grey patch anywhere: only the body and the blood.",
         look="doll",
         over="player/lie",
     ),

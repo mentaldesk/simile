@@ -111,9 +111,12 @@ def test_a_figure_with_nothing_fitted_is_the_painting_alone_and_one_with_parts_s
     assert missing(aim.unarmed(worn, feet), SOME[-1], "stand", 0.7) == []
 
 
-def test_a_new_prompt_is_a_new_fingerprint(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(("name", "value"), [("WORDS", "other words"), ("REROLL", 1)])
+def test_a_new_prompt_or_reroll_is_a_new_fingerprint(
+    monkeypatch: pytest.MonkeyPatch, name: str, value: object
+) -> None:
     before = aim.fingerprint()
 
-    monkeypatch.setattr(aim, "REROLL", 1)
+    monkeypatch.setattr(aim, name, value)
 
     assert aim.fingerprint() != before

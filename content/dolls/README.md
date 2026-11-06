@@ -198,7 +198,9 @@ A figure with bionics takes everything below the hands from its own `stand` if i
 and its eye and datajack from there too. The aim is in a lossless atlas of its own, `<id>_aim.webp`,
 named by the frame's **`atlas`**: saving a figure's lossy atlas again would wash out the small bright
 parts, and all of them lossless wouldn't fit the budget. Its manifest's **`aimed`** is what it was
-painted from. `simile dolls paint player` writes manifests without it: run `simile dolls aim` after.
+painted from. `simile dolls paint player`, `simile dolls add player` and painting only a bionic's
+layer all write manifests without it, so run `simile dolls aim` after any of them. The tests fail
+until you do, and the client just stands. Painting the player also means painting the `corpse` icon.
 
 ## The flat-doll route
 

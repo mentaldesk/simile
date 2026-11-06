@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { LAYER_PLACES, layerCopies, parallaxY, streetCentreY } from './camera';
 import { pieceUrl, scenery, village } from './content';
 import { DEPTH } from './depths';
+import { furnitureKey } from './draw';
 import { House, isBroken, MOULDING } from './house';
 import { furniturePlacement, GROUND_LIFT_M, PPM, streetRow, TILE } from './layout';
 import { emptyLight, lightAt } from './light';
+import type { Placed } from './maps';
 import type { SceneryManifest } from './scenery';
 import { CITY_PARALLAX, LAMP_HEAD_M, StreetView } from './street-view';
 import type { SideTextures } from './textures';
@@ -381,9 +383,56 @@ describe('a machine you repair', () => {
     expect(isBroken(undefined)).toBe(false);
   });
 
-  it('never shows a broken picture among the colour variants a place picks from', () => {
-    for (const entry of Object.values(scenery.furniture)) {
-      expect(Object.values(entry.variants ?? {})).not.toContain(entry.broken ?? '');
+  it('is never picked as a colour variant, wherever it stands', () => {
+    const entry = { piece: 'working', variants: { blue: 'working-blue' }, broken: 'broken' };
+    const manifest = { furniture: { machine: entry } } as unknown as SceneryManifest;
+    const picked = new Set<string | undefined>();
+    for (let x = 0; x < 200; x++) picked.add(furnitureKey(manifest, { name: 'machine', x, y: 2, w: 1, h: 2 } as Placed, 'floor'));
+    expect(picked).toEqual(new Set(['working', 'working-blue']));
+  });
+
+  describe.each(['printer_3d', 'recycler'])('%s', (machine) => {
+    function room() {
+      const drawn: Drawn[] = [];
+      const map = village.map(scenery.buildings.maker_space.street)!;
+      const street = new StreetView(fakeScene(drawn), fakeTextures, { village, scenery, pieceUrl }, map);
+      const shown = (picture: string) =>
+        drawn.filter(({ key }) => typeof key === 'string' && key.includes(`furniture/${picture}`) && key.split('#')[0].endsWith(picture)).map(({ visible }) => visible);
+      return { street, house: street.house('maker_space')!, working: () => shown(machine), broken: () => shown(`${machine}-broken`) };
     }
+    const states = (state: 'broken' | 'working') => new Map([[machine, { state }]]);
+
+    it('swaps from broken to working once it is repaired, its shadow with it', () => {
+      const { street, house, working, broken } = room();
+      house.setShown(true);
+
+      street.showMachines(states('broken'));
+      expect(broken().length).toBeGreaterThan(1);
+      expect(new Set(broken())).toEqual(new Set([true]));
+      expect(new Set(working())).toEqual(new Set([false]));
+
+      street.showMachines(states('working'));
+      expect(new Set(broken())).toEqual(new Set([false]));
+      expect(new Set(working())).toEqual(new Set([true]));
+    });
+
+    it('draws neither while the house is shut, and the right one when it opens', () => {
+      const { street, house, working, broken } = room();
+      street.showMachines(states('broken'));
+      expect(new Set([...working(), ...broken()])).toEqual(new Set([false]));
+
+      house.setShown(true);
+      street.showMachines(states('broken'));
+      expect(new Set(broken())).toEqual(new Set([true]));
+      expect(new Set(working())).toEqual(new Set([false]));
+    });
+
+    it('is drawn working if nothing says otherwise', () => {
+      const { street, house, working, broken } = room();
+      house.setShown(true);
+      street.showMachines(new Map());
+      expect(new Set(working())).toEqual(new Set([true]));
+      expect(new Set(broken())).toEqual(new Set([false]));
+    });
   });
 });
