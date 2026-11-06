@@ -43,9 +43,26 @@ describe('usablesOn', () => {
     const searched = byId(on('high_street', { searched: ['maker_space_bench'] }), 'maker_space_floor_0/maker_space_bench');
     const box = boxOf(scenery, searched.picture);
     expect(searched.loot).toBeUndefined();
-    expect(searched.searched).toMatchObject({ x: box.left + box.width / 2, depth: DEPTH.furniture + 0.1 });
+    expect(searched.searched).toMatchObject({ x: xOf(MAKER.offset.x + 5.5), depth: DEPTH.furniture + 0.1 });
     expect(searched.searched!.y).toBeGreaterThan(box.top);
     expect(searched.searched!.y).toBeLessThan(box.top + box.height);
+  });
+
+  it("ticks only the one searched of Aris's bench and spool, where its loot lay on their one workbench", () => {
+    const bench = 'maker_space_floor_0/maker_space_bench';
+    const spool = 'maker_space_floor_0/maker_space_spool';
+    const fresh = on('high_street');
+    expect(byId(fresh, bench).picture).toEqual(byId(fresh, spool).picture);
+
+    const spooled = on('high_street', { searched: ['maker_space_spool'] });
+    expect(byId(spooled, spool).searched?.x).toBe(xOf(MAKER.offset.x + 4));
+    expect(byId(spooled, bench).searched).toBeUndefined();
+    expect(byId(spooled, bench).loot?.[0]?.x).toBe(xOf(MAKER.offset.x + 5.5));
+
+    const benched = on('high_street', { searched: ['maker_space_bench'] });
+    expect(byId(benched, bench).searched?.x).toBe(xOf(MAKER.offset.x + 5.5));
+    expect(byId(benched, spool).searched).toBeUndefined();
+    expect(byId(benched, spool).loot?.[0]?.x).toBe(xOf(MAKER.offset.x + 4));
   });
 
   it('marks the loft shelf searched, and nothing else', () => {

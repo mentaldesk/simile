@@ -280,14 +280,25 @@ def test_the_spool_joins_plastic_they_carry() -> None:
     assert searching.player.items == [plastic(9.5)]
 
 
-def test_a_stack_too_heavy_for_what_they_carry_is_left_whole_by_its_weight() -> None:
-    searching = Searching(Player(items=[lamp(), ANVIL, ANVIL]))
+def test_a_stack_with_room_for_a_unit_but_not_all_of_it_is_left_whole() -> None:
+    searching = Searching(Player(items=[lamp()], carry_limit=3.0))
 
     searching.e(SPOOL)
 
-    assert [item.id for item in searching.player.items] == ["lamp", "anvil", "anvil"]
+    assert searching.player.items == [lamp()]
     [left] = searching.player.left
     assert left.items == [plastic(8.0)]
-    searching.player.items = [lamp()]
+    searching.player.carry_limit = 5.0
     searching.e(SPOOL)
     assert searching.player.items == [lamp(), plastic(8.0)]
+
+
+def test_a_stack_found_uses_up_the_room_of_all_of_it() -> None:
+    bun = Item(id="bun", kind="food", name="Bun", weight=0.2)
+    maps = holding(SPOOL.map, ARIS_SPOOL, items=[plastic(4.0), bun])
+    searching = Searching(Player(items=[lamp()], carry_limit=3.1), maps)
+
+    searching.e(SPOOL)
+
+    assert searching.player.items == [lamp(), plastic(4.0)]
+    assert [pile.items for pile in searching.player.left] == [[bun]]

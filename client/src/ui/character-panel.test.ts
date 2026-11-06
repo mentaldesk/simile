@@ -288,8 +288,11 @@ describe('gear', () => {
     expect([loose.count, Number(loose.weight.toFixed(2))]).toEqual([6, 0.12]);
     expect(Number(load.toFixed(2))).toBe(1.87);
     expect(itemDetails(spool, carrying).lines[0]).toBe('3.5 of them, 0.5 kg each, 1.75 kg in all.');
-    const { page } = onGear({ ...STATE, player: { ...PLAYER, items: [plastic(0.5)] } });
+    const crumb: Player = { ...PLAYER, items: [plastic(0.5)] };
+    const { page } = onGear({ ...STATE, player: crumb });
     expect(page.querySelector('.character-count')?.textContent).toBe('×0.5');
+    expect(page.querySelector<HTMLElement>('[data-item="plastic"]')?.ariaLabel).toBe('Plastic ×0.5');
+    expect(itemDetails(gear(crumb).tiles[0], crumb).lines[0]).toBe('0.5 of them, 0.5 kg each, 0.25 kg in all.');
   });
 
   it('has a tile per kind of item in the order they got it, with its count, weight and picture', () => {

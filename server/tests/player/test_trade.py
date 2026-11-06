@@ -186,7 +186,8 @@ def test_a_part_sold_is_bought_back_at_twice_what_it_fetched(at: Point, place: s
     assert platform.balanced()
 
 
-def test_buying_back_a_stack_counts_its_whole_weight() -> None:
+@pytest.mark.parametrize(("carry_limit", "bought"), [(2.0, False), (3.0, True)])
+def test_buying_back_a_stack_counts_its_whole_weight(carry_limit: float, bought: bool) -> None:
     stack = Item(
         id="plastic",
         kind=ItemKind.MATERIAL,
@@ -195,11 +196,12 @@ def test_buying_back_a_stack_counts_its_whole_weight() -> None:
         amount=4.0,
         material=Material.PLASTIC,
     )
-    platform = Platform(Player(money=100, carry_limit=1.0))
+    platform = Platform(Player(money=100, carry_limit=carry_limit))
     platform.stand(STALL)
     platform.player.sales = [Sale(item=stack, place=platform.trade.buyer().place, price=1)]
 
-    assert not platform.trade.buy("plastic")
+    assert platform.player.load == 1.0
+    assert platform.trade.buy("plastic") is bought
 
 
 def test_only_what_was_sold_is_on_offer_and_only_where_it_was_sold() -> None:

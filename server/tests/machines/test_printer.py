@@ -12,6 +12,7 @@ from simile.machines.materials import plastic
 from simile.machines.printer import PISTOL, ROUNDS
 from simile.machines.workshop import Workshop, register_offers
 from simile.persistence import player_of
+from simile.player.pickups import joined
 from simile.schema import PLAYER_ID, Item, ItemKind, Material, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.village import ARIS_SPOOL
@@ -134,13 +135,50 @@ def test_it_uses_plastic_across_stacks_and_leaves_what_is_over() -> None:
     ]
 
 
-def test_plastic_used_up_to_a_rounding_error_leaves_no_stack() -> None:
-    player = Player(items=[plastic(0.1 + 0.2), plastic(1.7)], repaired=[PRINTER])
+def added_up(amount: float, times: int) -> Item:
+    """A stack grown by joining, with the rounding error that leaves."""
+    items = [plastic(amount)]
+    for _ in range(times - 1):
+        items = joined(items, [plastic(amount)])
+    return items[0]
+
+
+@pytest.mark.parametrize(
+    ("amount", "times", "cost"),
+    [(0.1, 20, 2.0000000000000004), (0.2, 10, 1.9999999999999998)],
+)
+def test_plastic_a_rounding_error_from_the_cost_prints_and_leaves_no_stack(
+    amount: float, times: int, cost: float
+) -> None:
+    stack = added_up(amount, times)
+    assert stack.amount == cost
+    player = Player(items=[stack], repaired=[PRINTER])
 
     assert printer(player).make(PRINTER, ROUNDS.id)
 
     assert [item.id for item in player.items] == [ROUNDS.id]
-    assert Player.model_validate_json(player.model_dump_json()).items == player.items
+
+
+@pytest.mark.parametrize(("short", "prints"), [(5e-10, True), (5e-9, False)])
+def test_plastic_short_of_the_cost_prints_only_within_the_panels_tolerance(
+    short: float, prints: bool
+) -> None:
+    player = Player(items=[plastic(2 - short)], repaired=[PRINTER])
+
+    assert printer(player).make(PRINTER, ROUNDS.id) is prints
+
+
+def test_each_item_it_prints_is_its_own_object() -> None:
+    player = Player(items=[plastic(16.0)], repaired=[PRINTER])
+    shop = printer(player)
+
+    assert shop.make(PRINTER, PISTOL.id) and shop.make(PRINTER, PISTOL.id)
+    assert shop.make(PRINTER, ROUNDS.id)
+
+    first, second, rounds = player.items[-3:]
+    assert first is not second
+    assert first is not PISTOL and second is not PISTOL
+    assert rounds is not ROUNDS
 
 
 def test_too_little_plastic_changes_nothing() -> None:
@@ -161,7 +199,7 @@ def test_it_prints_only_while_they_stand_at_it() -> None:
 
 @pytest.mark.parametrize(
     ("ballast", "fits"),
-    [(10.88, True), (10.89, False)],
+    [(10.88, True), (10.88 + 5e-10, True), (10.88 + 5e-9, False), (10.89, False)],
 )
 def test_it_refuses_what_wouldnt_fit_as_the_panels_load_after_does(
     ballast: float, fits: bool
@@ -195,8 +233,7 @@ def moved(client: TestClient, app: Starlette, ws: Any, at: Point) -> None:
 
 
 def carrying(ws: Any, item: str, seconds: float = 5) -> dict[str, Any]:
-    """The next `player_state` showing `item` among what they carry, failing rather than hanging:
-    `receive_json` has no timeout."""
+    """The next `player_state` showing `item`, or a timeout: `receive_json` has none."""
 
     def read() -> dict[str, Any]:
         for _ in range(500):

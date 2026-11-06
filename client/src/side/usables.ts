@@ -131,9 +131,9 @@ function cluePicture(map: SideMap, clue: Clue): IconSprite | undefined {
   return { icon: look.icon, height: look.m * PPM, x: xOf(map.offset.x + clue.x), y, originX: 0.5, originY: 1, depth: DEPTH.stairs + ABOVE };
 }
 
-function tickOn(manifest: SceneryManifest, sprite: Sprite) {
-  const { left, top, width, height } = boxOf(manifest, sprite);
-  return { x: left + width / 2, y: top + Math.min(height * 0.45, 0.6 * PPM), depth: sprite.depth + ABOVE };
+function tickOn(manifest: SceneryManifest, sprite: Sprite, x: number) {
+  const { top, height } = boxOf(manifest, sprite);
+  return { x, y: top + Math.min(height * 0.45, 0.6 * PPM), depth: sprite.depth + ABOVE };
 }
 
 /** What E uses on the street shown and its floors, and what each looks like. */
@@ -153,7 +153,7 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       if (!picture) continue;
       const usable: Usable = { id: thingId(map.id, thing.name), kind: thing.type, ...at, picture };
       const holding = held.get(thing.name);
-      if (state.searched.includes(thing.name)) usable.searched = tickOn(manifest, picture);
+      if (state.searched.includes(thing.name)) usable.searched = tickOn(manifest, picture, spotOn(manifest, map, thing).x);
       else if (holding && holds(holding) && searches(holding, state.searched, !!state.jacked)) {
         usable.loot = heapAt(lootIcons(holding), spotOn(manifest, map, thing));
       }

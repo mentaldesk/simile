@@ -55,7 +55,7 @@ def _printing(product: Product) -> Callable[[Player], bool]:
         if after > player.carry_limit + 1e-9:
             return False
         rest = _without(player.items, product.uses, product.cost)
-        player.items = joined(rest, [product.item])
+        player.items = joined(rest, [product.item.model_copy()])
         logger.info("The player prints %s", product.item.name)
         return True
 

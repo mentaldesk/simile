@@ -411,3 +411,46 @@ def test_a_stack_they_pick_up_joins_the_first_of_its_id() -> None:
 
 def test_only_material_and_rounds_join() -> None:
     assert joined([BUN], [BUN]) == [BUN, BUN]
+
+
+def test_joined_keeps_different_ids_of_a_kind_apart() -> None:
+    other = spooled(1.0).model_copy(update={"id": "other_plastic"})
+
+    assert joined([spooled(2.0)], [other]) == [spooled(2.0), other]
+
+
+def test_joined_adds_to_the_first_of_its_id() -> None:
+    carried = [spooled(1.0), BUN, spooled(2.0)]
+
+    assert joined(carried, [spooled(3.0)]) == [spooled(4.0), BUN, spooled(2.0)]
+
+
+def test_a_stack_in_a_pile_joins_what_they_carry() -> None:
+    tunnels = Tunnels(Player(items=[spooled(2.0), lamp()], left=[at(10, spooled(1.5))]))
+    tunnels.stand(10)
+
+    assert tunnels.pickups.pick_up()
+
+    assert tunnels.player.items == [spooled(3.5), lamp()]
+    assert tunnels.player.left == []
+
+
+def test_a_stack_in_a_pile_that_fits_only_a_unit_at_a_time_stays_whole() -> None:
+    pile = at(10, spooled(8.0))
+    tunnels = Tunnels(Player(items=[], carry_limit=3.0, left=[pile]))
+    tunnels.stand(10)
+
+    assert not tunnels.pickups.pick_up()
+
+    assert tunnels.player.items == []
+    assert tunnels.player.left == [pile]
+
+
+def test_a_stack_from_a_pile_uses_up_the_room_of_all_of_it() -> None:
+    tunnels = Tunnels(Player(items=[], carry_limit=2.1, left=[at(10, spooled(4.0), BUN)]))
+    tunnels.stand(10)
+
+    assert tunnels.pickups.pick_up()
+
+    assert tunnels.player.items == [spooled(4.0)]
+    assert [pile.items for pile in tunnels.player.left] == [[BUN]]
