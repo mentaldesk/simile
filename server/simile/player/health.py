@@ -10,6 +10,7 @@ from starlette.applications import Starlette
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
 from simile.player.lamp import DEFAULT_LAMP
 from simile.player.where import here, location
+from simile.protocol import Vital
 from simile.schema import PRESENT, Body, BodyPart, Effect, EffectKind, Id, Location, Player
 from simile.sim import Clock
 from simile.world.map import FLOORS, MAP_DIR
@@ -44,8 +45,8 @@ class HealthConfig(BaseModel):
         gt=0,
         description="Real seconds resting in their bed at home, once they've lain down, takes to "
         "heal them from none to full, whatever the sim's speed: as long as a plug takes to charge "
-        "the lamp. They rest from `rest` until they're full, move off the bed, are infected, "
-        "collapse or get up.",
+        "the lamp. They rest from `rest` until they're full, move off the bed, are infected or "
+        "starving, die or get up.",
     )
     lie_down: float = Field(
         default=0.8,
@@ -53,7 +54,7 @@ class HealthConfig(BaseModel):
         description="Real seconds lying down in bed takes, before resting heals them faster.",
     )
     waking: float = Field(
-        default=0.25, gt=0, le=1, description="Their health when they wake after collapsing."
+        default=0.25, gt=0, le=1, description="Their health when they wake after dying."
     )
     bitten: float = Field(
         default=0.2,
@@ -120,7 +121,7 @@ def kidneys(body: Body) -> int:
 
 class Health:
     """The player's health and ailments: hurting, healing, fading, an untreated bite turning
-    infected, resting in bed, and collapsing at none. Tick it on the sim loop. `beds` are the cells
+    infected, resting in bed, and dying at none. Tick it on the sim loop. `beds` are the cells
     where they can rest, by default the beds in their home."""
 
     def __init__(
@@ -130,7 +131,7 @@ class Health:
         clock: Clock,
         *,
         playing: Callable[[], bool] = lambda: True,
-        collapse: Callable[[], None] = lambda: None,
+        die: Callable[[Vital], None] = lambda cause: None,
         night: Callable[[], bool] = lambda: False,
         beds: Collection[Spot] | None = None,
         config: HealthConfig = DEFAULT_HEALTH,
@@ -139,7 +140,7 @@ class Health:
         self.movement = movement
         self.clock = clock
         self.playing = playing
-        self.collapse = collapse
+        self.die = die
         self.night = night
         """Whether a rest now sleeps until morning, well or infected."""
         self.config = config
@@ -158,11 +159,11 @@ class Health:
         self._fade(hours)
         self._infect()
         infection = self.effect(EffectKind.INFECTION)
+        if (infection is not None or self.starving()) and not self.overnight:
+            self.lain = None
         if infection is not None:
-            if not self.overnight:
-                self.lain = None
             self.hurt(self.config.infection * infection.strength * hours)
-        elif self.player.health < 1:
+        elif self.player.health < 1 and not self.starving():
             self.player.health = min(self.player.health + self.healing(dt), 1.0)
         if self.resting():
             self.lying -= dt / self.clock.speed
@@ -171,7 +172,7 @@ class Health:
 
     def rest(self, on: bool, *, woken: bool = False) -> bool:
         """Lies them down in the bed where they stand, or gets them up. Whether it did. Having
-        `woken` there from a collapse, they're lying down already."""
+        `woken` there from dying, they're lying down already."""
         if not on:
             resting = self.resting()
             self.lain = None
@@ -181,26 +182,26 @@ class Health:
             return False
         overnight = not woken and self.night()
         infected = self.effect(EffectKind.INFECTION) is not None
-        if not overnight and (self.player.health >= 1 or infected):
+        if not overnight and (self.player.health >= 1 or infected or self.starving()):
             return False
         self.lain, self.lying = bed, 0.0 if woken else self.config.lie_down
         self.overnight = overnight
         return True
 
     def home_bed(self) -> Spot | None:
-        """The bed they wake in after collapsing: one of their `beds`."""
+        """The bed they wake in after dying: one of their `beds`."""
         return min(self.beds, default=None)
 
-    def hurt(self, damage: float) -> None:
-        """Takes `damage` of their health, collapsing them at none."""
+    def hurt(self, damage: float, cause: Vital = Vital.HEALTH) -> None:
+        """Takes `damage` of their health, and at none they die of `cause`."""
         health = self.player.health - damage
-        if health > 0:
+        if health > 1e-9:
             self.player.health = health
             return
-        self.player.health = self.config.waking
+        self.player.health = 0.0
         self.lain = None
         logger.info("%s  The player has no health left", self.clock)
-        self.collapse()
+        self.die(cause)
 
     def bite(self, damage: float) -> None:
         """A rat bites them: it takes `damage`, and the bite may turn infected if it isn't
@@ -222,6 +223,10 @@ class Health:
 
     def effect(self, kind: EffectKind) -> Effect | None:
         return next((effect for effect in self.player.effects if effect.kind is kind), None)
+
+    def starving(self) -> bool:
+        """Whether hunger is full: no health comes back until they eat."""
+        return self.player.hunger >= 1
 
     def fading(self, kind: EffectKind) -> float | None:
         """How fast `kind` fades now, slower with one kidney, or None if it lasts until treated."""
@@ -251,8 +256,8 @@ class Health:
         return self.resting() and self.lying < 1e-9
 
     def resting(self) -> bool:
-        """Whether they're lying in bed, from `rest` until they're full, move off it, are infected,
-        collapse or get up. A rest at night goes on until morning, well or infected."""
+        """Whether they're lying in bed, from `rest` until they're full, move off it, are infected
+        or starving, die or get up. A rest at night goes on until morning, well or infected."""
         if self.lain is not None and self.bed() != self.lain:
             self.lain = None
         return self.lain is not None

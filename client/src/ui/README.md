@@ -121,21 +121,21 @@ prompts from their own tasks.
 The top-left corner shows the player's hunger from the last `player_state` (`playerState` in
 [`net/`](../net/index.ts)), in [`hunger.ts`](hunger.ts):
 
-- "You're hungry." from 0.5, and "You're starving. Eat soon, or you'll collapse." from 0.85. The
-  server collapses them at 1.
+- "You're hungry." from 0.5, "You're starving. Eat soon, or you'll die." from 0.85, and "You're
+  starving to death. Eat now." at 1, when the server starts to hurt them.
 - From 0.3, what F eats: the meal on offer where they stand if they can pay ("Press F to eat at
   home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
-- For six seconds after `player_died`, why they collapsed, by its `cause`: "You collapsed from
-  hunger and woke at home.", "Your power cell ran flat. You collapsed and woke at home.", or "You
-  collapsed from your wounds and woke at home." The world scene puts the player at home.
+- For six seconds after `player_died`, why they died, by its `cause`: "You starved to death, and
+  woke in your bed in a new body.", "Your power cell ran flat and you died. You woke in your bed in
+  a new body.", or "You died of your wounds, and woke in your bed in a new body." The world scene
+  puts the player at home.
 - **On a power cell** (a `power_cell` grade in their stomach) they never eat: no F, no meals, and
   no hunger. The corner says "Your power is low. Charge it at a plug." from 30% power, and "Your
-  power cell is nearly flat. Charge it at a plug, or you'll collapse." from 10%.
+  power cell is nearly flat. Charge it at a plug, or you'll die." from 10%.
 - **Health** (`healthFeeling`), on a line of its own: "You're hurt. Rest at home to heal faster."
-  from 60%, and "You're badly hurt. Rest at home or get patched up at the clinic, or you'll
-  collapse." from 25%. A rat bite says "A rat bit you. Have the clinic clean it before it turns.",
+  from 60%, and "You're badly hurt. Rest at home or get patched up at the clinic, or you'll die." from 25%. A rat bite says "A rat bit you. Have the clinic clean it before it turns.",
   and an infection, above all else, "Your bite is infected. It won't heal until the clinic treats
   it." While `player_state` says they're `resting` in their bed at home, which heals them as fast
   as a plug charges, it says "Resting. Your health comes back." until they're full. The character
@@ -149,7 +149,7 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
 
 Every time the player takes damage, the screen says so (#468). `Hurts` in [`hurt.ts`](hurt.ts) hears
 a hit from `player_state`'s health dropping by 0.015 or more, so an infection's slow drain (0.01 at a
-time) isn't one, or from `player_died` with `cause: health`. A hit's `strength` is the health it
+time) isn't one, or from `player_died` with `cause` `health` or `hunger`. It forgets the health it last heard at `player_died`, so waking with less isn't one. A hit's `strength` is the health it
 took over a bot's or a dog's 0.1, up to 1: a bat's is 0.3, a rat's bite 0.5. It forgets the health it
 last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` hears each one.
 

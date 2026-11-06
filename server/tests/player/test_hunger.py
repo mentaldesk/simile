@@ -3,25 +3,22 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
-from simile.economy import PILES, PLAYER, Batch, Kind
+from simile.economy import PLAYER, Batch, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.player.hunger import Hunger
-from simile.protocol import Meal, Shut, ShutReason, Vital
+from simile.player.config import DEFAULT_CONFIG
+from simile.player.hunger import DEFAULT_STARVING, Hunger
+from simile.protocol import Meal, Shut, ShutReason
 from simile.schema import (
     PLAYER_ID,
     Bionic,
     Body,
-    Effect,
-    EffectKind,
     Item,
     ItemKind,
-    MapTile,
     Npc,
     Pay,
     PayKind,
-    Pile,
     Player,
     lamp,
 )
@@ -75,7 +72,7 @@ class Village:
         self.economy = Economy(self.world.clock, behaviour, player=self.player)
         self.open: set[str] = {"noodle_bar", "coffee_shop"}
         self.playing = True
-        self.woke: list[tuple[MapTile, Vital]] = []
+        self.pangs: list[float] = []
         self.hunger = Hunger(
             self.player,
             self.movement,
@@ -83,7 +80,7 @@ class Village:
             supply=self.supply,
             economy=self.economy,
             playing=lambda: self.playing,
-            collapsed=lambda home, cause: self.woke.append((home, cause)),
+            pang=self.pangs.append,
         )
 
     def supply(self, goal: Goal, need: Need) -> float:
@@ -242,117 +239,69 @@ def test_eating_never_takes_hunger_below_nothing() -> None:
     assert village.player.hunger == 0
 
 
-def test_starving_collapses_them_at_home_with_what_they_carried_left_where_they_fell() -> None:
-    lit = lamp().model_copy(update={"charge": 0.3, "on": True})
-    village = Village(Player(items=[WIRE, lit, BUN], hunger=0.999))
-    village.stand(12.3, 15, "kapok_walk")
+def test_hunger_stops_at_starving_and_hurts_every_twelve_sim_minutes() -> None:
+    village = Village(Player(hunger=1.0))
 
+    village.hunger.tick(11 * 60)
+    assert village.player.hunger == 1
+    assert village.pangs == []
     village.hunger.tick(60)
-
-    assert village.player.hunger == 0.75
-    assert village.player.items == [lit]
-    assert village.player.left == [
-        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE, BUN])
-    ]
-    assert village.here() == HOME
-    assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.HUNGER)]
+    assert village.pangs == [DEFAULT_STARVING.damage]
+    village.hunger.tick(2 * DEFAULT_STARVING.every * 3600)
+    assert village.pangs == [DEFAULT_STARVING.damage] * 3
+    assert village.player.hunger == 1
 
 
-def test_with_a_bed_at_home_they_wake_in_it() -> None:
-    village = Village(Player(hunger=0.999))
-    village.hunger.bed = lambda: BED
-    village.stand(12.3, 15, "kapok_walk")
+def test_from_fed_to_starved_to_death_takes_six_sim_hours() -> None:
+    assert 1 / DEFAULT_CONFIG.rise == 4
+    assert round(1 / DEFAULT_STARVING.damage) * DEFAULT_STARVING.every == pytest.approx(2)
 
+
+def test_eating_stops_the_pangs_and_starts_their_count_again() -> None:
+    village = Village(Player(hunger=1.0, items=[lamp(), BUN]))
+    village.hunger.tick(11 * 60)
+
+    assert village.hunger.eat("pork_bun")
+    village.hunger.tick(11 * 60)
+    assert village.pangs == []
+    assert village.player.hunger < 1
+
+    village.player.hunger = 1.0
+    village.hunger.tick(11 * 60)
+    assert village.pangs == []
     village.hunger.tick(60)
-
-    assert village.here() == Point(BED.x, BED.y, BED.map)
-    assert village.woke == [(MapTile(map=BED.map, x=BED.x, y=BED.y), Vital.HUNGER)]
+    assert village.pangs == [DEFAULT_STARVING.damage]
 
 
-def test_their_money_is_left_with_what_they_carried_and_every_effect_clears() -> None:
-    bite = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=NOW)
-    sick = Effect(kind=EffectKind.INFECTION, strength=0.2, fades=None, since=NOW)
-    village = Village(Player(items=[lamp(), WIRE], money=31.5, effects=[bite, sick]))
-    village.stand(12, 15, "kapok_walk")
+def test_a_pang_that_wakes_them_fed_stops_the_rest_of_the_tick() -> None:
+    village = Village(Player(hunger=1.0))
 
-    village.hunger.collapse(Vital.HEALTH)
+    def killed(damage: float) -> None:
+        village.pangs.append(damage)
+        village.player.hunger = DEFAULT_CONFIG.waking
 
-    assert village.player.money == 0
-    assert village.player.effects == []
-    assert village.player.left == [
-        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE], money=31.5)
-    ]
-    dropped = village.economy.ledger.entries
-    assert [(e.kind, e.amount, e.payer, e.payee) for e in dropped] == [
-        (Kind.DROPPED, 31.5, PLAYER, PILES)
-    ]
-    assert village.economy.ledger.gap(village.economy.money) == 0
+    village.hunger.pang = killed
+    village.hunger.tick(3600)
+
+    assert village.pangs == [DEFAULT_STARVING.damage]
 
 
-def test_money_alone_is_left_in_a_pile_of_its_own() -> None:
-    village = Village(Player(money=8.0))
-    village.stand(12, 15, "kapok_walk")
+def test_nothing_hurts_while_nobody_is_playing() -> None:
+    village = Village(Player(hunger=1.0))
+    village.playing = False
 
-    village.hunger.collapse(Vital.POWER)
+    village.hunger.tick(3600)
 
-    assert village.player.money == 0
-    assert village.player.left == [
-        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[], money=8.0)
-    ]
+    assert village.pangs == []
 
 
-@pytest.mark.parametrize(
-    ("x", "y", "ground"),
-    [(17.2, 5.6, (17, 8)), (22.4, 5, (22, 15)), (3, 13.5, (3, 15))],
-    ids=["over_a_roof", "over_a_gap", "on_a_ladder"],
-)
-def test_what_they_carried_falls_to_the_ground_below(
-    x: float, y: float, ground: tuple[int, int]
-) -> None:
-    village = Village(Player(items=[lamp(), WIRE], hunger=1 - 1e-9))
-    village.stand(x, y, "rooftops")
+def test_a_power_cell_ends_starving() -> None:
+    village = Village(Player(hunger=1.0, body=Body(stomach=Bionic.POWER_CELL)))
 
-    village.hunger.tick(1)
+    village.hunger.tick(3600)
 
-    fell = MapTile(map="rooftops", x=ground[0], y=ground[1])
-    assert village.player.left == [Pile(at=fell, items=[WIRE])]
-
-
-@pytest.mark.parametrize("items", [[], [lamp()]], ids=["nothing", "only_the_lamp"])
-def test_collapsing_with_nothing_but_the_lamp_leaves_nothing(items: list[Item]) -> None:
-    village = Village(Player(items=items, hunger=0.9999))
-    village.stand(70, 15, "high_street")
-
-    village.hunger.collapse()
-
-    assert village.player.items == items
-    assert village.player.left == []
-    assert village.here() == HOME
-
-
-def test_each_collapse_leaves_another_pile_after_the_last() -> None:
-    village = Village(Player(items=[lamp(), WIRE]))
-    village.stand(70, 15, "high_street")
-    village.hunger.collapse()
-    village.player.items = [*village.player.items, BUN]
-    village.stand(30, 15, "lychee_lane")
-
-    village.hunger.collapse()
-
-    assert [pile.at for pile in village.player.left] == [
-        MapTile(map="high_street", x=70, y=15),
-        MapTile(map="lychee_lane", x=30, y=15),
-    ]
-
-
-def test_a_collapse_before_the_server_knows_where_they_are_keeps_what_they_carry() -> None:
-    village = Village(Player(items=[lamp(), WIRE]))
-
-    village.hunger.collapse()
-
-    assert village.player.items == [lamp(), WIRE]
-    assert village.player.left == []
-    assert village.here() == HOME
+    assert village.player.hunger == 0
+    assert village.pangs == []
 
 
 def test_a_power_cell_clears_hunger_and_takes_meals_off_the_menu() -> None:
@@ -367,15 +316,6 @@ def test_a_power_cell_clears_hunger_and_takes_meals_off_the_menu() -> None:
     assert not village.hunger.eat(None)
     assert not village.hunger.eat("pork_bun")
     assert village.player.items == [lamp(), BUN]
-
-
-def test_a_collapse_for_power_leaves_hunger_alone_and_says_why() -> None:
-    village = Village(Player(body=Body(stomach=Bionic.POWER_CELL)))
-
-    village.hunger.collapse(Vital.POWER)
-
-    assert village.player.hunger == 0
-    assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.POWER)]
 
 
 def at_the_noodle_bar(now: datetime) -> Village:

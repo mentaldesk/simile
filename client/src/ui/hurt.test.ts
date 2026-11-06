@@ -40,11 +40,22 @@ describe('getting hurt', () => {
     expect(hits).toEqual([]);
   });
 
-  it('is dying of their wounds, at full strength, but not from hunger', () => {
+  it('is dying of wounds or starving, at full strength, but not a cell running flat', () => {
     const { hits, send } = watch();
     const position = { x: 1, y: 1, map: 'house_1_floor_0' };
-    send({ type: 'player_died', cause: 'hunger', position });
+    const full = { size: FULL_HIT, strength: 1 };
+    send({ type: 'player_died', cause: 'power', position });
+    expect(hits).toEqual([]);
     send({ type: 'player_died', cause: 'health', position });
-    expect(hits).toEqual([{ size: FULL_HIT, strength: 1 }]);
+    send({ type: 'player_died', cause: 'hunger', position });
+    expect(hits).toEqual([full, full]);
+  });
+
+  it('does not take waking in a new body with less health for a hit', () => {
+    const { hits, health, send } = watch();
+    health(1);
+    send({ type: 'player_died', cause: 'power', position: { x: 1, y: 1, map: 'house_1_floor_0' } });
+    health(0.25);
+    expect(hits).toEqual([]);
   });
 });

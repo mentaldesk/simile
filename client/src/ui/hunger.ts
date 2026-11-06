@@ -7,17 +7,17 @@ import { EAT_KEY, NEWS_KEY } from './tuning';
 /** Hunger from which F eats. */
 export const PECKISH = 0.3;
 export const HUNGRY = 0.5;
-/** The server collapses the player at 1. */
+/** From 1 starving hurts until they eat. */
 export const STARVING = 0.85;
-/** Power from which they're warned to charge, and from which they're told they'll collapse. */
+/** Power from which they're warned to charge, and from which they're told they'll die. */
 export const LOW_POWER = 0.3;
 export const FLAT = 0.1;
-/** Health from which they're told they're hurt, and from which they're warned they'll collapse. */
+/** Health from which they're told they're hurt, and from which they're warned they'll die. */
 export const HURT = 0.6;
 export const BADLY_HURT = 0.25;
 export const RESTING = 'Resting. Your health comes back.';
 export const REST_PROMPT = `Press ${NEWS_KEY.toUpperCase()} to rest.`;
-const COLLAPSED_MS = 6000;
+const DIED_MS = 6000;
 const DAY_MS = 86_400_000;
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -34,13 +34,14 @@ const key = (name: string) => name.toUpperCase();
 export const onCell = (player: Player): boolean => player.body.stomach?.startsWith('power_cell') ?? false;
 
 export function feeling(hunger: number): string | undefined {
-  if (hunger >= STARVING) return "You're starving. Eat soon, or you'll collapse.";
+  if (hunger >= 1) return "You're starving to death. Eat now.";
+  if (hunger >= STARVING) return "You're starving. Eat soon, or you'll die.";
   if (hunger >= HUNGRY) return "You're hungry.";
   return undefined;
 }
 
 export function powerFeeling(power: number): string | undefined {
-  if (power <= FLAT) return "Your power cell is nearly flat. Charge it at a plug, or you'll collapse.";
+  if (power <= FLAT) return "Your power cell is nearly flat. Charge it at a plug, or you'll die.";
   if (power <= LOW_POWER) return 'Your power is low. Charge it at a plug.';
   return undefined;
 }
@@ -51,7 +52,7 @@ export function healthFeeling(player: Player, resting = false): string | undefin
   const health = player.health ?? 1;
   if (has('infection')) return "Your bite is infected. It won't heal until the clinic treats it.";
   if (resting && health < 1) return RESTING;
-  if (health <= BADLY_HURT) return "You're badly hurt. Rest at home or get patched up at the clinic, or you'll collapse.";
+  if (health <= BADLY_HURT) return "You're badly hurt. Rest at home or get patched up at the clinic, or you'll die.";
   if (has('rat_bite')) return 'A rat bit you. Have the clinic clean it before it turns.';
   if (health <= HURT) return "You're hurt. Rest at home to heal faster.";
   return undefined;
@@ -110,40 +111,40 @@ export function eatPrompt(state: PlayerStateMessage, now: string | undefined = s
   return 'Eat at home, or at the café or the noodle bar.';
 }
 
-export const COLLAPSED: Record<Vital, string> = {
-  hunger: 'You collapsed from hunger and woke at home.',
-  power: 'Your power cell ran flat. You collapsed and woke at home.',
-  health: 'You collapsed from your wounds and woke at home.',
+export const DIED: Record<Vital, string> = {
+  hunger: 'You starved to death, and woke in your bed in a new body.',
+  power: 'Your power cell ran flat and you died. You woke in your bed in a new body.',
+  health: 'You died of your wounds, and woke in your bed in a new body.',
 };
 
-type Line = 'collapsed' | 'feeling' | 'health' | 'rest' | 'eat' | 'pile' | 'sell';
+type Line = 'died' | 'feeling' | 'health' | 'rest' | 'eat' | 'pile' | 'sell';
 
 /** How hungry the player is and what they can eat, or how much power they have, and how hurt they are, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
   readonly corner: HTMLElement;
   private readonly lines = new Map<Line, HTMLElement>();
-  private collapsedUntil = 0;
+  private diedUntil = 0;
   private cause: Vital = 'hunger';
 
   constructor(parent: HTMLElement) {
     const root = (this.corner = parent.appendChild(document.createElement('div')));
     root.className = 'hunger-hint';
-    for (const line of ['collapsed', 'feeling', 'health', 'rest', 'eat', 'pile', 'sell'] as const) {
+    for (const line of ['died', 'feeling', 'health', 'rest', 'eat', 'pile', 'sell'] as const) {
       const element = root.appendChild(document.createElement('div'));
       element.hidden = true;
       this.lines.set(line, element);
     }
   }
 
-  collapsed(cause: Vital = 'hunger', now = Date.now()): void {
+  died(cause: Vital = 'hunger', now = Date.now()): void {
     this.cause = cause;
-    this.collapsedUntil = now + COLLAPSED_MS;
+    this.diedUntil = now + DIED_MS;
   }
 
   /** `used` is what E uses, if any: a pile to pick up from, or their bed. */
   update(state: PlayerStateMessage | undefined, used: Reachable | undefined, now = Date.now()): void {
     const pile = used?.kind === 'pile' ? used.pile : undefined;
-    this.show('collapsed', now < this.collapsedUntil ? COLLAPSED[this.cause] : undefined);
+    this.show('died', now < this.diedUntil ? DIED[this.cause] : undefined);
     this.show('feeling', state && feelingOf(state.player));
     this.show('health', state && healthFeeling(state.player, !!state.resting));
     this.show('rest', used?.kind === 'bed' ? REST_PROMPT : undefined);

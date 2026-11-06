@@ -207,7 +207,7 @@ def test_a_daytime_rest_heals_and_ends_at_full_health_without_a_skip() -> None:
     assert sleeper.world.clock.time_of_day < 14.01
 
 
-def test_waking_in_bed_after_a_collapse_at_night_rests_without_a_skip() -> None:
+def test_waking_in_bed_after_dying_at_night_rests_without_a_skip() -> None:
     sleeper = Sleeper(2.75, Player(health=0.25))
 
     assert sleeper.health.rest(True, woken=True)

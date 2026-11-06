@@ -270,7 +270,7 @@ describe('going to bed', () => {
 });
 
 describe('the player', () => {
-  it('starts where the snapshot says, or at home once they collapse', () => {
+  it('starts where the snapshot says, or at home once they die', () => {
     const player = { id: 'player', kind: 'player', name: 'You', position: { x: 51, y: 15, map: 'high_street' } };
     server.dispatch(JSON.stringify({ type: 'snapshot', time: '2026-03-14T09:10:03Z', map_id: 'high_street', entities: [player], conversations: [] }));
     expect(sideResidents.start).toEqual({ x: 51, y: 15, map: 'high_street' });

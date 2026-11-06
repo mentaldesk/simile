@@ -8,7 +8,7 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
 
 ## Hunger
 
-- **It rises** by `rise` (0.25) a sim hour, from fed (0) to collapsing (1) in four hours, but only
+- **It rises** by `rise` (0.25) a sim hour, from fed (0) to starving (1) in four hours, but only
   while a client is in the game: one that has sent a player position since it connected
   (`InGame`). Nobody starves while the game is closed or on the menu or the character creator, and
   `simile headless` and `simile behaviour simulate` never change the player.
@@ -29,18 +29,40 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
     gone, otherwise `closed` (off shift, or past the café's last orders). It opens at the next
     start after now of its keeper's shifts (`hours.py`), so while a keeper is late it's their next
     shift, and never while nobody works there.
-- **Collapsing.** At 1 they collapse. Their money and everything they carry but the lamp is left
-  in a `Pile` where they fell, on the ground below if they were mid-air or partway up stairs or a
-  ladder, at the end of `Player.left`, the money through the ledger as `dropped`, and every
-  effect clears. They wake in their bed at home, already resting (see *Resting*), or at the entry
-  of `home` if it has no bed, with hunger `waking` (0.75), and the client gets `player_died`
-  to put them there, with `cause` `hunger`. The lamp stays with them, so they can see to go back
-  for the rest. A collapse for health or power takes the same path.
+- **Starving.** At 1 hunger stops rising, and every `StarvingConfig.every` (0.2) sim hours while
+  someone's playing and they're awake it takes `damage` (0.1) of their health, `pang` wired to
+  `Health.hurt` with `cause` `hunger`. No health comes back and no rest starts in the daytime while
+  it lasts. Eating anything stops it. From full health it kills in ten pangs, two sim hours, so six
+  sim hours from fed.
 - **Once a power cell is in** their stomach, hunger is 0 for good and nothing is on offer to eat:
   `meal()` is none and `eat` does nothing. They run on power instead.
 
 Home is `PlayerConfig.home`, the maker space: the village has no house for the player, and every
 house is someone's. Aris's workshop is the place the story makes theirs until one is added.
+
+## Death
+
+`Death` (`corpses.py`) is what happens when health or a power cell runs out, whichever way, with the
+`Vital` that ran out as `cause`:
+
+- **The corpse.** A new `Corpse` goes at the end of `Player.corpses`, assigned as a new list so its
+  validator checks the id: `next_corpse` gives an id none of the saved ones has, so a reload can't
+  reuse one. It lies on the tile they fell on or the ground below it, or in their bed if the server
+  doesn't yet know where they are, holding their money, through the ledger as `dropped`, everything
+  they carried but the lamp, and every bionic fitted. It stays whatever it holds, and a second death
+  leaves a second. Taking from it is Q11's.
+- **The lamp** stays with them, switched off, as stage 2's collapse had it, so they can see to go
+  back. Everything else they carried is on the corpse.
+- **The new body.** `Body()`, whole and organic, so every part can be sold again: the clinic reads
+  what it would buy from the body alone, so the kidney sells again. Every effect clears, power is
+  full, and hunger is at most `PlayerConfig.waking` (0.75), so they never wake starving.
+- **Waking.** In their bed at home, or at its entry without one, with `HealthConfig.waking` (0.25)
+  health, resting at once, and whole again in a couple of real seconds. The client gets
+  `player_died` to put them there.
+- **What stays theirs** isn't their body: their mind, with the recipes they've sold still sold, the
+  stash, what buyers keep for them to buy back (`sales`), what they've searched, taken and
+  `repaired`, and everything in `left`: a destroyed bot's haul, what of a pickup didn't fit, and what
+  they left when they collapsed in a save from before death.
 
 ## Power
 
@@ -51,8 +73,8 @@ the stomach, while a client is in the game, like hunger. Without one, `Player.po
   fitted: five hours on the cell alone, two with the datajack, the legs and the feet.
 - **It charges** at a plug as fast as the lamp, from the same `Lamp.charging`: flat to full in
   about three real seconds. Plugged in, it doesn't drain.
-- **Running flat** collapses them as hunger does, with `cause` `power`, and they wake at home with
-  `waking` (0.25) power.
+- **Running flat** kills them, with `cause` `power`. The new body has no cell, so `power` is full
+  again, and it stays full until another is fitted.
 - **A cell runs a limited number of bionics** besides itself, by grade, in `runs`: 3 for the
   first cell, 4 for the second and 5 for the third. `runs(body, bionic)` says whether the cell
   would still run everything once `bionic` is fitted, so the clinic fits nothing past it. A higher
@@ -66,8 +88,8 @@ Its constants are in `PowerConfig`, beside it.
 game, like hunger. It's `health_of(app)` once the `running` hook has made it, for P10's creatures
 to hurt and bite the player: they look it up when they do, not at startup.
 
-- **Damage.** `hurt(damage)` takes that much of their health. At none they collapse as when they
-  starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
+- **Damage.** `hurt(damage, cause)` takes that much of their health. At none they die of `cause`,
+  `health` unless they're starving. See *Death*.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
   `heal_at_home` (0.5) at home, in two, standing on their bed too. Their beds are the cells the
   `bed` furniture covers on their home's floor maps (`beds_in`), and `player_state`'s `bed` is the
@@ -75,9 +97,9 @@ to hurt and bite the player: they look it up when they do, not at startup.
 - **Resting.** The client's `rest` lies them down in that bed, unless they're at full health or
   infected in the daytime. Once they've lain down, `lie_down` (0.8) real seconds later, it comes back as fast as
   a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the sim's speed.
-  They rest until they're full, move off the bed, an infection sets in, they collapse or they get
+  They rest until they're full, move off the bed, an infection sets in or they start starving, they die or they get
   up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
-  the bed doesn't lie them down again. Waking there from a collapse, they rest at once, with no
+  the bed doesn't lie them down again. Waking there after dying, they rest at once, with no
   `lie_down`.
 - **Sleeping until morning** (`sleep.py`, P79). At night, from `night_starts` (21:00, the
   earliest bedtime any resident can have, as the client's `NIGHT.from`) until `night_ends`
@@ -86,8 +108,8 @@ to hurt and bite the player: they look it up when they do, not at startup.
   runs the clock at `speed` (3600x, an hour a real second) with `clock.skip`, so 02:45 to 07:00
   takes about four real seconds. Health still comes back, unless they're infected, and hunger and
   power hold for the whole rest. At 07:00 the clock goes back to its speed and they get up. Moving
-  off the bed, getting up, collapsing or the client leaving ends it early, and the clock goes back
-  at once. Waking in bed from a collapse at night doesn't sleep until morning.
+  off the bed, getting up, dying or the client leaving ends it early, and the clock goes back
+  at once. Waking in bed after dying at night doesn't sleep until morning.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
@@ -99,7 +121,7 @@ to hurt and bite the player: they look it up when they do, not at startup.
   its kind's in `fades`, and `one_kidney` (half) of it with a kidney sold, so a sold kidney slows
   what they have already. Two bites close together fade before they turn on two kidneys, and turn
   on one. Radiation fades by 0.05 an hour, for the deeper sewers.
-- **Collapsing** for health keeps their effects: an untreated infection still needs the clinic.
+- **Dying** clears every effect, since they were the old body's.
 
 Its constants are in `HealthConfig`, beside it.
 
@@ -127,7 +149,7 @@ Its constants are in `HealthConfig`, beside it.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
   fits under their carry limit, in order, a stack whole and joining any of its `id` they carry.
-  Money weighs nothing, and from a pickup goes through the ledger as `found`. Money they left when they collapsed went into the ledger as `dropped`, and
+  Money weighs nothing, and from a pickup goes through the ledger as `found`. Money they left when they collapsed, in an older save, went into the ledger as `dropped`, and
   comes back as `recovered`. Taking from a pickup records when, by its id, in `Player.taken`,
   which is saved, and whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any
   that don't fit of one of theirs stay in it.
@@ -222,7 +244,8 @@ in the game, like hunger:
   the café, the noodle bar, the metro's maintenance alcove and the sewers' junction boxes), on or
   off, from flat to full in `charge` (3) real seconds whatever the sim's speed. Getting to a plug
   is the game, not waiting at one. Plugged in, it doesn't drain.
-- **A collapse switches it off,** so it doesn't run down at home while they recover.
+- **A death switches it off,** and it stays with them rather than on the corpse, so they can see to
+  go back.
 - **The client's `lamp`** switches it on or off (`docs/protocol.md`). Switching on a flat one, or
   to how it already is, does nothing. A switch goes out in `player_state` at once, and the charge
   alone at `step`, as above.

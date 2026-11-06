@@ -10,7 +10,7 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.persistence import player_of
 from simile.player.lamp import Lamp
-from simile.player.power import DEFAULT_POWER, Power, runs
+from simile.player.power import Power, runs
 from simile.player.sync import PlayerSync
 from simile.schema import PLAYER_ID, Bionic, Body, Player
 from simile.sim import Clock, EventBus, World, world_of
@@ -39,7 +39,7 @@ class Cell:
     def __init__(self, player: Player, at: Point = TUNNEL, speed: float = 1.0) -> None:
         self.player = player
         self.playing = True
-        self.collapses = 0
+        self.deaths = 0
         self.movement = Movement(MAPS, EventBus())
         self.movement.track(PLAYER_ID, at)
         clock = Clock(NOW, speed=speed)
@@ -49,11 +49,11 @@ class Cell:
             clock,
             charging=self.lamp.charging,
             playing=lambda: self.playing,
-            collapse=self.collapse,
+            die=self.die,
         )
 
-    def collapse(self) -> None:
-        self.collapses += 1
+    def die(self) -> None:
+        self.deaths += 1
 
     def run(self, seconds: float, step: float = 1.0) -> None:
         for _ in range(round(seconds / step)):
@@ -79,7 +79,7 @@ def test_without_a_cell_power_stays_full() -> None:
     cell.run(HOUR * 10, step=60)
 
     assert cell.player.power == 1
-    assert cell.collapses == 0
+    assert cell.deaths == 0
 
 
 def test_power_waits_while_nobody_is_playing() -> None:
@@ -105,16 +105,16 @@ def test_a_plug_charges_it_from_flat_to_full_in_three_real_seconds(
 
     assert partway == pytest.approx(0.01 + 1.4 / 3)
     assert cell.player.power == 1
-    assert cell.collapses == 0
+    assert cell.deaths == 0
 
 
-def test_running_flat_collapses_them_and_they_wake_with_some_charge() -> None:
+def test_running_flat_kills_them() -> None:
     cell = Cell(Player(body=THREE, power=0.001))
 
     cell.power.tick(60)
 
-    assert cell.collapses == 1
-    assert cell.player.power == DEFAULT_POWER.waking
+    assert cell.deaths == 1
+    assert cell.player.power == 0
 
 
 def test_the_first_cell_runs_three_other_bionics_and_a_bigger_cell_more() -> None:
@@ -165,13 +165,14 @@ def next_of(ws: Any, type: str) -> dict[str, Any]:
     raise AssertionError(f"no {type}")
 
 
-def test_a_flat_cell_collapses_them_for_power_and_the_plug_downstairs_charges_it(
+def test_a_flat_cell_kills_them_for_power_and_they_wake_with_no_cell_at_home(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        tick, player = world_of(app).loop.tick, player_of(app)
+        tick = world_of(app).loop.tick
+        player = player_of(app)
         next_of(ws, "player_state")
         ws.send_json({"type": "player_move", "position": {"x": 65, "y": 15, "map": "metro"}})
         deadline = time.monotonic() + 2
@@ -181,21 +182,17 @@ def test_a_flat_cell_collapses_them_for_power_and_the_plug_downstairs_charges_it
         client.portal.call(lambda: setattr(player, "body", THREE))
         client.portal.call(lambda: setattr(player, "power", 1e-9))
         client.portal.call(tick)
-        collapsed = next_of(ws, "player_died")
+        died = next_of(ws, "player_died")
         woken = next_of(ws, "player_state")
-        ws.send_json({"type": "player_move", "position": {"x": 13, "y": 2, "map": HOME.map}})
-        while client.portal.call(movement_of(app).entities).get(PLAYER_ID) != HOME:
-            assert time.monotonic() < deadline + 2, "the server never had the player at the plug"
-            time.sleep(0.001)
         client.portal.call(lambda: [tick() for _ in range(40)])
-        charging = [next_of(ws, "player_state")]
-        while "power" in charging[-1]["player"]:
-            charging.append(next_of(ws, "player_state"))
+        after = client.portal.call(lambda: (player.power, player.hunger))
 
-    assert collapsed["cause"] == "power"
-    assert collapsed["position"] == {"x": 5, "y": 2, "map": "maker_space_floor_2"}
-    assert woken["player"]["power"] == DEFAULT_POWER.waking
+    assert died["cause"] == "power"
+    assert died["position"] == {"x": 5, "y": 2, "map": "maker_space_floor_2"}
+    assert "power" not in woken["player"]
+    assert woken["player"]["body"] == Body().model_dump(mode="json", exclude_defaults=False)
     assert woken["player"]["hunger"] == 0
-    assert woken.get("meal") is None
-    rising = [message["player"].get("power", 1) for message in charging]
-    assert rising == sorted(rising) and rising[0] > DEFAULT_POWER.waking and rising[-1] == 1
+    assert woken["player"]["corpses"][0]["bionics"] == [bionic.value for bionic in THREE.bionics]
+    assert woken["meal"] == {"place": "maker_space", "name": "home", "price": 0.0}
+    assert after[0] == 1
+    assert after[1] > 0

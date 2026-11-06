@@ -47,13 +47,13 @@ def route(town: TownMap, run: float) -> list[tuple[float, float, float, float]]:
 
 def through(level: int, jump: Jump) -> Player:
     """The player through the den and back from full health: their health as they come out, or
-    after they collapse."""
+    after they die."""
     town = maps(level)[SEWERS]
     player = Player()
     movement = Movement(maps(level), EventBus())
-    collapsed = []
+    deaths = []
     health = Health(player, movement, Clock(datetime(2026, 1, 1, tzinfo=UTC)))
-    health.collapse = lambda: collapsed.append(True)
+    health.die = deaths.append
     points = route(town, jump.run)
     x, y = points[0][:2]
     heard = Point(x, y, SEWERS)
@@ -67,7 +67,7 @@ def through(level: int, jump: Jump) -> Player:
     now, said = 0.0, 0.0
     for tx, ty, pace, stop in points[1:]:
         while (x, y) != (tx, ty) or stop > 0:
-            if collapsed:
+            if deaths:
                 player.health = 0.0
                 return player
             now += STEP
@@ -85,7 +85,7 @@ def through(level: int, jump: Jump) -> Player:
 
 
 @pytest.mark.parametrize("level", range(LEVELS))
-def test_a_player_on_their_own_legs_collapses_in_the_den(level: int) -> None:
+def test_a_player_on_their_own_legs_dies_in_the_den(level: int) -> None:
     assert through(level, JUMP).health == 0
 
 

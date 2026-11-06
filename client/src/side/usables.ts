@@ -1,5 +1,5 @@
 import iconManifest from '../../../content/icons/icons.json';
-import type { Pile, Position } from '../net';
+import type { Corpse, Pile, Position } from '../net';
 import type { Clue } from '../world/clues';
 import { interactablesOn } from '../world/interactables';
 import { mapOf } from '../world/map';
@@ -9,10 +9,10 @@ import { DEPTH } from './depths';
 import { furnitureKey } from './draw';
 import { feetOf, furniturePlacement, PPM, stretchWidth, xOf } from './layout';
 import type { Placed, SideMap, Village } from './maps';
-import { lootIcons } from './piles';
+import { corpseIcons, lootIcons } from './piles';
 import type { SceneryManifest } from './scenery';
 
-export type UsableKind = 'clue' | 'searchable' | 'jack' | 'terminal' | 'pile';
+export type UsableKind = 'clue' | 'searchable' | 'jack' | 'terminal' | 'pile' | 'corpse';
 
 type Placing = { x: number; y: number; originX: number; originY: number; depth: number };
 /** A piece of furniture the street view draws, in world px, stretched to `stretch` px wide. */
@@ -35,7 +35,7 @@ export type Usable = {
   searched?: { x: number; y: number; depth: number };
 };
 
-export type UsableState = { searched: readonly string[]; piles: readonly Pile[]; clues: readonly Clue[]; jacked?: boolean };
+export type UsableState = { searched: readonly string[]; piles: readonly Pile[]; corpses?: readonly Corpse[]; clues: readonly Clue[]; jacked?: boolean };
 
 const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
@@ -55,6 +55,7 @@ const ABOVE = 0.1;
 export const thingId = (map: string, id: string): string => `${map}/${id}`;
 export const clueId = (id: string): string => `clue:${id}`;
 export const pileId = ({ at }: Pile): string => `pile:${at.map}:${at.x},${at.y}`;
+export const corpseId = ({ id }: Corpse): string => `corpse:${id}`;
 export const spritesOf = ({ picture, loot = [] }: Usable): Sprite[] => [picture, ...loot];
 /** A pile keeps its id as what it holds changes, and its pictures with it. */
 export const glowKey = (usable: Usable): string =>
@@ -171,6 +172,11 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       const spot = { x: xOf(map.offset.x + pile.at.x), y: feetOf(map.offset.y + pile.at.y), depth: depthOf(map) + ABOVE };
       const [picture, ...loot] = heapAt(lootIcons(pile), spot);
       if (picture) found.push({ id: pileId(pile), kind: 'pile', ...at, picture, ...(loot.length > 0 && { loot }) });
+    }
+    for (const corpse of (state.corpses ?? []).filter(({ at }) => at.map === map.id)) {
+      const spot = { x: xOf(map.offset.x + corpse.at.x), y: feetOf(map.offset.y + corpse.at.y), depth: depthOf(map) + ABOVE };
+      const [picture, ...loot] = heapAt(corpseIcons(corpse), spot);
+      if (picture) found.push({ id: corpseId(corpse), kind: 'corpse', ...at, picture, ...(loot.length > 0 && { loot }) });
     }
     return found;
   });

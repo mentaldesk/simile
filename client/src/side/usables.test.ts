@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Item, Pile } from '../net';
+import type { Corpse, Item, Pile } from '../net';
 import { clues } from '../world/clues';
 import { reachables, type Reachables, type WayPrompt } from '../world/reach';
 import { scenery, village } from './content';
@@ -108,6 +108,19 @@ describe('usablesOn', () => {
       ['pile:metro:50,15', expect.objectContaining({ icon: 'credits', x: xOf(50), y: feetOf(15) }), undefined],
     ]);
     expect(usables[0].picture).toMatchObject({ height: expect.closeTo(0.65 * PPM), depth: DEPTH.streetFurniture + 0.1 });
+  });
+
+  it('draws each corpse where it fell, two on one tile as two, and E does nothing with one yet', () => {
+    const at = { map: 'metro', x: 30, y: 15 };
+    const corpses: Corpse[] = [
+      { id: 'corpse_1', owner: 'player', at, money: 0, items: [], bionics: [] },
+      { id: 'corpse_2', owner: 'player', at, money: 5, items: [WIRE], bionics: ['datajack'] },
+      { id: 'corpse_3', owner: 'player', at: { ...at, map: 'high_street' }, money: 0, items: [], bionics: [] },
+    ];
+    const usables = on('metro', { corpses }).filter(({ kind }) => kind === 'corpse');
+    expect(usables.map(({ id }) => id)).toEqual(['corpse:corpse_1', 'corpse:corpse_2']);
+    expect(usables[0].picture).toEqual(expect.objectContaining({ icon: 'unknown_item', x: xOf(30), y: feetOf(15), originY: 1 }));
+    expect(usables[1].loot).toHaveLength(2);
   });
 
   it('heaps up to three of what a pile holds round its middle, the first in front', () => {

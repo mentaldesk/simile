@@ -100,7 +100,7 @@ export class DialogueScene extends Phaser.Scene {
     this.machines = new MachinePanel(this.root);
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
-    const stopCollapses = server.on('player_died', ({ cause }) => hunger.collapsed(cause));
+    const stopDeaths = server.on('player_died', ({ cause }) => hunger.died(cause));
     const health = (this.health = new HealthGauge(hunger.corner));
     this.lamp = new LampGauge(this.root);
     const journal = (this.journal = new JournalPanel(this.root));
@@ -137,7 +137,7 @@ export class DialogueScene extends Phaser.Scene {
       window.removeEventListener('keydown', onGetUp);
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       stopInvitations();
-      stopCollapses();
+      stopDeaths();
       health.destroy();
       this.news.stop();
       this.murals.stop();

@@ -3,7 +3,7 @@ import type { ServerConnection } from '../net/connection';
 
 /** Health lost at once below which it's an infection's slow drain, not a hit: the server sends health every 0.01. */
 export const LEAST_HIT = 0.015;
-/** Health lost at once that gives a hit full strength: a bot's or a dog's. */
+/** Health lost at once that gives a hit full strength: a bot's, a dog's or a pang of starving. */
 export const FULL_HIT = 0.1;
 
 /** A hit's `size` is the health it took, `strength` that from 0 to 1: a bat's 0.3, a rat's 0.5, a bot's 1. */
@@ -19,7 +19,10 @@ export class Hurts {
   constructor(connection: Pick<ServerConnection, 'on'> = server) {
     connection.on('snapshot', () => (this.health = undefined));
     connection.on('player_state', ({ player }) => this.feel(player.health ?? 1));
-    connection.on('player_died', ({ cause }) => cause === 'health' && this.hit(FULL_HIT));
+    connection.on('player_died', ({ cause }) => {
+      this.health = undefined;
+      if (cause !== 'power') this.hit(FULL_HIT);
+    });
   }
 
   on(listener: Listener): () => void {

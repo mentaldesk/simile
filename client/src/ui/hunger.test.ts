@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { server } from '../net';
 import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
-import { COLLAPSED, eatPrompt, feeling, getsUp, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, toEat, when } from './hunger';
+import { DIED, eatPrompt, feeling, getsUp, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, toEat, when } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -28,10 +28,11 @@ function state(hunger: number, { money = 0, items = [LAMP], meal, shut, left, bu
 }
 
 describe('feeling', () => {
-  it('says nothing until they are hungry, then warns them before they collapse', () => {
+  it('says nothing until they are hungry, then warns them before they die', () => {
     expect(feeling(0.49)).toBeUndefined();
     expect(feeling(0.5)).toBe("You're hungry.");
-    expect(feeling(0.85)).toBe("You're starving. Eat soon, or you'll collapse.");
+    expect(feeling(0.85)).toBe("You're starving. Eat soon, or you'll die.");
+    expect(feeling(1)).toBe("You're starving to death. Eat now.");
   });
 });
 
@@ -40,11 +41,11 @@ describe('healthFeeling', () => {
   const INFECTION: Effect = { kind: 'infection', strength: 0.4, fades: null, since: '2026-01-01T12:00:00Z' };
   const hurt = (health: number, effects?: Effect[]): Player => ({ ...state(0).player, health, ...(effects && { effects }) });
 
-  it('says nothing while they are well, then that they are hurt, then warns them before they collapse', () => {
+  it('says nothing while they are well, then that they are hurt, then warns them before they die', () => {
     expect(healthFeeling(state(0).player)).toBeUndefined();
     expect(healthFeeling(hurt(0.61))).toBeUndefined();
     expect(healthFeeling(hurt(0.6))).toBe("You're hurt. Rest at home to heal faster.");
-    expect(healthFeeling(hurt(0.25))).toBe("You're badly hurt. Rest at home or get patched up at the clinic, or you'll collapse.");
+    expect(healthFeeling(hurt(0.25))).toBe("You're badly hurt. Rest at home or get patched up at the clinic, or you'll die.");
   });
 
   it('warns of a bite before it turns, and of an infection above all', () => {
@@ -73,10 +74,10 @@ describe('on a power cell', () => {
     expect(onCell(state(0).player)).toBe(false);
   });
 
-  it('warns as power runs low, and before they collapse', () => {
+  it('warns as power runs low, and before they die', () => {
     expect(powerFeeling(0.31)).toBeUndefined();
     expect(powerFeeling(0.3)).toBe('Your power is low. Charge it at a plug.');
-    expect(powerFeeling(0.1)).toBe("Your power cell is nearly flat. Charge it at a plug, or you'll collapse.");
+    expect(powerFeeling(0.1)).toBe("Your power cell is nearly flat. Charge it at a plug, or you'll die.");
   });
 
   it('never eats or offers a meal', () => {
@@ -216,23 +217,23 @@ describe('HungerHint', () => {
     expect(shown(root)).toEqual([]);
   });
 
-  it('says they collapsed for a few seconds after it', () => {
+  it('says they died for a few seconds after it', () => {
     const root = document.createElement('div');
     const hint = new HungerHint(root);
 
-    hint.collapsed('hunger', 1000);
+    hint.died('hunger', 1000);
     hint.update(state(0.75), undefined, 6999);
-    expect(shown(root)[0]).toBe(COLLAPSED.hunger);
+    expect(shown(root)[0]).toBe(DIED.hunger);
     hint.update(state(0.75), undefined, 7000);
-    expect(shown(root)).not.toContain(COLLAPSED.hunger);
+    expect(shown(root)).not.toContain(DIED.hunger);
   });
 
-  it('says why they collapsed', () => {
+  it('says why they died', () => {
     const root = document.createElement('div');
     const hint = new HungerHint(root);
 
-    hint.collapsed('power', 1000);
+    hint.died('power', 1000);
     hint.update(state(0, { power: 0.25 }), undefined, 2000);
-    expect(shown(root)[0]).toBe('Your power cell ran flat. You collapsed and woke at home.');
+    expect(shown(root)[0]).toBe('Your power cell ran flat and you died. You woke in your bed in a new body.');
   });
 });

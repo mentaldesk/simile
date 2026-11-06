@@ -10,6 +10,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.economy.economy import economy_of
     from simile.persistence import investigation_of, player_of
     from simile.player.clients import InGame
+    from simile.player.corpses import Death
     from simile.player.finds import Finds
     from simile.player.health import Health
     from simile.player.hunger import Hunger
@@ -44,7 +45,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     economy.player = player
     in_game = InGame()
 
-    def collapsed(home: MapTile, cause: Vital) -> None:
+    def woke(home: MapTile, cause: Vital) -> None:
         health.rest(True, woken=True)
         lamp.switch(False)
         position = Position(x=home.x, y=home.y, map=home.map)
@@ -57,9 +58,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         movement,
         world.clock,
         playing=lambda: bool(in_game),
-        collapse=lambda: hunger.collapse(Vital.HEALTH),
+        die=lambda cause: death.die(cause),
         night=lambda: sleep.night(),
     )
+    death = Death(player, movement, world.clock, economy=economy, bed=health.home_bed, woke=woke)
 
     def awake() -> bool:
         return bool(in_game) and not health.sleeping()
@@ -72,8 +74,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         supply=lambda goal, need: behaviour.hooks.supply(goal, need),
         economy=economy,
         playing=awake,
-        collapsed=collapsed,
-        bed=health.home_bed,
+        pang=lambda damage: health.hurt(damage, Vital.HUNGER),
     )
 
     def bed() -> MapTile | None:
@@ -98,7 +99,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.clock,
         charging=lamp.charging,
         playing=awake,
-        collapse=lambda: hunger.collapse(Vital.POWER),
+        die=lambda: death.die(Vital.POWER),
     )
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player)

@@ -221,6 +221,9 @@ describe('the bed', () => {
     expect(restsAt(state(0.5, { resting: true }), 14)).toBeUndefined();
     expect(restsAt(state(0.5, { bed: undefined }), 14)).toBeUndefined();
     expect(restsAt(infected(0.5), 14)).toBeUndefined();
+    const starving = state(0.5);
+    expect(restsAt({ ...starving, player: { ...starving.player, hunger: 1 } }, 14)).toBeUndefined();
+    expect(restsAt({ ...starving, player: { ...starving.player, hunger: 1 } }, 23)).toEqual(bed);
     expect(restsAt(undefined, 14)).toBeUndefined();
   });
 

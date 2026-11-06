@@ -321,7 +321,7 @@ change is sent at once. Clients that predate it ignore it.
 | `health` | number | From 1, unhurt, to 0, when they die. Left out while it's full: read it as `player.health ?? 1`. |
 | `effects` | `Effect[]` | Their ailments, in the order they got them, each kind once. Left out while there's none. |
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
-| `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, a destroyed bot's haul, and anything of a pickup that didn't fit. Left out while there's none. |
+| `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, in a save from before they could die, a destroyed bot's haul, and anything of a pickup that didn't fit. Left out while there's none. |
 | `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. Each `player_state` has all of them, so read them from here: a corpse no longer in the list is gone. Left out while there's none. |
 | `taken` | object | When each pickup in the world was last emptied, by the player or a recycler bot, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
@@ -447,8 +447,8 @@ Some kinds have more, each left out for every other kind:
 A `Pile` is things lying on a tile in the world for the player to pick up with
 [`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
 `x` and `y`, whole tiles). It holds at least one item or some money, and `money` is left out while
-it's 0. What's theirs is one kind, in `left`: what they carried when they collapsed, on the tile
-they fell on or the ground below it, a destroyed bot's haul, on the cell it went down in, and what
+it's 0. What's theirs is one kind, in `left`: what they carried when they collapsed, in a save from
+before they could die, on the tile they fell on or the ground below it, a destroyed bot's haul, on the cell it went down in, and what
 of a pickup didn't fit. Salvage and secrets, in `piles`, are another.
 
 A `Corpse` is one of their own bodies, in `corpses`, with what was on it. It has its `id`, as two
@@ -495,18 +495,12 @@ never sent: the player sees it only in how residents treat them.
 cell ran flat; or `"health"`, they had none left.
 The client puts them at `position`, snapping there as through a door, and can say what happened.
 The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
-`corpses`, where they fell, with their money, everything they carried and every bionic they had
-fitted, and a whole organic `body`. What they know, what they keep in the `stash` and what they've
-`repaired` stay theirs.
-
-Until Q10 (#606) makes this a death, the server sends it for stage 2's collapse, so this section's
-corpse and whole organic `body`, and `hunger`'s hurting in [`player_state`](#player_state), describe
-Q10. Today:
-
-- `corpses` stays empty and `body` doesn't change: a fitted `stomach` of `"power_cell"` stays fitted.
-- They wake with their lamp, switched off. Their money and whatever else they carried are in a new
-  `Pile` at the end of `left`. With nothing but the lamp, they leave no pile.
-- `hunger` reaching 1 collapses them at once, nothing hurts first, and they wake at 0.75.
+`corpses`, where they fell, with their money, everything they carried but the lamp and every bionic
+they had fitted, and a whole organic `body`. With nothing on them they still leave a corpse. They
+keep the lamp, switched off, so they can see to go back. They wake with no effects, full `power`,
+`hunger` of 0.75 at most, and a little `health`, resting in their bed if they have one. What they
+know, what they keep in the `stash`, what they've sold, what they've `repaired` and what's in `left`
+stay theirs.
 
 ### `journal`
 
