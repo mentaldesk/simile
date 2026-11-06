@@ -1,0 +1,7 @@
+.machine-panel .clinic-side {
+  margin-top: 3px;
+}
+
+.machine-panel li.machine-part {
+  cursor: default;
+}
