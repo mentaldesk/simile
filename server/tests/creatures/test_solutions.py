@@ -3,21 +3,50 @@ level of the sewers, losing no health (simile/creatures/README.md's *Solutions*)
 
 import heapq
 import math
-from collections.abc import Iterable, Iterator
+from collections import Counter
+from collections.abc import Iterable, Iterator, Sequence
 from functools import cache
+from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
+from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.creatures.engine import Creature
 from simile.creatures.kinds import BOT, RAT
 from simile.creatures.placing import spawns
-from simile.schema import Bionic, Body, CreatureKind, CreatureState, Item, ItemKind, Player
+from simile.player.finds import Finds
+from simile.player.pickups import Pickups
+from simile.schema import (
+    PLAYER_ID,
+    Bionic,
+    Body,
+    CreatureKind,
+    CreatureState,
+    Item,
+    ItemKind,
+    Player,
+)
+from simile.sim import Clock
 from simile.street.jump import JUMP, LEGS, Jump
-from simile.street.metro import VAULT_LADDER
+from simile.street.metro import DECK, SWITCHBOARD, TOOL_CRATE, TRACK_RUBBLE, VAULT_LADDER
 from simile.street.moves import moves
 from simile.street.plan import Spawn
-from simile.street.sewers import DEN, DEN_LADDER, FLOORS, LANDING, LEVELS, SEWERS, WEIR_AT
+from simile.street.sewers import (
+    DEN,
+    DEN_BEDROLL,
+    DEN_LADDER,
+    FLOORS,
+    LANDING,
+    LEVELS,
+    PRINTER_CRATES,
+    SEWERS,
+    SPRINT_SALVAGE,
+    WEIR_AT,
+)
+from simile.street.village import GROUND
 from simile.world.map import TownMap, load_maps
+from simile.world.movement import Point
 
 from .walkthrough import FRAME, Climb, Leap, Plan, Step, Stuck, Wait, Walk, Walkthrough
 
@@ -86,7 +115,32 @@ WEST = [
 ]
 
 
-def metro(steps: Iterable[Step], body: Body = FITTED, frame: float = FRAME) -> Walkthrough:
+def spot(town: TownMap, thing: str) -> Cell:
+    """Where they stand to search `thing`, or the cell it lies on."""
+    for item in town.interactables:
+        if item.id == thing:
+            return item.stand[0].x, item.stand[0].y
+    [pickup] = [pickup for pickup in town.pickups if pickup.id == thing]
+    return pickup.x, pickup.y
+
+
+def press_e(walk: Walkthrough) -> list[Step]:
+    """What E does where they stand, as the server hears it: searches a thing or takes a pile."""
+    at = Point(walk.x, walk.y, walk.town.id)
+    movement: Any = SimpleNamespace(
+        maps={walk.town.id: walk.town}, entities=lambda: {PLAYER_ID: at}
+    )
+    economy: Any = SimpleNamespace(find=lambda *_: None)
+    finds = Finds(walk.player, movement, lambda: CLINIC.recipes, lambda *_: None)
+    Pickups(walk.player, movement, economy, Clock()).pick_up([finds.claim])
+    return []
+
+
+def carried(walk: Walkthrough) -> Counter[str]:
+    return Counter(item.id for item in walk.player.items)
+
+
+def metro(steps: Iterable[Step | Plan], body: Body = FITTED, frame: float = FRAME) -> Walkthrough:
     town = maps()["metro"]
     walk = Walkthrough(town, placed("metro"), 23, 15, player=Player(body=body), frame=frame)
     return walk.go(steps)
@@ -96,6 +150,34 @@ def metro(steps: Iterable[Step], body: Body = FITTED, frame: float = FRAME) -> W
 def test_the_metro_s_bots_are_passed_overhead_both_ways_unhurt(frame: float) -> None:
     walk = metro([*EAST, Walk(70.5), *WEST], frame=frame)
     assert walk.harmed == [], walk.log
+
+
+@pytest.mark.parametrize("frame", FRAMES)
+def test_the_printer_s_sheet_and_wires_are_fetched_from_the_metro_unhurt(frame: float) -> None:
+    town = maps()["metro"]
+    ladder = 141
+    walk = metro(
+        [
+            *EAST,
+            Walk(ladder),
+            Climb(DECK),
+            Walk(spot(town, SWITCHBOARD)[0]),
+            press_e,
+            Walk(ladder),
+            Climb(GROUND),
+            Walk(spot(town, TRACK_RUBBLE)[0]),
+            press_e,
+            Walk(spot(town, TOOL_CRATE)[0]),
+            press_e,
+            Walk(70.5),
+            *WEST,
+        ],
+        frame=frame,
+    )
+
+    assert walk.harmed == [], walk.log
+    assert carried(walk)["metal_sheet"] == 1
+    assert carried(walk)["copper_wire"] == 3
 
 
 def test_walking_the_metro_s_floor_hurts_a_fitted_player_but_not_a_whole_one() -> None:
@@ -443,11 +525,14 @@ def zone_0(level: int, frame: float = FRAME) -> Walkthrough:
     return walk.go([to((gate + WEIR_AT - 1, FLOORS[0]))])
 
 
-def den(level: int, frame: float = FRAME) -> Walkthrough:
-    """From the lift on the first legs through the gate to the den, up its ladder by the door to
-    the loft's stash, along the loft into the bat cave by lamplight off, and back out."""
+def den(level: int, frame: float = FRAME, first: Sequence[str] = ()) -> Walkthrough:
+    """From the lift on the first legs through the gate, by way of `first` to search or take, to
+    the den, up its ladder by the door to the loft's stash, to the delver's bedroll, along the loft
+    into the bat cave by lamplight off, and back out."""
     walk = sewers(level, LEGS[Bionic.BIONIC_LEGS], LEGGED, frame)
     town = walk.town
+    for thing in first:
+        walk.go([to(spot(town, thing)), press_e])
     [door] = [light.area.x for light in town.light if light.id == "sewers_den"]
     x, end, loft, ground = door + 1, door + 1 + DEN, FLOORS[1], FLOORS[0]
     ladder = x + DEN_LADDER
@@ -460,6 +545,8 @@ def den(level: int, frame: float = FRAME) -> Walkthrough:
             Walk(ladder + 1.4),
             Leap(x, loft - 2),
             Leap(ladder + 1, loft),
+            Walk(spot(town, DEN_BEDROLL)[0]),
+            press_e,
             Walk(end - 3.4),
             Leap(end, loft),
             Walk(end + 3),
@@ -489,3 +576,30 @@ def test_the_den_s_stash_and_the_cave_are_reached_past_the_dogs_unhurt(
 ) -> None:
     walk = den(level, frame)
     assert walk.harmed == [], "\n".join(walk.log[-40:])
+
+
+@pytest.mark.parametrize("frame", FRAMES)
+@pytest.mark.parametrize("level", range(LEVELS))
+def test_the_printer_s_actuator_is_fetched_from_before_the_gate_unhurt_on_their_own_legs(
+    level: int, frame: float
+) -> None:
+    walk = sewers(level, JUMP, FITTED, frame)
+
+    walk.go([to(spot(walk.town, PRINTER_CRATES)), press_e, to((LANDING.x, LANDING.y))])
+
+    assert walk.harmed == [], "\n".join(walk.log[-40:])
+    assert carried(walk)["linear_actuator"] == 1
+
+
+@pytest.mark.parametrize("frame", FRAMES)
+@pytest.mark.parametrize("level", range(LEVELS))
+def test_the_recycler_s_parts_and_the_second_cell_s_are_fetched_on_the_legs_unhurt(
+    level: int, frame: float
+) -> None:
+    walk = den(level, frame, ["sewers_crates_cell", "sewers_bedroll_cell", SPRINT_SALVAGE])
+    needed = Counter(CLINIC.recipes[Bionic.POWER_CELL_2].parts) + Counter(
+        {"apex_board": 1, "old_battery": 2}
+    )
+
+    assert walk.harmed == [], "\n".join(walk.log[-40:])
+    assert carried(walk) >= needed, carried(walk)

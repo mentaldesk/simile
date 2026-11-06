@@ -152,6 +152,7 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | The metro's signal box (143–144, row 11) | `metro_switchboard` | A dead `switchboard` | 2 copper wire, signal relay | |
 | The metro's signal box (146–147, row 11) | `metro_relay_rack` | A `switchboard` | USB-C connector | |
 | The metro's signal box (150, row 11) | `metro_signal_desk` | A `jack`, a `dead_terminal` | 2 circuit board | |
+| The metro's disused track (163–164) | `metro_track_rubble` | The `rubble` | metal sheet | |
 | The metro's disused track (168) | `metro_tool_crate` | `crates` | copper wire, lithium cell | |
 | The metro's shed (210–211) | `metro_lockers` | `lockers` | a ration pack | |
 | Sewers zone 0 | `sewers_bedroll_legs` | A delver's `bedroll` | copper coil | `bionic_legs` |
@@ -161,6 +162,8 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | Sewers zone 1, the security station | `sewers_security_terminal` | A `jack`, a `dead_terminal` | | `infrared_eye` |
 | Sewers zone 1, the security station | `sewers_bedroll_cell` | A delver's `bedroll` | 2 copper coil | `power_cell_2` |
 | Sewers zone 1 | `sewers_crates_cell` | `crates` | 4 old battery | |
+| Sewers zone 0 | `sewers_crates_printer` | `crates` | linear actuator | |
+| The den's loft | `sewers_bedroll_den` | A delver's `bedroll` | 2 old battery | |
 
 The cell's parts are in the village and the metro, and the datajack's three wires are the shelf's
 and the metro's two, besides the salvage on the train's roof. Past the clinic the metro holds
@@ -168,6 +171,20 @@ a spare of every part the two need, so a player who sells one or misses one can 
 The infrared eye needs the second power cell, so its recipe and the cell's are found together, in
 the room past the gate farthest from it, but the hatch's, that has room for both. The eye's lens is
 a villager's (P17).
+
+The maker space's machines (Q7) need parts from here too, in the order the player gets to them:
+
+| Machine | Part | Where | What reaching it takes |
+|---|---|---|---|
+| Printer | Metal sheet | `metro_track_rubble`, past the clinic | A walk, in the dark |
+| Printer | 2 copper wire | `metro_switchboard` and `metro_tool_crate` hold three past the clinic, spare after the datajack's | A walk and a ladder |
+| Printer | Linear actuator | `sewers_crates_printer`, before the gate | The player's own legs, and the datajack for the lift |
+| Recycler | Apex control board | `sewers_salvage_sprint`, the hall's ledge | The bionic legs |
+| Recycler | 2 old battery | `sewers_bedroll_den`, on top of the second power cell's four in `sewers_crates_cell` | Any legs or feet past the gate |
+
+`problems` fails a level that doesn't hold the sewers' parts where whoever needs them gets to (`WANTED`
+in `simile.street.sewers`). The batteries that lie about as salvage aren't in every level, so they
+aren't counted on. The metal sheet and the actuator have no price, so they can't be sold and lost.
 
 ### Houses
 

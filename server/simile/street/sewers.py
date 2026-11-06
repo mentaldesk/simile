@@ -7,7 +7,7 @@ from collections import Counter, deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from itertools import pairwise
-from typing import Any
+from typing import Any, NamedTuple
 
 from simile.creatures import grid as moving
 from simile.creatures.kinds import BOT
@@ -27,7 +27,7 @@ from simile.schema import (
 )
 from simile.street import charge
 from simile.street.charge import Ways, runs, seconds
-from simile.street.finds import searchable, under
+from simile.street.finds import LINEAR_ACTUATOR, searchable, under
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets, tapped, walking
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
@@ -107,6 +107,8 @@ SPRINT_SALVAGE = "sewers_salvage_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
 PIPE_SECRET = "sewers_secret_pipe"
 DEN_SECRET = "sewers_secret_den"
+DEN_BEDROLL = "sewers_bedroll_den"
+PRINTER_CRATES = "sewers_crates_printer"
 CAVE_SECRET = "sewers_secret_cave"
 TIERS = {SHAFT_KIND: (0,), ROOMS: (0, 1, 2), HALL: (0, 2), DEN_KIND: (), CAVE_KIND: ()}
 
@@ -150,6 +152,8 @@ class Find:
     teaches: Bionic | None = None
     security: bool = False
     """In the security station: the room past the gate farthest from it but the hatch's."""
+    parts: tuple[Item, ...] = ()
+    """What else it holds that isn't salvage."""
 
 
 LABELS = {"bedroll": "Delver's bedroll", "crates": "Crates", "dead_terminal": "Security terminal"}
@@ -162,10 +166,29 @@ FINDS = (
     Find(SECURITY_TERMINAL, 1, "dead_terminal", teaches=Bionic.INFRARED_EYE, security=True),
     Find("sewers_bedroll_cell", 1, "bedroll", ("copper_coil",) * 2, Bionic.POWER_CELL_2, True),
     Find("sewers_crates_cell", 1, "crates", ("old_battery",) * 4),
+    Find(PRINTER_CRATES, 0, "crates", parts=(LINEAR_ACTUATOR,)),
 )
 """Each level's recipes and their parts: the legs' before the gate, the feet's past it, and in the
-security station the eye's with the second power cell's, which the eye needs."""
+security station the eye's with the second power cell's, which the eye needs. Last, so it moves
+nothing, the printer's actuator before the gate."""
 ZONES = {find.id: find.zone for find in FINDS}
+
+
+class Wanted(NamedTuple):
+    """How many of an item a level holds where whoever `needs` it has got to by then."""
+
+    item: str
+    count: int
+    needs: str
+
+
+WANTED = (
+    Wanted(LINEAR_ACTUATOR.id, 1, OWN_JUMP),
+    Wanted(APEX_BOARD.id, 1, Bionic.BIONIC_LEGS.value),
+    Wanted("old_battery", 6, Bionic.BIONIC_LEGS.value),
+)
+"""The machines' parts in the sewers. Six batteries are the recycler's two on top of the second
+power cell's four, as the salvage that respawns isn't in every level."""
 
 
 def slab(tier: int) -> int:
@@ -519,7 +542,7 @@ def finds(
         plan.piece(find.piece, area.x, area.y, width, height)
         jack = find.piece == "dead_terminal"
         kind = InteractableKind.JACK if jack else InteractableKind.SEARCHABLE
-        items = [SCRAP[item] for item in find.items]
+        items = [*(SCRAP[item] for item in find.items), *find.parts]
         label = LABELS[find.piece]
         searchable(plan, find.id, label, area, under(area), items, find.teaches, kind)
 
@@ -810,6 +833,9 @@ def den(level: Level, plan: Plan) -> None:
     money = float(rng.choice((90, 100, 110, 120)))
     plan.pickups.append(Pickup(DEN_SECRET, SECRET, x, row, money, needs=OWN_JUMP))
     plan.piece("bedroll", ladder - 3, loft, 2, 1)
+    area = TileArea(x=ladder - 3, y=loft, width=2, height=1)
+    batteries = [SCRAP["old_battery"]] * 2
+    searchable(plan, DEN_BEDROLL, LABELS["bedroll"], area, under(area), batteries)
     kept = x + DEN_LADDER + DEN_CLEAR
     area = TileArea(x=kept, y=floor - 3, width=column.end - kept, height=4)
     for number, at in enumerate(sorted(rng.sample(range(kept + 1, ladder), DOGS)), 1):
@@ -1119,6 +1145,18 @@ def unwalked(town: Any, near: list[Interactable]) -> list[str]:
     return found
 
 
+def held_within(plan: Plan, item: str, cells: set[Cell]) -> int:
+    """How many of `item` a level holds at the `cells`, to search or lying there."""
+    searched = sum(
+        held.id == item
+        for thing in plan.interactables
+        if (thing.stand[0].x, thing.stand[0].y) in cells
+        for held in thing.items
+    )
+    lying = sum(p.item.id == item for p in plan.pickups if p.item and (p.x, p.y) in cells)
+    return searched + lying
+
+
 def problems(plan: Plan, town: object | None = None) -> list[str]:
     """Where a level fails content/street/README.md's checks for the sewers: none if it's sound."""
     town = town or Cells(plan)
@@ -1159,4 +1197,12 @@ def problems(plan: Plan, town: object | None = None) -> list[str]:
                 found.append(f"{pickup.id} needs {pickup.needs}, but {name} says otherwise")
         if pickup.needs not in (None, OWN_JUMP) and cell in reached[OWN_JUMP]:
             found.append(f"{pickup.id} is in reach of the player's own legs")
+    for part, count, needs in WANTED:
+        short = [
+            name
+            for name, jump in KITS.items()
+            if meets(jump, needs) and held_within(plan, part, reached[name]) < count
+        ]
+        if short:
+            found.append(f"fewer than {count} {part} in reach of {', '.join(short)}")
     return found

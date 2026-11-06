@@ -8,6 +8,9 @@ from simile.street import finds, sewers
 from simile.street.metro import RATION_PACK
 from simile.world.map import level_count, load_maps
 
+WAITING_ON_Q13 = {"metal_sheet", "linear_actuator"}
+"""In the world before their pictures: Q13 paints them and deletes this (#603, #609)."""
+
 
 def in_the_world() -> set[str]:
     found = set()
@@ -15,7 +18,7 @@ def in_the_world() -> set[str]:
         for town in load_maps(level=level).values():
             found |= {pickup.item.id for pickup in town.pickups if pickup.item}
             found |= {item.id for thing in town.interactables for item in thing.items}
-    return found
+    return found - WAITING_ON_Q13
 
 
 def every_item() -> set[str]:
