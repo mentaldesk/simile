@@ -27,6 +27,7 @@ from simile.schema import (
     Recipe,
     SideFacing,
     Timestamp,
+    Unit,
 )
 from simile.schema.news import LongSummary
 
@@ -93,6 +94,12 @@ class Creature(Model):
     position: Position
     facing: SideFacing
     state: CreatureState
+    health: Unit = Field(
+        default=1.0,
+        exclude_if=lambda health: health == 1,
+        description="How much it has left, from 1, unhurt, to 0, when it's gone. Left out while "
+        "it's full.",
+    )
 
     @model_validator(mode="after")
     def _only_bats_roost(self) -> Self:
@@ -156,8 +163,8 @@ class EntityMovedMessage(Model):
 
 
 class CreatureMovedMessage(Model):
-    """A creature moved, turned or changed state, or appeared: one the client doesn't have yet is
-    new. On its way somewhere, it's sent as it goes."""
+    """A creature moved, turned, changed state or lost health, or appeared: one the client doesn't
+    have yet is new. On its way somewhere, it's sent as it goes."""
 
     type: Literal["creature_moved"] = "creature_moved"
     creature: Creature
@@ -167,6 +174,14 @@ class CreatureGoneMessage(Model):
     """A creature is gone from the world, such as a rat the player jumps on."""
 
     type: Literal["creature_gone"] = "creature_gone"
+    creature_id: Id
+
+
+class CreatureHitMessage(Model):
+    """A creature was hurt, for the client to draw. A `creature_moved` with its `health` or a
+    `creature_gone` follows, so the client still has it."""
+
+    type: Literal["creature_hit"] = "creature_hit"
     creature_id: Id
 
 
@@ -563,21 +578,39 @@ class PlayerStateMessage(Model):
 
 
 class Vital(StrEnum):
-    """What runs out when the player collapses."""
+    """What runs out when the player collapses or dies."""
 
     HUNGER = "hunger"
     POWER = "power"
     HEALTH = "health"
 
 
+def _bare_cause(schema: dict[str, Any]) -> None:
+    # Beside a $ref, either makes json-schema-to-typescript declare a copy, like Vital1.
+    del schema["properties"]["cause"]["default"]
+    del schema["properties"]["cause"]["description"]
+
+
 class PlayerCollapsedMessage(Model):
-    """The player collapsed: they starved, their power cell ran flat, or they had no health left.
-    They wake at home, at `position`, with their lamp, switched off. Everything else they carried
-    stays where they fell, in `player_state`'s `left`."""
+    """The player collapsed of `cause`: they starved, their power cell ran flat, or they had no
+    health left. They wake at home, at `position`, with their lamp, switched off. Everything else
+    they carried stays where they fell, in `player_state`'s `left`."""
+
+    model_config = ConfigDict(json_schema_extra=_bare_cause)
 
     type: Literal["player_collapsed"] = "player_collapsed"
     position: Position
     cause: Vital = Field(default=Vital.HUNGER, description="The vital that ran out.")
+
+
+class PlayerDiedMessage(Model):
+    """The player died of `cause`: they starved, their power cell ran flat, or they had no health
+    left. They wake in their bed, at `position`, in a whole organic body. Their corpse stays where
+    they fell, at the end of `player_state`'s `corpses`."""
+
+    type: Literal["player_died"] = "player_died"
+    position: Position
+    cause: Vital
 
 
 class JournalMessage(Model):
@@ -724,12 +757,61 @@ class BuyMessage(Model):
     item: Id = Field(description="What they buy, by its `id`: the first of that id in `stock`.")
 
 
+class FireMessage(Model):
+    """Fires the first weapon they carry that's loaded and not worn out, the way they face, along
+    the row from where the server last kept them. The server doesn't track the player's facing, so
+    the client says it. The server ignores it if they carry no such weapon."""
+
+    type: Literal["fire"] = "fire"
+    facing: SideFacing
+
+
+class ReloadMessage(Model):
+    """Loads the first weapon they carry that has room and isn't worn out, with as many as fit of
+    the rounds they carry of its `material`. The server ignores it if there's no such weapon, or
+    they carry no such rounds."""
+
+    type: Literal["reload"] = "reload"
+
+
+class RepairMessage(Model):
+    """Repairs the broken machine they stand at, using up its `parts`. The server ignores it if
+    they aren't at it, it isn't broken, or they don't carry every part."""
+
+    type: Literal["repair"] = "repair"
+    machine: Id = Field(description="The machine, by its `id`.")
+
+
+class MakeMessage(Model):
+    """Has the working machine they stand at make one of its `makes`, using up what it takes. A
+    product that uses scrap takes all the scrap they carry, at that rate. The server ignores it if
+    they aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up
+    carrying wouldn't fit under their carry limit."""
+
+    type: Literal["make"] = "make"
+    machine: Id = Field(description="The machine, by its `id`.")
+    item: Id = Field(description="What they make, by the `id` of its product's `item`.")
+
+
+class StashMessage(Model):
+    """Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at
+    Aris's lockers. The server ignores it away from the lockers, if they don't have it, or if it
+    wouldn't fit under the stash's limit or their carry limit."""
+
+    type: Literal["stash"] = "stash"
+    item: Id = Field(description="What they move, by its `id`: the first of that id.")
+    action: Literal["store", "take"] = Field(
+        description="`store` puts it in the stash, and `take` takes it out."
+    )
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
     | EntityMovedMessage
     | CreatureMovedMessage
     | CreatureGoneMessage
+    | CreatureHitMessage
     | MachineChangedMessage
     | ConversationStartedMessage
     | ConversationEndedMessage
@@ -741,7 +823,8 @@ type ServerMessage = Annotated[
     | PaintingsMessage
     | PlayerStateMessage
     | JournalMessage
-    | PlayerCollapsedMessage,
+    | PlayerCollapsedMessage
+    | PlayerDiedMessage,
     Field(discriminator="type"),
 ]
 
@@ -762,7 +845,12 @@ type ClientMessage = Annotated[
     | SellRecipeMessage
     | BuyMessage
     | TreatMessage
-    | RestMessage,
+    | RestMessage
+    | FireMessage
+    | ReloadMessage
+    | RepairMessage
+    | MakeMessage
+    | StashMessage,
     Field(discriminator="type"),
 ]
 

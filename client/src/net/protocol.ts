@@ -8,6 +8,7 @@ export type ServerMessage =
   | EntityMovedMessage
   | CreatureMovedMessage
   | CreatureGoneMessage
+  | CreatureHitMessage
   | MachineChangedMessage
   | ConversationStartedMessage
   | ConversationEndedMessage
@@ -19,7 +20,8 @@ export type ServerMessage =
   | PaintingsMessage
   | PlayerStateMessage
   | JournalMessage
-  | PlayerCollapsedMessage;
+  | PlayerCollapsedMessage
+  | PlayerDiedMessage;
 export type EntityKind = 'npc' | 'player';
 /**
  * What someone is doing where they are. `climbing` is on stairs or a ladder, `riding` in a
@@ -125,7 +127,7 @@ export type ShutReason = 'closed' | 'sold_out';
  */
 export type SourceKind = 'resident' | 'clue';
 /**
- * The vital that ran out.
+ * What runs out when the player collapses or dies.
  */
 export type Vital = 'hunger' | 'power' | 'health';
 export type ClientMessage =
@@ -145,7 +147,12 @@ export type ClientMessage =
   | SellRecipeMessage
   | BuyMessage
   | TreatMessage
-  | RestMessage;
+  | RestMessage
+  | FireMessage
+  | ReloadMessage
+  | RepairMessage
+  | MakeMessage
+  | StashMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -245,6 +252,10 @@ export interface Creature {
   position: Position;
   facing: SideFacing;
   state: CreatureState;
+  /**
+   * How much it has left, from 1, unhurt, to 0, when it's gone. Left out while it's full.
+   */
+  health?: number;
 }
 /**
  * The state of a machine you repair and then use. Where it stands and what it's called are
@@ -362,8 +373,8 @@ export interface EntityMovedMessage {
   facing?: Facing;
 }
 /**
- * A creature moved, turned or changed state, or appeared: one the client doesn't have yet is
- * new. On its way somewhere, it's sent as it goes.
+ * A creature moved, turned, changed state or lost health, or appeared: one the client doesn't
+ * have yet is new. On its way somewhere, it's sent as it goes.
  */
 export interface CreatureMovedMessage {
   type: 'creature_moved';
@@ -374,6 +385,14 @@ export interface CreatureMovedMessage {
  */
 export interface CreatureGoneMessage {
   type: 'creature_gone';
+  creature_id: string;
+}
+/**
+ * A creature was hurt, for the client to draw. A `creature_moved` with its `health` or a
+ * `creature_gone` follows, so the client still has it.
+ */
+export interface CreatureHitMessage {
+  type: 'creature_hit';
   creature_id: string;
 }
 /**
@@ -1035,12 +1054,22 @@ export interface Lead {
   text: string;
 }
 /**
- * The player collapsed: they starved, their power cell ran flat, or they had no health left.
- * They wake at home, at `position`, with their lamp, switched off. Everything else they carried
- * stays where they fell, in `player_state`'s `left`.
+ * The player collapsed of `cause`: they starved, their power cell ran flat, or they had no
+ * health left. They wake at home, at `position`, with their lamp, switched off. Everything else
+ * they carried stays where they fell, in `player_state`'s `left`.
  */
 export interface PlayerCollapsedMessage {
   type: 'player_collapsed';
+  position: Position;
+  cause: Vital;
+}
+/**
+ * The player died of `cause`: they starved, their power cell ran flat, or they had no health
+ * left. They wake in their bed, at `position`, in a whole organic body. Their corpse stays where
+ * they fell, at the end of `player_state`'s `corpses`.
+ */
+export interface PlayerDiedMessage {
+  type: 'player_died';
   position: Position;
   cause: Vital;
 }
@@ -1188,4 +1217,65 @@ export interface TreatMessage {
 export interface RestMessage {
   type: 'rest';
   on: boolean;
+}
+/**
+ * Fires the first weapon they carry that's loaded and not worn out, the way they face, along
+ * the row from where the server last kept them. The server doesn't track the player's facing, so
+ * the client says it. The server ignores it if they carry no such weapon.
+ */
+export interface FireMessage {
+  type: 'fire';
+  facing: SideFacing;
+}
+/**
+ * Loads the first weapon they carry that has room and isn't worn out, with as many as fit of
+ * the rounds they carry of its `material`. The server ignores it if there's no such weapon, or
+ * they carry no such rounds.
+ */
+export interface ReloadMessage {
+  type: 'reload';
+}
+/**
+ * Repairs the broken machine they stand at, using up its `parts`. The server ignores it if
+ * they aren't at it, it isn't broken, or they don't carry every part.
+ */
+export interface RepairMessage {
+  type: 'repair';
+  /**
+   * The machine, by its `id`.
+   */
+  machine: string;
+}
+/**
+ * Has the working machine they stand at make one of its `makes`, using up what it takes. A
+ * product that uses scrap takes all the scrap they carry, at that rate. The server ignores it if
+ * they aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up
+ * carrying wouldn't fit under their carry limit.
+ */
+export interface MakeMessage {
+  type: 'make';
+  /**
+   * The machine, by its `id`.
+   */
+  machine: string;
+  /**
+   * What they make, by the `id` of its product's `item`.
+   */
+  item: string;
+}
+/**
+ * Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at
+ * Aris's lockers. The server ignores it away from the lockers, if they don't have it, or if it
+ * wouldn't fit under the stash's limit or their carry limit.
+ */
+export interface StashMessage {
+  type: 'stash';
+  /**
+   * What they move, by its `id`: the first of that id.
+   */
+  item: string;
+  /**
+   * `store` puts it in the stash, and `take` takes it out.
+   */
+  action: 'store' | 'take';
 }

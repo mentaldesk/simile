@@ -17,10 +17,12 @@ from simile.protocol import (
     ConversationStartedMessage,
     Creature,
     CreatureGoneMessage,
+    CreatureHitMessage,
     CreatureMovedMessage,
     EatMessage,
     EntityMovedMessage,
     Face,
+    FireMessage,
     FitMessage,
     Fitting,
     Frame,
@@ -30,6 +32,7 @@ from simile.protocol import (
     ListNewsMessage,
     ListWorksMessage,
     MachineChangedMessage,
+    MakeMessage,
     Meal,
     Message,
     Mural,
@@ -43,18 +46,22 @@ from simile.protocol import (
     PaintingsMessage,
     PickUpMessage,
     PlayerCollapsedMessage,
+    PlayerDiedMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     PlayerStateMessage,
     Position,
     ReadNewsMessage,
     ReadWorkMessage,
+    ReloadMessage,
+    RepairMessage,
     RestMessage,
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
     Shut,
     ShutReason,
+    StashMessage,
     Treatment,
     TreatMessage,
     Vital,
@@ -88,6 +95,7 @@ from simile.schema import (
     Pose,
     Recipe,
     Sale,
+    SideFacing,
     Source,
     SourceKind,
     Stash,
@@ -365,6 +373,7 @@ ARMED = PlayerStateMessage(
     ),
 )
 DRAINED = PlayerCollapsedMessage(position=Position(x=4, y=9, map="home"), cause=Vital.POWER)
+DIED = PlayerDiedMessage(position=Position(x=5, y=2, map="maker_space_floor_2"), cause=Vital.HEALTH)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 IN_THE_METRO = STARTING.model_copy(
@@ -452,9 +461,11 @@ SERVER = [
     IN_THE_SEWERS,
     *(CreatureMovedMessage(creature=creature) for creature in CREATURES),
     CreatureGoneMessage(creature_id="rat_2"),
+    CreatureHitMessage(creature_id="rat_2"),
     WITH_MACHINES,
     *(MachineChangedMessage(machine=machine) for machine in MACHINES),
     AFTER_DYING,
+    DIED,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -483,6 +494,14 @@ CLIENT = [
     TreatMessage(effect=EffectKind.INFECTION),
     RestMessage(on=True),
     RestMessage(on=False),
+    FireMessage(facing=SideFacing.EAST),
+    FireMessage(facing=SideFacing.WEST),
+    ReloadMessage(),
+    RepairMessage(machine="printer_3d"),
+    MakeMessage(machine="printer_3d", item="plastic_pistol"),
+    MakeMessage(machine="recycler", item="plastic"),
+    StashMessage(item="plastic", action="store"),
+    StashMessage(item="plastic", action="take"),
 ]
 
 
@@ -1091,6 +1110,7 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("Fitting", "blocked"),
         ("SnapshotMessage", "creatures"),
         ("SnapshotMessage", "machines"),
+        ("Creature", "health"),
         ("Player", "corpses"),
         ("Player", "repaired"),
         ("Player", "searched"),
@@ -1367,6 +1387,82 @@ def test_a_collapse_goes_only_from_server_to_client() -> None:
         client_messages.validate_python(data)
 
 
+def test_a_death_says_where_they_wake_and_why() -> None:
+    assert json.loads(DIED.model_dump_json()) == {
+        "type": "player_died",
+        "position": {"x": 5.0, "y": 2.0, "map": "maker_space_floor_2"},
+        "cause": "health",
+    }
+
+
+def test_a_death_always_says_why() -> None:
+    with pytest.raises(ValidationError, match="cause"):
+        server_messages.validate_python({"type": "player_died", "position": {"x": 5, "y": 2}})
+
+
+def test_a_death_goes_only_from_server_to_client() -> None:
+    with pytest.raises(ValidationError):
+        client_messages.validate_python(json.loads(DIED.model_dump_json()))
+
+
+def test_every_cause_is_one_type_in_the_exported_protocol() -> None:
+    defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
+
+    for message in ("PlayerCollapsedMessage", "PlayerDiedMessage"):
+        assert defs[message]["properties"]["cause"] == {"$ref": "#/$defs/Vital"}
+        assert "cause" in defs[message]["required"]
+
+
+@pytest.mark.parametrize(
+    ("message", "data"),
+    [
+        (FireMessage(facing=SideFacing.WEST), {"type": "fire", "facing": "west"}),
+        (ReloadMessage(), {"type": "reload"}),
+        (RepairMessage(machine="printer_3d"), {"type": "repair", "machine": "printer_3d"}),
+        (
+            MakeMessage(machine="printer_3d", item="plastic_pistol"),
+            {"type": "make", "machine": "printer_3d", "item": "plastic_pistol"},
+        ),
+        (
+            StashMessage(item="plastic", action="store"),
+            {"type": "stash", "item": "plastic", "action": "store"},
+        ),
+        (
+            StashMessage(item="plastic", action="take"),
+            {"type": "stash", "item": "plastic", "action": "take"},
+        ),
+    ],
+    ids=["fire", "reload", "repair", "make", "store", "take"],
+)
+def test_shooting_and_the_maker_space_go_from_client_to_server(
+    message: Any, data: dict[str, Any]
+) -> None:
+    assert json.loads(message.model_dump_json()) == data
+    assert client_messages.validate_python(data) == message
+    with pytest.raises(ValidationError):
+        server_messages.validate_python(data)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"type": "fire"},
+        {"type": "fire", "facing": "north"},
+        {"type": "fire", "facing": "south_east"},
+        {"type": "repair"},
+        {"type": "repair", "machine": "3D printer"},
+        {"type": "make", "machine": "printer_3d"},
+        {"type": "make", "item": "plastic_pistol"},
+        {"type": "stash", "item": "plastic"},
+        {"type": "stash", "item": "plastic", "action": "drop"},
+        {"type": "stash", "action": "take"},
+    ],
+)
+def test_rejects_invalid_shooting_and_maker_space_messages(data: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        client_messages.validate_python(data)
+
+
 def test_a_flushed_line_says_so() -> None:
     message = LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=True)
 
@@ -1612,7 +1708,7 @@ def test_creatures_face_right_or_left() -> None:
     assert defs["Creature"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
 
 
-def test_the_exported_creature_requires_every_field() -> None:
+def test_the_exported_creature_requires_every_field_but_health() -> None:
     creature = json.loads(SCHEMA_FILE.read_text())["$defs"]["Creature"]
 
     assert sorted(creature["required"]) == ["facing", "id", "kind", "position", "state"]
@@ -1628,7 +1724,9 @@ def test_the_exported_creature_requires_every_field() -> None:
         ({"facing": "north"}, "Input should be 'east' or 'west'"),
         ({"facing": "south_east"}, "Input should be 'east' or 'west'"),
         ({"id": "Rat 1"}, "String should match pattern"),
-        ({"health": 0.5}, "Extra inputs"),
+        ({"health": -0.1}, "greater than or equal to 0"),
+        ({"health": 1.1}, "less than or equal to 1"),
+        ({"strength": 0.5}, "Extra inputs"),
     ],
 )
 def test_rejects_invalid_creatures(update: dict[str, Any], match: str) -> None:
@@ -1636,10 +1734,31 @@ def test_rejects_invalid_creatures(update: dict[str, Any], match: str) -> None:
         Creature.model_validate(CREATURES[0].model_dump() | update)
 
 
+def test_a_hurt_creature_says_how_much_it_has_left() -> None:
+    hurt = json.loads(CreatureMovedMessage(creature=CREATURES[-1]).model_dump_json())
+
+    assert hurt["creature"]["health"] == 0.5
+
+
+def test_a_creature_at_full_health_dumps_as_before() -> None:
+    whole = json.loads(CreatureMovedMessage(creature=CREATURES[0]).model_dump_json())
+
+    assert "health" not in whole["creature"]
+    assert CREATURES[0].health == 1
+
+
+def test_a_hit_names_the_creature() -> None:
+    assert json.loads(CreatureHitMessage(creature_id="dog_1").model_dump_json()) == {
+        "type": "creature_hit",
+        "creature_id": "dog_1",
+    }
+
+
 def test_creature_messages_go_only_from_server_to_client() -> None:
     for message in (
         CreatureMovedMessage(creature=CREATURES[0]),
         CreatureGoneMessage(creature_id="rat_1"),
+        CreatureHitMessage(creature_id="rat_1"),
     ):
         with pytest.raises(ValidationError):
             client_messages.validate_python(json.loads(message.model_dump_json()))

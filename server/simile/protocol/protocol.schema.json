@@ -211,19 +211,24 @@
         "mapping": {
           "buy": "#/$defs/BuyMessage",
           "eat": "#/$defs/EatMessage",
+          "fire": "#/$defs/FireMessage",
           "fit": "#/$defs/FitMessage",
           "lamp": "#/$defs/LampMessage",
           "list_news": "#/$defs/ListNewsMessage",
           "list_works": "#/$defs/ListWorksMessage",
+          "make": "#/$defs/MakeMessage",
           "pick_up": "#/$defs/PickUpMessage",
           "player_move": "#/$defs/PlayerMoveMessage",
           "player_say": "#/$defs/PlayerSayMessage",
           "read_news": "#/$defs/ReadNewsMessage",
           "read_work": "#/$defs/ReadWorkMessage",
+          "reload": "#/$defs/ReloadMessage",
+          "repair": "#/$defs/RepairMessage",
           "rest": "#/$defs/RestMessage",
           "sell": "#/$defs/SellMessage",
           "sell_part": "#/$defs/SellPartMessage",
           "sell_recipe": "#/$defs/SellRecipeMessage",
+          "stash": "#/$defs/StashMessage",
           "treat": "#/$defs/TreatMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
@@ -280,6 +285,21 @@
         },
         {
           "$ref": "#/$defs/RestMessage"
+        },
+        {
+          "$ref": "#/$defs/FireMessage"
+        },
+        {
+          "$ref": "#/$defs/ReloadMessage"
+        },
+        {
+          "$ref": "#/$defs/RepairMessage"
+        },
+        {
+          "$ref": "#/$defs/MakeMessage"
+        },
+        {
+          "$ref": "#/$defs/StashMessage"
         }
       ]
     },
@@ -476,6 +496,13 @@
         },
         "state": {
           "$ref": "#/$defs/CreatureState"
+        },
+        "health": {
+          "default": 1.0,
+          "description": "How much it has left, from 1, unhurt, to 0, when it's gone. Left out while it's full.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
         }
       },
       "required": [
@@ -510,6 +537,28 @@
       "title": "CreatureGoneMessage",
       "type": "object"
     },
+    "CreatureHitMessage": {
+      "additionalProperties": false,
+      "description": "A creature was hurt, for the client to draw. A `creature_moved` with its `health` or a\n`creature_gone` follows, so the client still has it.",
+      "properties": {
+        "type": {
+          "const": "creature_hit",
+          "default": "creature_hit",
+          "type": "string"
+        },
+        "creature_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "creature_id"
+      ],
+      "title": "CreatureHitMessage",
+      "type": "object"
+    },
     "CreatureKind": {
       "description": "What a creature is, named as its figure is in `content/creatures/`: a `rat`, a recycler\n`bot`, a wild `dog` or a `bat`.",
       "enum": [
@@ -523,7 +572,7 @@
     },
     "CreatureMovedMessage": {
       "additionalProperties": false,
-      "description": "A creature moved, turned or changed state, or appeared: one the client doesn't have yet is\nnew. On its way somewhere, it's sent as it goes.",
+      "description": "A creature moved, turned, changed state or lost health, or appeared: one the client doesn't\nhave yet is new. On its way somewhere, it's sent as it goes.",
       "properties": {
         "type": {
           "const": "creature_moved",
@@ -732,6 +781,26 @@
       ],
       "title": "Facing",
       "type": "string"
+    },
+    "FireMessage": {
+      "additionalProperties": false,
+      "description": "Fires the first weapon they carry that's loaded and not worn out, the way they face, along\nthe row from where the server last kept them. The server doesn't track the player's facing, so\nthe client says it. The server ignores it if they carry no such weapon.",
+      "properties": {
+        "type": {
+          "const": "fire",
+          "default": "fire",
+          "type": "string"
+        },
+        "facing": {
+          "$ref": "#/$defs/SideFacing"
+        }
+      },
+      "required": [
+        "type",
+        "facing"
+      ],
+      "title": "FireMessage",
+      "type": "object"
     },
     "FitMessage": {
       "additionalProperties": false,
@@ -1292,6 +1361,36 @@
       "title": "MachineState",
       "type": "string"
     },
+    "MakeMessage": {
+      "additionalProperties": false,
+      "description": "Has the working machine they stand at make one of its `makes`, using up what it takes. A\nproduct that uses scrap takes all the scrap they carry, at that rate. The server ignores it if\nthey aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up\ncarrying wouldn't fit under their carry limit.",
+      "properties": {
+        "type": {
+          "const": "make",
+          "default": "make",
+          "type": "string"
+        },
+        "machine": {
+          "description": "The machine, by its `id`.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "item": {
+          "description": "What they make, by the `id` of its product's `item`.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "machine",
+        "item"
+      ],
+      "title": "MakeMessage",
+      "type": "object"
+    },
     "MapTile": {
       "additionalProperties": false,
       "description": "A tile on a given map: the village or an interior, or in side view a street or a floor.",
@@ -1836,7 +1935,7 @@
     },
     "PlayerCollapsedMessage": {
       "additionalProperties": false,
-      "description": "The player collapsed: they starved, their power cell ran flat, or they had no health left.\nThey wake at home, at `position`, with their lamp, switched off. Everything else they carried\nstays where they fell, in `player_state`'s `left`.",
+      "description": "The player collapsed of `cause`: they starved, their power cell ran flat, or they had no\nhealth left. They wake at home, at `position`, with their lamp, switched off. Everything else\nthey carried stays where they fell, in `player_state`'s `left`.",
       "properties": {
         "type": {
           "const": "player_collapsed",
@@ -1847,9 +1946,7 @@
           "$ref": "#/$defs/Position"
         },
         "cause": {
-          "$ref": "#/$defs/Vital",
-          "default": "hunger",
-          "description": "The vital that ran out."
+          "$ref": "#/$defs/Vital"
         }
       },
       "required": [
@@ -1858,6 +1955,30 @@
         "cause"
       ],
       "title": "PlayerCollapsedMessage",
+      "type": "object"
+    },
+    "PlayerDiedMessage": {
+      "additionalProperties": false,
+      "description": "The player died of `cause`: they starved, their power cell ran flat, or they had no health\nleft. They wake in their bed, at `position`, in a whole organic body. Their corpse stays where\nthey fell, at the end of `player_state`'s `corpses`.",
+      "properties": {
+        "type": {
+          "const": "player_died",
+          "default": "player_died",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "cause": {
+          "$ref": "#/$defs/Vital"
+        }
+      },
+      "required": [
+        "type",
+        "position",
+        "cause"
+      ],
+      "title": "PlayerDiedMessage",
       "type": "object"
     },
     "PlayerMoveMessage": {
@@ -2166,6 +2287,45 @@
       "title": "Recipe",
       "type": "object"
     },
+    "ReloadMessage": {
+      "additionalProperties": false,
+      "description": "Loads the first weapon they carry that has room and isn't worn out, with as many as fit of\nthe rounds they carry of its `material`. The server ignores it if there's no such weapon, or\nthey carry no such rounds.",
+      "properties": {
+        "type": {
+          "const": "reload",
+          "default": "reload",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ReloadMessage",
+      "type": "object"
+    },
+    "RepairMessage": {
+      "additionalProperties": false,
+      "description": "Repairs the broken machine they stand at, using up its `parts`. The server ignores it if\nthey aren't at it, it isn't broken, or they don't carry every part.",
+      "properties": {
+        "type": {
+          "const": "repair",
+          "default": "repair",
+          "type": "string"
+        },
+        "machine": {
+          "description": "The machine, by its `id`.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "machine"
+      ],
+      "title": "RepairMessage",
+      "type": "object"
+    },
     "RestMessage": {
       "additionalProperties": false,
       "description": "Lies the player down in their bed where they stand, `player_state`'s `bed`, or gets them up.\nThe server ignores it away from their bed, at full health, while they're infected, and when\nthey're already resting or up as asked.",
@@ -2290,6 +2450,7 @@
           "conversation_ended": "#/$defs/ConversationEndedMessage",
           "conversation_started": "#/$defs/ConversationStartedMessage",
           "creature_gone": "#/$defs/CreatureGoneMessage",
+          "creature_hit": "#/$defs/CreatureHitMessage",
           "creature_moved": "#/$defs/CreatureMovedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
           "journal": "#/$defs/JournalMessage",
@@ -2300,6 +2461,7 @@
           "npc_state": "#/$defs/NpcStateMessage",
           "paintings": "#/$defs/PaintingsMessage",
           "player_collapsed": "#/$defs/PlayerCollapsedMessage",
+          "player_died": "#/$defs/PlayerDiedMessage",
           "player_state": "#/$defs/PlayerStateMessage",
           "snapshot": "#/$defs/SnapshotMessage",
           "works": "#/$defs/WorksMessage"
@@ -2321,6 +2483,9 @@
         },
         {
           "$ref": "#/$defs/CreatureGoneMessage"
+        },
+        {
+          "$ref": "#/$defs/CreatureHitMessage"
         },
         {
           "$ref": "#/$defs/MachineChangedMessage"
@@ -2357,6 +2522,9 @@
         },
         {
           "$ref": "#/$defs/PlayerCollapsedMessage"
+        },
+        {
+          "$ref": "#/$defs/PlayerDiedMessage"
         }
       ]
     },
@@ -2545,6 +2713,38 @@
       "title": "Stash",
       "type": "object"
     },
+    "StashMessage": {
+      "additionalProperties": false,
+      "description": "Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at\nAris's lockers. The server ignores it away from the lockers, if they don't have it, or if it\nwouldn't fit under the stash's limit or their carry limit.",
+      "properties": {
+        "type": {
+          "const": "stash",
+          "default": "stash",
+          "type": "string"
+        },
+        "item": {
+          "description": "What they move, by its `id`: the first of that id.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "action": {
+          "description": "`store` puts it in the stash, and `take` takes it out.",
+          "enum": [
+            "store",
+            "take"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "item",
+        "action"
+      ],
+      "title": "StashMessage",
+      "type": "object"
+    },
     "TreatMessage": {
       "additionalProperties": false,
       "description": "Has the buyer where they stand give a treatment, for its `treatments` price.",
@@ -2607,7 +2807,7 @@
       "type": "object"
     },
     "Vital": {
-      "description": "What runs out when the player collapses.",
+      "description": "What runs out when the player collapses or dies.",
       "enum": [
         "hunger",
         "power",
