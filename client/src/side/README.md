@@ -109,7 +109,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the street already draws, and one that no furniture draws is left out. The rest are icons from
   [`content/icons/`](../../../content/icons/README.md): Aris's notes pinned over her bench, out of
   the player's way, and the loot above. A clue without a picture of its own isn't drawn. A searched thing gets a
-  painted tick. The one E would use where the player stands (`glowing`, as `world/reach.ts`'s
+  painted tick where its loot lay. The one E would use where the player stands (`glowing`, as `world/reach.ts`'s
   `eUse` finds it) gets a pulsing glow round its outline, made in code from its pictures; a jack
   doesn't without the datajack, and the lift does with it.
 
@@ -229,7 +229,7 @@ roof, and the metro's jumps up to its secrets, walks off the clock house's roof 
 down into the metro, through it into the clinic and back up to Banyan Row, walks into the metro's
 dark west tunnel, lights the lamp with L and walks on to the plug, checking the darkness and the
 gauge's hints, checks Aris's notes are drawn in the maker space and glow only while the player
-stands by them, searches Aris's bench and checks it's drawn searched, rests on E at the loft's bed,
+stands by them, searches Aris's bench and checks it's drawn searched, then her spool, rests on E at the loft's bed,
 checking they lie down and get up at full health or on a key, checks a run jump at the metro's
 high ledge falls short, lands on the high ledge's secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto

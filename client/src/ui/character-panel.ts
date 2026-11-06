@@ -8,7 +8,7 @@ import './character-panel.css';
 import { feeling } from './hunger';
 import { iconUrl } from './icons';
 import { level, percent, type Where } from './lamp-gauge';
-import { amount } from './salvage';
+import { amount, loadOf, totalLoad } from './salvage';
 import { CHARACTER_KEY, EAT_KEY } from './tuning';
 
 const KEY = CHARACTER_KEY.toUpperCase();
@@ -119,7 +119,7 @@ const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
 export function gear(player: Player): Gear {
   const tiles = new Map<string, GearTile>();
   for (const item of player.items) {
-    const { id, kind, name, weight, charge, on } = item;
+    const { id, kind, name, weight, charge, on, amount: many = 1 } = item;
     const tile = tiles.get(id) ?? {
       id,
       kind,
@@ -130,16 +130,15 @@ export function gear(player: Player): Gear {
       picture: iconUrl(id) ? id : UNKNOWN_ITEM,
       ...(kind === 'lamp' ? { charge: charge ?? 0, on: !!on } : {}),
     };
-    tile.count += 1;
-    tile.weight += weight;
+    tile.count += many;
+    tile.weight += loadOf(item);
     if (kind === 'weapon') {
       tile.weapons = [...(tile.weapons ?? []), item];
       tile.condition = firesNext(tile.weapons)?.condition ?? 0;
     }
     tiles.set(id, tile);
   }
-  const load = player.items.reduce((sum, { weight }) => sum + weight, 0);
-  return { tiles: [...tiles.values()], load, limit: player.carry_limit };
+  return { tiles: [...tiles.values()], load: totalLoad(player.items), limit: player.carry_limit };
 }
 
 const KINDS: Record<ItemKind, string> = {
@@ -160,7 +159,7 @@ export type ItemDetails = { title: string; kind: ItemKind; status: string; lines
 /** What it's for, its weight, the lamp's charge, each weapon's rounds and condition, and which recipes they know use it. */
 export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = []): ItemDetails {
   const { id, kind, name, count, each, weight } = tile;
-  const lines = [count > 1 ? `${count} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
+  const lines = [count !== 1 ? `${amount(count)} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
   if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}. ${LAMP_KEY} switches it.`);
   if (kind === 'food') lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
   for (const { rounds, capacity, condition } of tile.weapons ?? []) {
@@ -384,7 +383,7 @@ export class CharacterPanel {
       const cell = grid.appendChild(el('button', undefined, `character-tile character-tile-${tile.kind}`));
       cell.type = 'button';
       cell.tabIndex = -1;
-      const label = tile.count > 1 ? `${tile.name} ×${tile.count}` : tile.name;
+      const label = tile.count !== 1 ? `${tile.name} ×${amount(tile.count)}` : tile.name;
       cell.ariaLabel = tile.condition === undefined ? label : `${label}, ${percent(tile.condition)} condition`;
       cell.dataset.item = tile.id;
       cell.dataset.picture = tile.picture;
@@ -394,7 +393,7 @@ export class CharacterPanel {
         picture.src = url;
         picture.alt = '';
       }
-      if (tile.count > 1) cell.appendChild(el('span', `×${tile.count}`, 'character-count'));
+      if (tile.count !== 1) cell.appendChild(el('span', `×${amount(tile.count)}`, 'character-count'));
       if (tile.charge !== undefined) cell.appendChild(meter({ fill: tile.charge, good: tile.charge }));
       if (tile.condition !== undefined) cell.appendChild(meter({ fill: tile.condition, good: tile.condition }));
       cell.appendChild(el('span', tile.name, 'character-tile-name'));

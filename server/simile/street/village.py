@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 
+from simile.machines.materials import plastic
 from simile.schema import (
     Bionic,
     Door,
@@ -47,6 +48,8 @@ FRAMES += [(5, 9), (8, 9), (11, 9), (19, 9), (22, 9), (25, 9)]
 """Each gallery painting's frame on today's map, which its viewing spots are named after."""
 ARIS_BENCH = "maker_space_bench"
 """Aris's bench downstairs in the maker space, with her schematic for the datajack."""
+ARIS_SPOOL = "maker_space_spool"
+"""Her spool of plastic, on the same workbench. Its own id, for saves that searched the bench."""
 SPARES = "maker_space_spares"
 SHELF = "maker_space_shelf"
 LOCKERS = "lockers"
@@ -406,6 +409,8 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     workbench(ground, 3, (3, 6))
     bench = TileArea(x=5, y=FLOOR_ROW, width=2, height=1)
     searchable(ground, ARIS_BENCH, "Aris's bench", bench, under(bench), teaches=Bionic.DATAJACK)
+    spool = TileArea(x=4, y=FLOOR_ROW, width=1, height=1)
+    searchable(ground, ARIS_SPOOL, "Aris's spool", spool, under(spool), [plastic(8.0)])
     ground.piece("pegboard", 3, 0, 4, 1)
     machine(ground, "laser_cutter", "Laser cutter", 7, 2, "desk-2-3", "desk-3-3")
     machine(ground, "printer_3d", "3D printer", 9, 1, "desk-6-3")

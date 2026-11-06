@@ -126,8 +126,8 @@ Its constants are in `HealthConfig`, beside it.
   money and a ration pack in the metro, the 60 on the high ledge only the spring feet reach.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
-  fits under their carry limit, in order. Money weighs nothing, and from a pickup goes through the
-  ledger as `found`. Money they left when they collapsed went into the ledger as `dropped`, and
+  fits under their carry limit, in order, a stack whole and joining any of its `id` they carry.
+  Money weighs nothing, and from a pickup goes through the ledger as `found`. Money they left when they collapsed went into the ledger as `dropped`, and
   comes back as `recovered`. Taking from a pickup records when, by its id, in `Player.taken`,
   which is saved, and whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any
   that don't fit of one of theirs stay in it.
