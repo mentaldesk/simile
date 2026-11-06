@@ -27,3 +27,4 @@ class Kind:
     lunges: bool = False
     rest: float = 1.0
     stomped: bool = False
+    health: int = 1

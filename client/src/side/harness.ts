@@ -1,6 +1,6 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type Bionic, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type Wall } from '../net';
+import { server, type Bionic, type Body, type ClientMessage, type Creature, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type SideFacing, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { levels } from '../world/assets';
@@ -11,7 +11,7 @@ import './harness.css';
 import { glowAround, sightOf } from './darkness';
 import { scenery } from './content';
 import { lampHere } from './lamp';
-import { cellOf, isStanding, type Village } from './maps';
+import { cellOf, isSolid, isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
 import type { MapPosition, SidePlayer } from './player';
 import { climbRuns, crossing, type Path } from './runs';
@@ -269,7 +269,20 @@ const RECIPES: Partial<Record<Bionic, Recipe>> = {
   },
 };
 
-let items: Item[] = [LAMP];
+/** `pistol` gives the player a loaded pistol and spare rounds, and puts a rat, a dog and a bot along their row. */
+const PISTOL: Item[] = params.has('pistol')
+  ? [
+      { id: 'plastic_pistol', kind: 'weapon', name: 'Plastic pistol', weight: 0.5, charge: null, on: null, material: 'plastic', rounds: 6, capacity: 6, condition: 1 },
+      { id: 'plastic_rounds', kind: 'rounds', name: 'Plastic rounds', weight: 0.02, charge: null, on: null, amount: 8, material: 'plastic' },
+    ]
+  : [];
+/** The server's `RANGE`, `LASTS` and each kind's `health`. */
+const SHOT_RANGE = 12;
+const PISTOL_LASTS = 30;
+const POINTS = { rat: 1, dog: 3, bot: 6, bat: 1 };
+const targets = new Map<string, Creature>();
+
+let items: Item[] = [LAMP, ...PISTOL];
 let searched: string[] = [];
 let known: Bionic[] = [];
 
@@ -328,11 +341,60 @@ function rests(scene: SideScene, village: Village): void {
   }, REST_TICK_MS);
 }
 
-function answer(message: ClientMessage, scene: SideScene): void {
+function placeTargets({ x, y, map }: Position): void {
+  for (const [kind, ahead] of [['rat', 4], ['dog', 7], ['bot', 10]] as const) {
+    const creature: Creature = { id: `${kind}_1`, kind, position: { x: x + ahead, y, map }, facing: 'west', state: 'idle' };
+    targets.set(creature.id, creature);
+    dispatch({ type: 'creature_moved', creature });
+  }
+}
+
+/** A `fire`, simpler than the server's: the row of their feet, and creatures on whole cells. */
+function shoot(facing: SideFacing, scene: SideScene, village: Village): void {
+  const at = scene.playing?.mapPosition;
+  const map = at && village.map(at.map);
+  const weapon = items.find(({ kind, rounds, condition }) => kind === 'weapon' && rounds && condition);
+  if (!at || !map || !weapon) return;
+  weapon.rounds! -= 1;
+  weapon.condition = Math.max(Math.round(weapon.condition! * PISTOL_LASTS) - 1, 0) / PISTOL_LASTS;
+  sendPlayerState();
+  const { x, y } = cellOf(at);
+  const way = facing === 'east' ? 1 : -1;
+  for (let column = x; Math.abs(column - x) <= SHOT_RANGE && !isSolid(map, column, y); column += way) {
+    const creature = [...targets.values()].find(({ position }) => position.map === at.map && position.x === column && position.y === y);
+    if (!creature) continue;
+    const health = (creature.health ?? 1) - 1 / POINTS[creature.kind];
+    dispatch({ type: 'creature_hit', creature_id: creature.id });
+    if (health < 1e-6) {
+      targets.delete(creature.id);
+      dispatch({ type: 'creature_gone', creature_id: creature.id });
+    } else {
+      creature.health = health;
+      dispatch({ type: 'creature_moved', creature });
+    }
+    return;
+  }
+}
+
+/** A `reload`, from the first stack alone. */
+function reload(): void {
+  const weapon = items.find(({ kind, rounds, capacity, condition }) => kind === 'weapon' && condition && rounds! < capacity!);
+  const stack = items.find(({ kind }) => kind === 'rounds');
+  if (!weapon || !stack) return;
+  const loaded = Math.min(weapon.capacity! - weapon.rounds!, stack.amount ?? 1);
+  weapon.rounds! += loaded;
+  stack.amount = (stack.amount ?? 1) - loaded;
+  if (!stack.amount) items = items.filter((item) => item !== stack);
+  sendPlayerState();
+}
+
+function answer(message: ClientMessage, scene: SideScene, village: Village): void {
   if (message.type === 'rest') {
     resting = message.on && !!bed && health < 1;
     return sendPlayerState();
   }
+  if (message.type === 'fire') return shoot(message.facing, scene, village);
+  if (message.type === 'reload') return reload();
   if (message.type === 'pick_up') search(scene.playing?.mapPosition);
   if (message.type !== 'lamp' || (message.on && !LAMP.charge)) return;
   LAMP.on = message.on;
@@ -427,7 +489,7 @@ function showPanel(): void {
   panel.innerHTML = `<b>Side-view harness</b>
     <p>Left and right walk, Shift switches to running and back, and Space or PageUp jumps. E takes a door, or uses
     what's in reach. T talks to the ringed resident, and V looks at a mural or a painting. Up climbs stairs or a ladder from the tile beside its foot, and down from beside its
-    top; up and down ride the lift. L switches the lamp. [ and ] move the clock an hour; 1 to 6 go to each
+    top; up and down ride the lift. L switches the lamp. With <code>pistol</code>, X fires and R reloads. [ and ] move the clock an hour; 1 to 6 go to each
     street, 6 the metro.</p>`;
 }
 
@@ -524,6 +586,18 @@ function exposeWalk(scene: SideScene, village: Village): void {
           }),
       textureLimit: () => (scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer>).getMaxTextureSize?.() ?? null,
       rest: () => ({ health, resting, bed: bed ?? null }),
+      weapon: () => {
+        const weapon = items.find(({ kind }) => kind === 'weapon');
+        return { rounds: weapon?.rounds ?? null, condition: weapon?.condition ?? null };
+      },
+      shot: () => scene.shotView.drawn(),
+      creatureImages: () =>
+        scene.children.list
+          .filter((child) => child instanceof Phaser.GameObjects.Image && child.texture.key.startsWith('creature-'))
+          .map((child) => {
+            const image = child as Phaser.GameObjects.Image;
+            return { key: image.texture.key, x: image.x, flashing: image.tintFill };
+          }),
       hurt: (to: number) => {
         health = to;
         sendPlayerState();
@@ -551,7 +625,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   server.close();
   server.send = (message) => {
     console.info('Side harness: sent', message);
-    answer(message, scene);
+    answer(message, scene, village);
     return true;
   };
   const [map, x, y] = (params.get('at') ?? 'high_street:51:15').split(':');
@@ -577,6 +651,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   if (params.get('murals') !== '0') dispatch({ type: 'murals', walls: walls(village) });
   dispatch({ type: 'paintings', frames: frames(village) });
   sendPlayerState();
+  if (PISTOL.length) placeTargets(player);
   if (!params.has('still')) {
     direct(all, village);
     chat();

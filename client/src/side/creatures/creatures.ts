@@ -9,6 +9,9 @@ export const SNAP_TILES = 4;
 /** How long one that's gone takes to keel over and fade. */
 export const DOWN_SECONDS = 0.6;
 
+/** How long one that's hit flashes and flinches. */
+export const HIT_SECONDS = 0.3;
+
 type Point = { x: number; y: number };
 
 /** A creature as the client draws it, between the server's positions. */
@@ -26,6 +29,8 @@ export class Tracked {
   travelled = 0;
   /** Seconds since it went, while it keels over. */
   down?: number;
+  /** Seconds since it was hit, while it flashes and flinches. */
+  hit?: number;
 
   constructor(creature: Creature) {
     this.creature = creature;
@@ -72,6 +77,7 @@ export class Tracked {
     this.sinceLast += dt;
     this.seconds += dt;
     if (this.down !== undefined) this.down += dt;
+    if (this.hit !== undefined) this.hit = this.hit + dt < HIT_SECONDS ? this.hit + dt : undefined;
     if (this.elapsed >= this.duration) return;
     this.elapsed = Math.min(this.elapsed + dt, this.duration);
     const t = this.elapsed / this.duration;
@@ -110,6 +116,11 @@ export class Creatures {
     if (known && known.down === undefined) known.down = 0;
   }
 
+  hit(id: string): void {
+    const known = this.all.get(id);
+    if (known) known.hit = 0;
+  }
+
   update(dt: number): void {
     for (const [id, tracked] of this.all) {
       tracked.update(dt);
@@ -122,3 +133,4 @@ export const sideCreatures = new Creatures();
 server.on('snapshot', ({ creatures }) => sideCreatures.reset(creatures));
 server.on('creature_moved', ({ creature }) => sideCreatures.move(creature));
 server.on('creature_gone', ({ creature_id }) => sideCreatures.gone(creature_id));
+server.on('creature_hit', ({ creature_id }) => sideCreatures.hit(creature_id));

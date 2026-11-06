@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
+import { weaponLine } from '../side/shooting';
 import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'unpainted' ? undefined : `/icons/${id}.webp`) }));
@@ -438,6 +439,45 @@ describe('gear', () => {
     const { section, page } = opened({ type: 'player_state', player: STAGE_1 });
     section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
     expect(texts(page, '.character-empty')).toEqual(['You carry nothing.']);
+  });
+});
+
+describe('a weapon in the gear', () => {
+  const pistol = (rounds: number, condition: number) =>
+    item('plastic_pistol', 'Plastic pistol', 0.5, { kind: 'weapon', material: 'plastic', rounds, capacity: 6, condition });
+  const carrying = (...items: Item[]): Player => ({ ...STATE.player, items });
+
+  it('has its condition on its tile', () => {
+    const { section, page } = opened({ ...STATE, player: carrying(pistol(4, 0.8)) });
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+
+    const cell = page.querySelector<HTMLElement>('[data-item="plastic_pistol"]')!;
+    expect(cell.querySelector<HTMLElement>('.character-meter > span')!.style.width).toBe('80%');
+    expect(cell.ariaLabel).toBe('Plastic pistol, 80% condition');
+  });
+
+  it('shows the condition of the one that fires, and none on a tile that isn’t a weapon', () => {
+    expect(gear(carrying(pistol(1, 0), pistol(1, 0.5))).tiles[0].condition).toBe(0.5);
+    expect(gear(carrying(pistol(1, 0))).tiles[0].condition).toBe(0);
+    expect(gear(carrying(LAMP)).tiles[0].condition).toBeUndefined();
+  });
+
+  it('agrees with the corner line on the one that fires, an empty one first or not', () => {
+    const items = [pistol(0, 0.5), pistol(3, 0.9)];
+    expect(gear(carrying(...items)).tiles[0].condition).toBe(0.9);
+    expect(weaponLine(items)).toContain('3/6, 0 spare, 90% condition');
+  });
+
+  it('details each one’s rounds and condition, and the keys', () => {
+    const player = carrying(pistol(4, 0.8), pistol(2, 0));
+    const [tile] = gear(player).tiles;
+
+    expect(itemDetails(tile, player).lines).toEqual([
+      '2 of them, 0.5 kg each, 1 kg in all.',
+      '4 of 6 rounds loaded, 80% condition.',
+      'Worn out.',
+      'X fires it and R reloads it.',
+    ]);
   });
 });
 

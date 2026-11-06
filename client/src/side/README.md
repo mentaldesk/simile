@@ -21,7 +21,14 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 | `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
+| `pistol` | Gives the player a loaded plastic pistol and 8 spare rounds, and puts a rat, a dog and a bot along their row. It answers `fire` and `reload` more simply than the server: a shot covers only the row of their feet. |
 | `city=sketch` | A city and the Apex towers on every street above ground, plain silhouettes drawn in code, for a manifest that has none yet. |
+
+X fires the way the player last faced sideways, and R reloads (`shooting.ts`). A press sends any
+position the throttle is holding back first, as the server shoots from the last one it kept. Neither
+goes with nothing to fire or reload, and fire doesn't go on a ladder, stairs or the lift, in bed or
+through a door. A plain pistol and flash show for a moment after each shot, the placeholders until
+Q13 paints them, and a line in the corner gives the weapon's rounds and condition while they carry one.
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
 or PageUp jumps (`jump.ts`, below). E takes the door or street way you're on, whatever else is in reach. It
@@ -227,8 +234,10 @@ checking they lie down and get up at full health or on a key, checks a run jump 
 high ledge falls short, lands on the high ledge's secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto
 it on the spring feet and crosses the high gap on the bionic legs, opens the news at every terminal
-on E, orders at the café's counter on T, talks to Lachlan on T, each after E there does nothing, and
-looks at house 10's mural and a painting on V and closes them on V, and checks the sewers' vault is
+on E, orders at the café's counter on T, talks to Lachlan on T, each after E there does nothing,
+looks at house 10's mural and a painting on V and closes them on V, fires on X and reloads on R with a
+pistol, checking the flash and the flinch and that X does nothing on a ladder, in bed or through a door,
+and checks the sewers' vault is
 drawn edge to edge in parts on the widest level, with no `texImage2D` error. It steps Playwright's clock
 rather than waiting, and the *Side walk* workflow runs it on every PR.
 
