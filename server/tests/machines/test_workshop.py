@@ -195,6 +195,27 @@ def test_making_needs_them_at_the_machine_and_says_when_it_cant() -> None:
     assert not there.make(PRINTER, ROUNDS.id)
 
 
+def test_an_offer_can_change_with_what_they_carry_and_is_sent_when_it_does() -> None:
+    def rounds(player: Player) -> Product | None:
+        if not player.items:
+            return None
+        return Product(item=ROUNDS, uses="scrap", cost=len(player.items))
+
+    player = Player(items=[], repaired=[PRINTER])
+    shop, changed = workshop(player)
+    shop.offer(PRINTER, Offer(rounds, lambda player: True))
+    shop.update()
+    assert shop.machine(PRINTER).makes == [] and changed == []
+    assert not shop.make(PRINTER, ROUNDS.id)
+
+    player.items = [WIRE, WIRE]
+    shop.tick(0.1)
+    shop.tick(0.1)
+
+    assert [machine.makes[0].cost for machine in changed] == [2]
+    assert shop.make(PRINTER, ROUNDS.id)
+
+
 def test_offering_on_a_machine_that_isnt_one_fails_loudly() -> None:
     with pytest.raises(KeyError):
         workshop(Player())[0].offer("laser_cutter", offer())

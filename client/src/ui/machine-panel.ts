@@ -1,4 +1,4 @@
-import { playerState, server, type ClientMessage, type Item, type Machine, type Player, type Position, type Product } from '../net';
+import { playerState, server, type Item, type Machine, type MakeMessage, type Material, type Player, type Position, type Product, type RepairMessage } from '../net';
 import { interactableAt, type Interactable } from '../world/interactables';
 import { mapOf } from '../world/map';
 import './clinic-panel.css';
@@ -29,7 +29,7 @@ export function machineAt(position: Position | undefined): { machine: Machine; i
   return machine && interactable && { machine, interactable };
 }
 
-export type Action = { type: 'repair'; machine: string } | { type: 'make'; machine: string; item: string };
+export type Action = RepairMessage | MakeMessage;
 
 /** One line of the panel: a part it needs, or what Enter does. */
 export type Row =
@@ -39,20 +39,18 @@ export type Row =
 
 const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-/** What they carry of a material, or the kilos of scrap: all their salvage, by weight. */
-export function carried(uses: Product['uses'], items: readonly Item[]): number {
-  if (uses === 'scrap') return items.filter(({ kind }) => kind === 'salvage').reduce((sum, { weight, amount = 1 }) => sum + weight * amount, 0);
-  return items.filter(({ id }) => id === uses).reduce((sum, { amount = 1 }) => sum + amount, 0);
+/** What they carry of a material. */
+export function carried(material: Material, items: readonly Item[]): number {
+  return items.filter(({ id }) => id === material).reduce((sum, { amount = 1 }) => sum + amount, 0);
 }
 
 /** A broken machine's parts against what they carry, then repairing it; a working one's offers. */
 export function rowsOf(machine: Machine, items: readonly Item[]): Row[] {
   if (machine.state === 'working') {
     return machine.makes.map((product) => {
-      const have = carried(product.uses, items);
+      const have = product.uses === 'scrap' ? product.cost : carried(product.uses, items);
       const made = product.item.amount && product.item.amount > 1 ? `${product.item.name} ×${amount(product.item.amount)}` : product.item.name;
-      const short = product.uses === 'scrap' ? have <= 0 : have < product.cost - 1e-9;
-      return { kind: 'make', id: product.item.id, name: made, product, have, short };
+      return { kind: 'make', id: product.item.id, name: made, product, have, short: have < product.cost - 1e-9 };
     });
   }
   const parts = Object.entries(machine.parts).map(([id, count]): Row => {
@@ -66,17 +64,16 @@ export function rowsOf(machine: Machine, items: readonly Item[]): Row[] {
 /** What a row shows at its end: how many of a part, or what it takes against what they have. */
 export function counted(row: Row): string {
   if (row.kind === 'part') return `${row.have}/${row.count}`;
-  if (row.kind === 'make') return row.product.uses === 'scrap' ? `${amount(row.have)} kg` : `${amount(row.have)}/${amount(row.product.cost)}`;
+  if (row.kind === 'make') return row.product.uses === 'scrap' ? `${amount(row.product.cost)} kg` : `${amount(row.have)}/${amount(row.product.cost)}`;
   return '';
 }
 
 /** What the panel says of the chosen row: what Enter will do, or why it can't. */
-export function note(chosen: Row | undefined, rows: readonly Row[]): string {
-  if (!chosen) return 'It has nothing to offer yet.';
+export function note(chosen: Row | undefined, rows: readonly Row[], kind?: Machine['kind']): string {
+  if (!chosen) return kind === 'recycler' ? "You're carrying no scrap it can use. It leaves the parts you'll need." : 'It has nothing to offer yet.';
   if (chosen.kind === 'make') {
-    if (!chosen.short) return 'Enter to make it.';
     const { uses, cost } = chosen.product;
-    return uses === 'scrap' ? "It takes scrap, and you're carrying none." : `It takes ${amount(cost)} ${uses}, and you have ${amount(chosen.have)}.`;
+    return chosen.short ? `It takes ${amount(cost)} ${uses}, and you have ${amount(chosen.have)}.` : 'Enter to make it.';
   }
   if (chosen.kind === 'repair' && !chosen.short) return 'Enter to repair it. It uses up these parts.';
   const missing = rows.find((row) => row.kind === 'part' && row.have < row.count);
@@ -122,7 +119,7 @@ export class MachinePanel {
   private at = 0;
   private drawn = '';
 
-  constructor(parent: HTMLElement, send: (action: Action) => void = (action) => server.send(action as unknown as ClientMessage)) {
+  constructor(parent: HTMLElement, send: (action: Action) => void = (action) => server.send(action)) {
     this.send = send;
     this.panel = parent.appendChild(el('div', undefined, 'clinic machine-panel'));
     this.panel.tabIndex = -1;
@@ -248,7 +245,7 @@ export class MachinePanel {
         return line;
       }),
     );
-    this.status.textContent = note(this.rows[this.at], this.rows);
+    this.status.textContent = note(this.rows[this.at], this.rows, this.shown?.kind);
     this.list.querySelector('.clinic-selected')?.scrollIntoView?.({ block: 'nearest' });
   }
 }

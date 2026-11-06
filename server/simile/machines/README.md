@@ -1,8 +1,9 @@
 # simile.machines
 
 Q4: the machines you repair and then use. Its `running` hook makes a `Workshop` from `player_of(app)`
-and adds every machine to the snapshot. `machine_changed` goes out when one is repaired, and the
-parts it used up reach the client in the next `player_state`, on the sim loop.
+and adds every machine to the snapshot, subscribes `repair` and `make`, and ticks on the sim loop,
+sending `machine_changed` for each machine that's changed. What a `repair` or a `make` used up
+reaches the client in the next `player_state`.
 
 A machine's `id` is its interactable's, on the maker space's map. Each `Machine` is built afresh from
 `Player.repaired`, which is all that's saved, so this module stays the source of its parts and offers.
@@ -37,5 +38,10 @@ def register(workshop: Workshop) -> None:
 A broken machine lists none of them. `Workshop.make` runs the one a client asks for, while the
 machine works and the player stands at it. The next `player_state` shows what changed.
 
-The client's panel is `client/src/ui/machine-panel.ts`. For `uses: "scrap"` it shows all the
-`salvage` they carry by weight, so an offer on scrap should take the same items.
+An offer that depends on what they carry gives a function of the player as its `product`. It returns
+what a press would make now, or None to list nothing, and the client hears of each change. The
+client can't tell what counts as scrap, so for `uses: "scrap"` the panel shows the product as the
+server sends it, with `item.amount` what a press makes and `cost` the kilos it takes. A working
+recycler listing nothing says it's carrying no scrap it can use.
+
+The client's panel is `client/src/ui/machine-panel.ts`.

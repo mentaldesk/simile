@@ -52,16 +52,18 @@ describe('rowsOf', () => {
     expect(rows[1]).toMatchObject({ kind: 'make', have: 3, short: false });
   });
 
-  it('makes from scrap with any scrap at all, since it takes all they carry', () => {
-    const recycler: Machine = { id: 'recycler', kind: 'recycler', state: 'working', parts: {}, makes: [{ item: PLASTIC, uses: 'scrap', cost: 1 }] };
+  it('shows what a press makes from scrap as the server sends it, since only it can tell what counts as scrap', () => {
+    const recycler: Machine = { id: 'recycler', kind: 'recycler', state: 'working', parts: {}, makes: [{ item: { ...PLASTIC, amount: 3.5 }, uses: 'scrap', cost: 3.5 }] };
 
-    const [some] = rowsOf(recycler, [{ ...WIRE, weight: 0.5 }]);
-    expect(some).toMatchObject({ have: 0.5, short: false });
-    expect(counted(some)).toBe('0.5 kg');
+    const [press] = rowsOf(recycler, [WIRE]);
 
-    const none = rowsOf(recycler, [SHEET]);
-    expect(none[0]).toMatchObject({ have: 0, short: true });
-    expect(note(none[0], none)).toBe("It takes scrap, and you're carrying none.");
+    expect(press).toMatchObject({ kind: 'make', name: 'Plastic ×3.5', short: false });
+    expect(counted(press)).toBe('3.5 kg');
+    expect(note(press, [press], 'recycler')).toBe('Enter to make it.');
+  });
+
+  it('says why a working recycler lists nothing', () => {
+    expect(note(undefined, [], 'recycler')).toBe("You're carrying no scrap it can use. It leaves the parts you'll need.");
   });
 
   it('offers nothing while broken, however much they carry', () => {
@@ -72,10 +74,6 @@ describe('rowsOf', () => {
 describe('carried', () => {
   it('adds up a material by amount', () => {
     expect(carried('plastic', [PLASTIC, { ...PLASTIC, amount: 1.5 }, WIRE])).toBe(9.5);
-  });
-
-  it('weighs scrap as all their salvage and nothing else', () => {
-    expect(carried('scrap', [WIRE, WIRE, SHEET, PLASTIC, LAMP])).toBe(3);
   });
 });
 

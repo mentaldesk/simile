@@ -29,15 +29,17 @@ MACHINES: dict[Id, Broken] = {
 
 
 class Offer(NamedTuple):
-    """Something a working machine offers: the `product` it lists, and `make`, which takes what it
-    uses from the player and gives them what comes out, or returns False and changes nothing."""
+    """Something a working machine offers: the `product` it lists, or a function of the player
+    giving what it lists for them now, or None for nothing, and `make`, which takes what it uses
+    from the player and gives them what comes out, or returns False and changes nothing."""
 
-    product: Product
+    product: Product | Callable[[Player], Product | None]
     make: Callable[[Player], bool]
 
 
 class Workshop:
-    """The machines you repair and then use, each built afresh from `Player.repaired`."""
+    """The machines you repair and then use, each built afresh from `Player.repaired`. On the sim
+    loop, it tells the client when one changes."""
 
     def __init__(
         self,
@@ -51,6 +53,7 @@ class Workshop:
         self.changed = changed
         self.broken = machines
         self.offers: dict[Id, list[Offer]] = {}
+        self.sent = self.machines()
 
     def offer(self, machine: Id, *offers: Offer) -> None:
         """Adds to what `machine` lists once it works. A module's `register` calls this."""
@@ -61,12 +64,23 @@ class Workshop:
     def machine(self, machine: Id) -> Machine:
         broken = self.broken[machine]
         if machine in self.player.repaired:
-            makes = [offer.product for offer in self.offers.get(machine, [])]
+            makes = [product for product, _ in self._listed(machine)]
             return Machine(id=machine, kind=broken.kind, state=MachineState.WORKING, makes=makes)
         return Machine(id=machine, kind=broken.kind, state=MachineState.BROKEN, parts=broken.parts)
 
     def machines(self) -> list[Machine]:
         return [self.machine(machine) for machine in self.broken]
+
+    def tick(self, dt: float) -> None:
+        self.update()
+
+    def update(self) -> None:
+        """Sends each machine that's changed since it was last sent."""
+        machines = self.machines()
+        for machine, sent in zip(machines, self.sent, strict=True):
+            if machine != sent:
+                self.changed(machine)
+        self.sent = machines
 
     def missing(self, machine: Id) -> dict[str, int]:
         """How many of each part repairing it uses up they're short of."""
@@ -91,7 +105,7 @@ class Workshop:
         self.player.items = items
         self.player.repaired = [*self.player.repaired, machine]
         logger.info("The player repairs %s", machine)
-        self.changed(self.machine(machine))
+        self.update()
         return True
 
     def make(self, machine: Id, item: Id) -> bool:
@@ -99,9 +113,17 @@ class Workshop:
         did."""
         if machine not in self.player.repaired or not self._at(machine):
             return False
-        offers = self.offers.get(machine, [])
-        offer = next((offer for offer in offers if offer.product.item.id == item), None)
+        listed = self._listed(machine)
+        offer = next((offer for product, offer in listed if product.item.id == item), None)
         return offer is not None and offer.make(self.player)
+
+    def _listed(self, machine: Id) -> list[tuple[Product, Offer]]:
+        listed = []
+        for offer in self.offers.get(machine, []):
+            product = offer.product(self.player) if callable(offer.product) else offer.product
+            if product is not None:
+                listed.append((product, offer))
+        return listed
 
     def _at(self, machine: Id) -> bool:
         at, stands = here(self.movement), self._interactable(machine)
