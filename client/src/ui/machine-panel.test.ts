@@ -62,6 +62,13 @@ describe('rowsOf', () => {
     expect(note(press, [press], 'recycler')).toBe('Enter to make it.');
   });
 
+  it('shows the amount of a press under one, and none for exactly one', () => {
+    const press = (amount?: number): Machine => ({ id: 'recycler', kind: 'recycler', state: 'working', parts: {}, makes: [{ item: { ...PLASTIC, amount }, uses: 'scrap', cost: amount ?? 1 }] });
+
+    expect(rowNames(rowsOf(press(0.5), []))).toEqual(['Plastic ×0.5']);
+    expect(rowNames(rowsOf(press(), []))).toEqual(['Plastic']);
+  });
+
   it('says why a working recycler lists nothing', () => {
     expect(note(undefined, [], 'recycler')).toBe("You're carrying no scrap it can use. It leaves the parts you'll need.");
   });
@@ -265,6 +272,17 @@ describe('MachinePanel', () => {
     expect(parent.querySelector('footer p')?.textContent).toBe('It has nothing to offer yet.');
     press('Enter');
     expect(sent).toEqual([]);
+  });
+
+  it('says why a press does nothing when all they carry is salvage it leaves', () => {
+    resetMachines([{ ...EMPTY, kind: 'recycler' }]);
+    playerState.latest = { player: player([WIRE]) } as PlayerStateMessage;
+    panel.use(AT_THE_PRINTER, false);
+
+    press('Enter');
+
+    expect(sent).toEqual([]);
+    expect(parent.querySelector('footer p')?.textContent).toBe("You're carrying no scrap it can use. It leaves the parts you'll need.");
   });
 
   it('keeps the chosen row as what they carry changes', () => {
