@@ -39,6 +39,7 @@
     "kind": "rat",
     "position": {"x": 15.0, "y": 9.0, "map": "sewers"},
     "facing": "east",
-    "state": "hurt"
+    "state": "hurt",
+    "health": 0.5
   }
 ]
