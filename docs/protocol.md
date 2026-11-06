@@ -615,7 +615,8 @@ none on offer or that they can't pay for.
 No fields. Picks up from the nearest `Pile` on the map the player is on, within a tile and a half of
 where they stand, one of their `left` or of `player_state`'s `piles`. It takes its money, and each
 item, in order, that still fits under their carry limit, and skips any that doesn't, which stays in
-the pile with anything else left. The server sends the [`player_state`](#player_state) that follows,
+the pile with anything else left. A stack fits or stays whole, and joins any of that `id` they already
+carry. The server sends the [`player_state`](#player_state) that follows,
 and ignores a `pick_up` with nothing in reach, or with only items that don't fit.
 
 It also reaches clues (S13): a clue whose cell is within half a tile of the player, and the clue

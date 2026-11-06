@@ -26,7 +26,8 @@ second:
 | `windup` | 0.3 | How long it shows its attack before it lands. |
 | `lunges` | no | Keeps after the player while its attack winds up, so running doesn't get away. |
 | `rest` | 1 | How long after an attack before the next. |
-| `stomped` | no | Goes down when the player lands on it (below). |
+| `stomped` | no | Takes `KICK` (1) of its `health` when the player lands on it (below). |
+| `health` | 1 | Points it takes to put it down: a plastic round takes 1 ([`simile.combat`](../combat/README.md)). |
 
 The tunnels' kinds are in `kinds.py` (below).
 
@@ -39,7 +40,8 @@ The tunnels' kinds are in `kinds.py` (below).
 | Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks, floor)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted, floor)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
 | Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up | 3, and 12 chasing: faster than any legs but the best (13). It flies, and thinks every 0.15 s |
 | Attack | Bites, `bite(0.12)`, from 0.9 tiles after a 0.3 s windup, then scurries home and rests 6 s before the next | `hurt(0.35)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
-| Landed on | Goes down, and it's back 120 s later | Never goes down until there are weapons: landing on one is landing in its reach | As the bot | Never: it flies |
+| Health | 1, and it's back whole 120 s later | 6, and it stays down until the server restarts | 3, as the bot | 1, as the bot |
+| Landed on | Goes down, and it's back 120 s later | Nothing: landing on one is landing in its reach | As the bot | Never: it flies |
 | Climbs | No ladders | No ladders or stairs, and never drops off its floor | No, and takes no door | Flies |
 
 A rat leaves a player who carries no food alone, and notices one who does only on its own floor
@@ -143,8 +145,8 @@ races them for it rather than clearing it while they're away.
 The player kills a rat by landing on it, as in the classic platformers. Each tick the engine compares
 where the server keeps the player with where it kept them the tick before: feet that came down
 from above a `stomped` creature's back (`STOMP_TOP`, 0.4 tiles over its floor) to it or below,
-within `STOMP_REACH` (0.9 tiles) of it, put it down: `creature_gone`, and it's back after `respawn`
-if it has one. Walking into one, jumping up past it or coming down beside it doesn't, and nor does
+within `STOMP_REACH` (0.9 tiles) of it, take `KICK` of its health, which puts a rat down:
+`creature_gone`, and it's back after `respawn` if it has one. Walking into one, jumping up past it or coming down beside it doesn't, and nor does
 coming down a ladder or stairs onto one: climbing a ladder puts the player on its column, so a jump
 from anywhere else onto a rat at a ladder's foot still counts. The reach is the player's foot and
 half a rat, and slack for the rat having moved on since the client drew it.
@@ -156,7 +158,7 @@ a dog puts the player in its reach, and it attacks as it would anyway.
 ## To the client
 
 The snapshot carries every creature, and `creature_moved` each change: at once for a change of
-state or facing, and every `SEND` (0.2 sim seconds) while one moves, with where it is mid-step. The
+state, facing or health, and every `SEND` (0.2 sim seconds) while one moves, with where it is mid-step. The
 client tweens between them. A walking creature's position is the floor under it, and a bat's the
 middle of its cell, or the ceiling above it while it roosts.
 

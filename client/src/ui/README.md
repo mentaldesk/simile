@@ -257,9 +257,9 @@ Opening it closes the journal and the controls.
   grade and what it does. `stomach` and `feet` are their own when left out.
 - **Gear:** the weight they carry against the carry limit, over a grid of what they carry: a tile
   per kind of item with its picture from `content/icons/` by item id (`unknown_item` for one with
-  none), how many when there's more than one, its name, and the lamp's charge. Hovering over a
-  tile, or Down then the arrows, shows what it's for, its weight, the lamp's charge and which
-  recipes they know use it. Up off the top row lets go of the grid, so ← → switch tabs again.
+  none), how many when there's more than one, its name, and the lamp's charge or a weapon's
+  condition. Hovering over a tile, or Down then the arrows, shows what it's for, its weight, the
+  lamp's charge, each weapon's rounds and condition, and which recipes they know use it. Up off the top row lets go of the grid, so ← → switch tabs again.
 
 The side walk opens it on C and goes through its tabs.
 

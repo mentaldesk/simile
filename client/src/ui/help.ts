@@ -16,6 +16,8 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['F'], 'eat: a meal at home, at the café or the noodle bar, or food you carry'],
   [['J'], 'open or close your journal: what you have learned about Aris, and the leads still open'],
   [['L'], 'switch your lamp on or off, to see in the dark; stand at a plug to charge it'],
+  [['X'], 'fire your weapon the way you face, along the row, at the first creature or wall in range'],
+  [['R'], 'reload your weapon from the rounds you carry'],
   [['C'], 'open or close your character: your vitals, your body, what you carry and the recipes you know'],
   [['Enter'], 'talk to the ringed resident, then send; with nobody near, open or close the conversation log'],
   [['Tab'], 'choose who to talk to'],

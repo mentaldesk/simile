@@ -1,6 +1,6 @@
 import logging
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from datetime import timedelta
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -8,7 +8,7 @@ from starlette.applications import Starlette
 
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.where import here
-from simile.schema import Id, Item, MapTile, Pile, Player
+from simile.schema import Id, Item, ItemKind, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.map import Pickup, PickupKind
 from simile.world.movement import Movement, Point
@@ -35,6 +35,20 @@ class Claim(NamedTuple):
 
 
 type Claimer = Callable[[Point], Claim | None]
+
+
+def joined(items: Iterable[Item], more: Iterable[Item]) -> list[Item]:
+    """`items` and `more`, a stack of material or rounds joining the first of its `id`."""
+    carried = list(items)
+    for item in more:
+        at = next((i for i, held in enumerate(carried) if held.id == item.id), None)
+        if at is None or item.kind not in (ItemKind.MATERIAL, ItemKind.ROUNDS):
+            carried.append(item)
+        else:
+            carried[at] = carried[at].model_copy(
+                update={"amount": carried[at].amount + item.amount}
+            )
+    return carried
 
 
 def claimers_of(app: Starlette) -> list[Claimer]:
@@ -89,9 +103,9 @@ class Pickups:
         taken: list[Item] = []
         kept: list[Item] = []
         for item in found.pile.items:
-            if item.weight <= room + 1e-9:
+            if item.load <= room + 1e-9:
                 taken.append(item)
-                room -= item.weight
+                room -= item.load
             else:
                 kept.append(item)
         if not taken and not found.pile.money:
@@ -107,7 +121,7 @@ class Pickups:
         else:
             self.player.taken = {**self.player.taken, found.pickup: self.clock.now}
             self.player.left = [*left, *rest]
-        self.player.items = [*self.player.items, *taken]
+        self.player.items = joined(self.player.items, taken)
         return True
 
     def _there(self, pickup: Id) -> bool:

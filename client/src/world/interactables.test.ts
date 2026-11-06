@@ -33,6 +33,7 @@ describe('interactablesOf', () => {
     const prompts = (map: string) => interactablesOf(map, maps[map]!).map(({ prompt }) => prompt);
     expect(prompts('maker_space_floor_0')).toEqual([
       "Search Aris's bench",
+      "Search Aris's spool",
       'Use the laser cutter',
       'Use the 3D printer',
       'Use the recycler',

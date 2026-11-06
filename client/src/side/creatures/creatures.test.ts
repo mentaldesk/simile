@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { server, type Creature, type CreatureState } from '../../net';
-import { Creatures, DOWN_SECONDS, sideCreatures, Tracked } from './creatures';
-import { creatureFigures, frameOf, goingDown, placedOf, poseOf } from './figures';
+import { Creatures, DOWN_SECONDS, HIT_SECONDS, sideCreatures, Tracked } from './creatures';
+import { creatureFigures, FLASH_SECONDS, flinchOf, FLINCH_TILES, frameOf, goingDown, knockedBack, placedOf, poseOf } from './figures';
 
 const rat: Creature = {
   id: 'rat_1',
@@ -143,5 +143,54 @@ describe('their figures', () => {
     expect(gone.alpha).toBe(0);
     expect(goingDown(rat, 'west', DOWN_SECONDS).angle).toBe(90);
     expect(goingDown(creatureFigures.bat!, 'east', DOWN_SECONDS).drop).toBeGreaterThan(gone.drop);
+  });
+
+  it('flashes and flinches on a hit, and still has one the hit killed to draw it on', () => {
+    const creatures = new Creatures();
+    creatures.move(rat);
+    creatures.hit('rat_1');
+    creatures.hit('nobody');
+    const tracked = creatures.all.get('rat_1')!;
+    expect(tracked.hit).toBe(0);
+
+    creatures.gone('rat_1');
+    run(creatures, HIT_SECONDS / 2);
+    expect(creatures.all.get('rat_1')?.hit).toBeGreaterThan(0);
+    run(creatures, HIT_SECONDS);
+    expect(tracked.hit).toBeUndefined();
+  });
+
+  it('keeps a hurt one’s health from its delta', () => {
+    const creatures = new Creatures();
+    creatures.move(rat);
+    creatures.hit('rat_1');
+    creatures.move(at(rat, 30, 15, { health: 2 / 3 }));
+
+    const tracked = creatures.all.get('rat_1')!;
+    expect(tracked.creature.health).toBeCloseTo(2 / 3);
+    expect(tracked.hit).toBe(0);
+  });
+
+  it('hears of a hit from the server', () => {
+    server.dispatch(JSON.stringify({ type: 'creature_moved', creature: { ...rat, id: 'rat_hit' } }));
+    server.dispatch(JSON.stringify({ type: 'creature_hit', creature_id: 'rat_hit' }));
+
+    expect(sideCreatures.all.get('rat_hit')!.hit).toBe(0);
+    server.dispatch(JSON.stringify({ type: 'creature_gone', creature_id: 'rat_hit' }));
+  });
+
+  it('flinch away from the player, and against their facing from the player’s own cell', () => {
+    expect(knockedBack(30, 25, 'west', 0.2)).toBeCloseTo(30.2);
+    expect(knockedBack(20, 25, 'east', 0.2)).toBeCloseTo(19.8);
+    expect(knockedBack(25, 25, 'east', 0.2)).toBeCloseTo(24.8);
+    expect(knockedBack(25, 25, 'west', 0.2)).toBeCloseTo(25.2);
+  });
+
+  it('flinch back and return, flashing first', () => {
+    expect(flinchOf(undefined)).toEqual({ back: 0, flash: false });
+    expect(flinchOf(0).flash).toBe(true);
+    expect(flinchOf(FLASH_SECONDS).flash).toBe(false);
+    expect(flinchOf(HIT_SECONDS / 2).back).toBeCloseTo(FLINCH_TILES);
+    expect(flinchOf(HIT_SECONDS).back).toBeCloseTo(0);
   });
 });

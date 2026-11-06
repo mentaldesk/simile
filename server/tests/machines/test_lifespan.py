@@ -22,7 +22,7 @@ MakePackage = Callable[[dict[str, str]], str]
 LIFESPANS = ("behaviour", "economy", "memory", "protocol", "world")
 PRINTER = Point(9, 2, "maker_space_floor_0")
 ROUNDS = Item(
-    id="plastic_rounds",
+    id="fixture_magazine",
     kind=ItemKind.ROUNDS,
     name="Rounds",
     weight=0.01,
@@ -111,7 +111,7 @@ def test_a_module_beside_the_workshop_adds_its_offers_at_startup(
         sys.modules.pop("simile.machines.q4_fixture_offers", None)
 
     [printer, _] = snapshot["machines"]
-    assert [product["item"]["id"] for product in printer["makes"]] == ["fixture_rounds"]
+    assert "fixture_rounds" in [product["item"]["id"] for product in printer["makes"]]
 
 
 def test_a_change_to_an_offer_reaches_the_client_on_the_sim_loop(
@@ -129,7 +129,7 @@ def test_a_change_to_an_offer_reaches_the_client_on_the_sim_loop(
         client.portal.call(world_of(app).loop.tick)
         changed = next_of(ws, "machine_changed")
 
-    assert [made["item"]["id"] for made in changed["machine"]["makes"]] == [ROUNDS.id]
+    assert ROUNDS.id in [made["item"]["id"] for made in changed["machine"]["makes"]]
 
 
 def test_the_snapshot_holds_both_machines_broken(make_package: MakePackage) -> None:
@@ -162,13 +162,12 @@ def test_a_repair_is_sent_and_in_the_next_snapshot(make_package: MakePackage) ->
             snapshot = next_of(ws, "snapshot")
 
     assert items == []
-    assert changed["machine"] == {
-        "id": "printer_3d",
-        "kind": "printer",
-        "state": "working",
-        "parts": {},
-        "makes": [],
-    }
+    assert changed["machine"]["state"] == "working"
+    assert changed["machine"]["parts"] == {}
+    assert [product["item"]["id"] for product in changed["machine"]["makes"]] == [
+        "plastic_pistol",
+        "plastic_rounds",
+    ]
     assert [(m["id"], m["state"]) for m in snapshot["machines"]] == [
         ("printer_3d", "working"),
         ("recycler", "broken"),

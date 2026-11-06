@@ -336,3 +336,7 @@ def test_bots_and_rats_notice_the_player_only_on_their_own_floor_and_never_on_a_
         walk = walkthrough(STOREYS, spawn, x=x, row=row, **player).go([Wait(0.5)])
         noticed = walk.creature("it").state in {CreatureState.CHASING, CreatureState.ATTACKING}
         assert noticed == notices, (x, row)
+
+
+def test_each_kind_has_its_health_in_points() -> None:
+    assert (RAT.health, DOG.health, BOT.health) == (1, 3, 6)

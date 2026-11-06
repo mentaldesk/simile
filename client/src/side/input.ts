@@ -1,3 +1,4 @@
+import { unfocused } from '../ui/keys';
 import type { Controls } from './player';
 
 /** Which arrow (or WASD) keys are down, whether running is on, and a jump key pressed (`jump`) or down (`hold`). */
@@ -62,6 +63,17 @@ export function eachOnce<E extends object>(handle: (event: E) => void): (event: 
     seen.add(event);
     handle(event);
   };
+}
+
+/** Phaser's names for the keys that shoot, within reach of the left hand on either the arrows or WASD. */
+export const FIRE_KEY = 'X';
+export const RELOAD_KEY = 'R';
+
+/** `handle` on a fresh press of a game key: not a repeat, one with a modifier like the browser's Cmd+R, or a key for what has focus. */
+export function onPress(handle: () => void): (event: KeyboardEvent) => void {
+  return eachOnce((event) => {
+    if (!event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey && unfocused(event)) handle();
+  });
 }
 
 export function readControls(held: Held, pressedE: boolean, out: Controls): Controls {

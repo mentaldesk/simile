@@ -8,8 +8,8 @@ from simile.street import finds, sewers
 from simile.street.metro import RATION_PACK
 from simile.world.map import level_count, load_maps
 
-WAITING_ON_Q13 = {"metal_sheet", "linear_actuator"}
-"""In the world before their pictures: Q13 paints them and deletes this (#603, #609)."""
+WAITING_ON_Q13 = {"metal_sheet", "linear_actuator", "plastic", "plastic_pistol", "plastic_rounds"}
+"""In the world before their pictures: Q13 paints them and deletes this (#601, #603, #609)."""
 
 
 def in_the_world() -> set[str]:

@@ -43,6 +43,22 @@ describe('fitting', () => {
   });
 });
 
+describe('a stack', () => {
+  const plastic = (amount: number): Item => ({ id: 'plastic', kind: 'material', name: 'Plastic', weight: 0.5, amount, material: 'plastic', charge: null, on: null });
+
+  it('weighs its whole amount, carried or lying in the pile', () => {
+    expect(fitting(pile([plastic(8)]), player([plastic(12)]))).toEqual({ taken: [plastic(8)], kept: [] });
+    expect(fitting(pile([plastic(8)]), player([plastic(13)]))).toEqual({ taken: [], kept: [plastic(8)] });
+    expect(fitting(pile([plastic(4), plastic(4)]), player([plastic(14)]))).toEqual({ taken: [plastic(4)], kept: [plastic(4)] });
+  });
+
+  it('says how much of it there is', () => {
+    expect(counted([plastic(8), plastic(0.5)])).toEqual(['plastic ×8.5']);
+    expect(counted([plastic(0.5)])).toEqual(['plastic ×0.5']);
+    expect(pickUpPrompt(pile([plastic(8)]), player([LAMP]))).toBe('Press E to pick up the plastic ×8.');
+  });
+});
+
 describe('pickUpPrompt', () => {
   it('says what E picks up of salvage or a secret', () => {
     expect(pickUpPrompt(pile([WIRE]), player([LAMP]))).toBe('Press E to pick up the copper wire.');
