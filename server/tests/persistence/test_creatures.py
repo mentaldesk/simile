@@ -112,6 +112,27 @@ async def test_a_destroyed_bots_haul_can_be_picked_up_and_it_doesnt_come_back(
 
 
 @pytest.mark.anyio
+async def test_a_haul_joins_what_the_player_already_left_after_it(database: Path) -> None:
+    collapse = Pile(at=MapTile(map=METRO, x=10, y=FLOOR), items=[BOARD], money=5.0)
+    piles: list[Pile] = []
+
+    async def destroy(app: Starlette) -> None:
+        creatures, player = creatures_of(app), player_of(app)
+        player.left = [collapse]
+        bot = creatures.all["metro_bot_1"]
+        bot.haul = [SCRAP]
+
+        creatures.hurt(bot, BOT.health)
+
+        haul = Pile(at=MapTile(map=METRO, x=bot.cell[0], y=FLOOR), items=[SCRAP])
+        piles.extend([collapse, haul])
+        assert player.left == piles
+
+    await run_village(BRIEFLY, after=destroy)
+    assert saved(database).player.left == piles
+
+
+@pytest.mark.anyio
 async def test_a_haul_nobody_has_picked_up_is_still_lying_after_a_restart(database: Path) -> None:
     async def hunt(app: Starlette) -> None:
         beside_the_salvage(app)

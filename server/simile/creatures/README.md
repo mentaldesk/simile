@@ -156,7 +156,11 @@ and takes another only when that lies there again, a sim day later.
 `saving()` goes in the world's save, as `SavedWorld.creatures`, by creature id: those gone for good,
 and the wounds and haul of those that aren't whole or empty-handed. A restart spawns the gone no
 more, and the rest back where they started with their wounds and haul. A creature that respawns
-is never gone, so a rat that's down at a restart is simply back. An id no longer on the maps is
+is never gone, so a rat that's down at a restart is simply back.
+
+The save goes by id alone, and ids repeat across levels: `sewers_bot_1` is on all 8, at different
+cells. A world whose level changes, as one can when the number of levels does, applies a saved
+death, wound or haul to the new level's creature with that id. Only an id that no level uses is
 kept and ignored.
 
 ## Landing on one
