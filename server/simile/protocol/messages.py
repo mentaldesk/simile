@@ -585,22 +585,14 @@ class Vital(StrEnum):
     HEALTH = "health"
 
 
-def _bare_cause(schema: dict[str, Any]) -> None:
-    # Beside a $ref, either makes json-schema-to-typescript declare a copy, like Vital1.
-    del schema["properties"]["cause"]["default"]
-    del schema["properties"]["cause"]["description"]
-
-
 class PlayerCollapsedMessage(Model):
     """The player collapsed of `cause`: they starved, their power cell ran flat, or they had no
     health left. They wake at home, at `position`, with their lamp, switched off. Everything else
     they carried stays where they fell, in `player_state`'s `left`."""
 
-    model_config = ConfigDict(json_schema_extra=_bare_cause)
-
     type: Literal["player_collapsed"] = "player_collapsed"
     position: Position
-    cause: Vital = Field(default=Vital.HUNGER, description="The vital that ran out.")
+    cause: Vital
 
 
 class PlayerDiedMessage(Model):
@@ -784,9 +776,10 @@ class RepairMessage(Model):
 
 class MakeMessage(Model):
     """Has the working machine they stand at make one of its `makes`, using up what it takes. A
-    product that uses scrap takes all the scrap they carry, at that rate. The server ignores it if
-    they aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up
-    carrying wouldn't fit under their carry limit."""
+    product that uses scrap takes all the scrap they carry, at that rate: their `salvage` items,
+    except those a recipe or a machine's repair uses. The server ignores it if they aren't at it,
+    it doesn't make that, they don't have what it takes, or what they'd end up carrying wouldn't
+    fit under their carry limit."""
 
     type: Literal["make"] = "make"
     machine: Id = Field(description="The machine, by its `id`.")
@@ -794,9 +787,10 @@ class MakeMessage(Model):
 
 
 class StashMessage(Model):
-    """Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at
-    Aris's lockers. The server ignores it away from the lockers, if they don't have it, or if it
-    wouldn't fit under the stash's limit or their carry limit."""
+    """Moves one thing between what they carry and the stash, at Aris's lockers: of a stack, as
+    much as fits under the stash's limit or their carry limit, and what doesn't fit stays where it
+    was. The server ignores it away from the lockers, if they don't have it, or if none of it
+    fits."""
 
     type: Literal["stash"] = "stash"
     item: Id = Field(description="What they move, by its `id`: the first of that id.")

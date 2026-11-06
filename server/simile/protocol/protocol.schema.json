@@ -1363,7 +1363,7 @@
     },
     "MakeMessage": {
       "additionalProperties": false,
-      "description": "Has the working machine they stand at make one of its `makes`, using up what it takes. A\nproduct that uses scrap takes all the scrap they carry, at that rate. The server ignores it if\nthey aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up\ncarrying wouldn't fit under their carry limit.",
+      "description": "Has the working machine they stand at make one of its `makes`, using up what it takes. A\nproduct that uses scrap takes all the scrap they carry, at that rate: their `salvage` items,\nexcept those a recipe or a machine's repair uses. The server ignores it if they aren't at it,\nit doesn't make that, they don't have what it takes, or what they'd end up carrying wouldn't\nfit under their carry limit.",
       "properties": {
         "type": {
           "const": "make",
@@ -2715,7 +2715,7 @@
     },
     "StashMessage": {
       "additionalProperties": false,
-      "description": "Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at\nAris's lockers. The server ignores it away from the lockers, if they don't have it, or if it\nwouldn't fit under the stash's limit or their carry limit.",
+      "description": "Moves one thing between what they carry and the stash, at Aris's lockers: of a stack, as\nmuch as fits under the stash's limit or their carry limit, and what doesn't fit stays where it\nwas. The server ignores it away from the lockers, if they don't have it, or if none of it\nfits.",
       "properties": {
         "type": {
           "const": "stash",

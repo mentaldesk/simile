@@ -725,18 +725,22 @@ carry every part.
 its `makes`, by the `id` of that `Product`'s `item`. It uses up the product's `cost` of what it
 `uses`, and they carry the `item`, a stack joining any of that `id` they already carry. A product
 that `uses` `"scrap"` takes all the scrap they carry, at that rate: 3.5 kg of scrap at the recycler's
-1 plastic for 1 kg makes 3.5 plastic. The server sends the [`player_state`](#player_state) that
+1 plastic for 1 kg makes 3.5 plastic. Scrap is their items of kind `"salvage"`, except those a
+recipe or a machine's repair uses, such as copper wire, so making plastic never burns a part they
+need. The server sends the [`player_state`](#player_state) that
 follows. It ignores a `make` if they aren't at it, if it doesn't make that, if they don't have what
 it takes, and if what they'd end up carrying wouldn't fit under their carry limit.
 
 ### `stash`
 
 `item` and `action`: one thing, by its `id`, the first of that `id`, and whether to `"store"` it, from
-what they carry into their `stash`, or `"take"` it back out. A stack moves whole, and joins any of
-that `id` already there. The player has to stand on a `stand` tile of Aris's lockers, the
-interactable with the id `"lockers"`. The server sends the [`player_state`](#player_state) that
-follows. It ignores a `stash` away from the lockers, for something that isn't there to move, and for
-something that wouldn't fit: under the stash's `limit` to store, or their carry limit to take.
+what they carry into their `stash`, or `"take"` it back out. Of a stack, as much moves as fits,
+under the stash's `limit` to store or their carry limit to take, joining any of that `id` already
+there, and what doesn't fit stays where it was: rounds move whole, and material in any amount. So
+nothing is stranded in a stack too heavy to carry. The player has to stand on a `stand` tile of
+Aris's lockers, the interactable with the id `"lockers"`. The server sends the
+[`player_state`](#player_state) that follows. It ignores a `stash` away from the lockers, for
+something that isn't there to move, and when none of it fits.
 
 ### `watch_npc`
 

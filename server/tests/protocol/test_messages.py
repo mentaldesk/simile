@@ -255,7 +255,9 @@ WOKEN = PlayerStateMessage(
     ),
     meal=Meal(place="maker_space", name="home", price=0),
 )
-COLLAPSED = PlayerCollapsedMessage(position=Position(x=13, y=2, map="maker_space_floor_0"))
+COLLAPSED = PlayerCollapsedMessage(
+    position=Position(x=13, y=2, map="maker_space_floor_0"), cause=Vital.HUNGER
+)
 SCRAP_TRADER = Buyer(place="scrap_stall", name="The scrap trader", prices={"copper_wire": 6})
 AT_THE_SCRAP_STALL = DELVING.model_copy(update={"buyer": SCRAP_TRADER})
 LEGS = Fitting(bionic=Bionic.BIONIC_LEGS, name="Bionic legs", price=80, parts=["legs"])
@@ -1316,12 +1318,6 @@ def test_a_collapse_says_where_they_wake_and_why() -> None:
     }
     assert json.loads(DRAINED.model_dump_json())["cause"] == "power"
     assert {vital.value for vital in Vital} == {"hunger", "power", "health"}
-
-
-def test_a_collapse_from_before_its_cause_was_hunger() -> None:
-    data = {"type": "player_collapsed", "position": {"x": 13, "y": 2}}
-
-    assert server_messages.validate_python(data).cause is Vital.HUNGER
 
 
 @pytest.mark.parametrize(

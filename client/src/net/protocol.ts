@@ -1248,9 +1248,10 @@ export interface RepairMessage {
 }
 /**
  * Has the working machine they stand at make one of its `makes`, using up what it takes. A
- * product that uses scrap takes all the scrap they carry, at that rate. The server ignores it if
- * they aren't at it, it doesn't make that, they don't have what it takes, or what they'd end up
- * carrying wouldn't fit under their carry limit.
+ * product that uses scrap takes all the scrap they carry, at that rate: their `salvage` items,
+ * except those a recipe or a machine's repair uses. The server ignores it if they aren't at it,
+ * it doesn't make that, they don't have what it takes, or what they'd end up carrying wouldn't
+ * fit under their carry limit.
  */
 export interface MakeMessage {
   type: 'make';
@@ -1264,9 +1265,10 @@ export interface MakeMessage {
   item: string;
 }
 /**
- * Moves one thing, a whole stack if it's a stack, between what they carry and the stash, at
- * Aris's lockers. The server ignores it away from the lockers, if they don't have it, or if it
- * wouldn't fit under the stash's limit or their carry limit.
+ * Moves one thing between what they carry and the stash, at Aris's lockers: of a stack, as
+ * much as fits under the stash's limit or their carry limit, and what doesn't fit stays where it
+ * was. The server ignores it away from the lockers, if they don't have it, or if none of it
+ * fits.
  */
 export interface StashMessage {
   type: 'stash';
