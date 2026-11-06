@@ -9,10 +9,21 @@ from simile.app import create_app
 from simile.clinic.config import DEFAULT_CONFIG
 from simile.machines.materials import plastic
 from simile.machines.recycler import offers
-from simile.machines.workshop import MACHINES, Workshop, register_offers
+from simile.machines.workshop import MACHINES, Broken, Workshop, register_offers
 from simile.persistence import player_of
 from simile.player.config import SALVAGE
-from simile.schema import PLAYER_ID, Item, ItemKind, MachineState, Player, Product, lamp
+from simile.schema import (
+    PLAYER_ID,
+    Bionic,
+    Item,
+    ItemKind,
+    MachineKind,
+    MachineState,
+    Material,
+    Player,
+    Product,
+    lamp,
+)
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.finds import COPPER_WIRE, METAL_SHEET
 from simile.street.sewers import APEX_BOARD, GAUGE, SCRAP
@@ -25,6 +36,35 @@ AT_IT = Point(1, 2, "maker_space_floor_0")
 STEEL, BOARD = SALVAGE["metro_salvage_2"].item, SALVAGE["metro_salvage_3"].item
 RELAY = SALVAGE["metro_salvage_5"].item
 BATTERY = SCRAP["old_battery"]
+
+
+RATION = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
+PISTOL = Item(
+    id="plastic_pistol",
+    kind=ItemKind.WEAPON,
+    name="Plastic pistol",
+    weight=1.0,
+    material=Material.PLASTIC,
+    rounds=4,
+    capacity=6,
+    condition=1.0,
+)
+ROUNDS = Item(
+    id="plastic_rounds",
+    kind=ItemKind.ROUNDS,
+    name="Plastic rounds",
+    weight=0.01,
+    amount=6.0,
+    material=Material.PLASTIC,
+)
+DATAJACK = Item(
+    id=Bionic.DATAJACK,
+    kind=ItemKind.BIONIC,
+    name="Salvaged datajack",
+    weight=0.5,
+    bionic=Bionic.DATAJACK,
+)
+UNUSED_PART = Item(id="unused_part", kind=ItemKind.PART, name="Unused part", weight=1.0)
 
 
 def scrap(weight: float) -> Item:
@@ -57,6 +97,32 @@ def test_scrap_becomes_plastic_by_weight_and_the_rest_is_left_alone() -> None:
 
     assert player.items == [lamp(), METAL_SHEET, COPPER_WIRE, plastic(6.0)]
     assert listed(shop) == []
+
+
+def test_a_press_leaves_everything_that_isnt_salvage() -> None:
+    others = [lamp(), RATION, PISTOL, ROUNDS, DATAJACK, UNUSED_PART]
+    player, shop = working([*others, STEEL])
+
+    assert listed(shop) == [Product(item=plastic(4.5), uses="scrap", cost=4.5)]
+    assert shop.make(RECYCLER, "plastic")
+
+    assert player.items == [*others, plastic(4.5)]
+
+
+def test_it_keeps_back_what_a_machines_repair_uses_though_no_recipe_does() -> None:
+    pipe = SCRAP["lead_pipe"]
+    world = World(Clock(datetime(2026, 1, 1, 12, tzinfo=UTC)), FakeWallClock())
+    movement = Movement(MAPS, world.bus)
+    movement.track(PLAYER_ID, AT_IT)
+    player = Player(items=[pipe, STEEL], repaired=[RECYCLER])
+    machines = {RECYCLER: Broken(MachineKind.RECYCLER, {pipe.id: 1})}
+    shop = Workshop(player, movement, machines=machines)
+    offers(shop)
+
+    assert listed(shop) == [Product(item=plastic(4.5), uses="scrap", cost=4.5)]
+    assert shop.make(RECYCLER, "plastic")
+
+    assert player.items == [pipe, plastic(4.5)]
 
 
 def test_what_a_recipe_or_a_repair_uses_is_kept_back_and_the_other_salvage_is_scrap() -> None:

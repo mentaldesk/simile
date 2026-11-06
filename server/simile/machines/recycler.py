@@ -1,3 +1,4 @@
+import logging
 import math
 from collections.abc import Collection
 
@@ -5,6 +6,8 @@ from simile.clinic.config import DEFAULT_CONFIG
 from simile.machines.materials import plastic
 from simile.machines.workshop import Offer, Workshop
 from simile.schema import Id, Item, ItemKind, Player, Product
+
+logger = logging.getLogger(__name__)
 
 
 def _is_scrap(item: Item, kept: Collection[Id]) -> bool:
@@ -30,6 +33,7 @@ def _make(player: Player, kept: Collection[Id]) -> bool:
     else:
         joined = stack.model_copy(update={"amount": stack.amount + press.item.amount})
         player.items = [joined if item is stack else item for item in items]
+    logger.info("The player recycles %s kg of scrap", press.cost)
     return True
 
 
