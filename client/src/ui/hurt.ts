@@ -19,7 +19,7 @@ export class Hurts {
   constructor(connection: Pick<ServerConnection, 'on'> = server) {
     connection.on('snapshot', () => (this.health = undefined));
     connection.on('player_state', ({ player }) => this.feel(player.health ?? 1));
-    connection.on('player_collapsed', ({ cause }) => cause === 'health' && this.hit(FULL_HIT));
+    connection.on('player_died', ({ cause }) => cause === 'health' && this.hit(FULL_HIT));
   }
 
   on(listener: Listener): () => void {

@@ -20,7 +20,6 @@ export type ServerMessage =
   | PaintingsMessage
   | PlayerStateMessage
   | JournalMessage
-  | PlayerCollapsedMessage
   | PlayerDiedMessage;
 export type EntityKind = 'npc' | 'player';
 /**
@@ -127,7 +126,7 @@ export type ShutReason = 'closed' | 'sold_out';
  */
 export type SourceKind = 'resident' | 'clue';
 /**
- * What runs out when the player collapses or dies.
+ * What runs out when the player dies.
  */
 export type Vital = 'hunger' | 'power' | 'health';
 export type ClientMessage =
@@ -670,15 +669,15 @@ export interface Player {
   body: Body;
   mind?: Mind;
   /**
-   * 0 is fed and 1 is starving: they collapse.
+   * 0 is fed and 1 is starving, which hurts until they eat.
    */
   hunger: number;
   /**
-   * Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.
+   * Their power cell's charge, from 1 (full) to 0 (flat: they die), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.
    */
   power?: number;
   /**
-   * From 1, unhurt, to 0, when they collapse. Left out while it's full.
+   * From 1, unhurt, to 0, when they die. Left out while it's full.
    */
   health?: number;
   /**
@@ -686,7 +685,7 @@ export interface Player {
    */
   effects?: Effect[];
   /**
-   * What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
+   * What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, a destroyed bot's haul, on the cell it went down in, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
    */
   left?: Pile[];
   /**
@@ -746,8 +745,8 @@ export interface Body {
   feet?: ('present' | 'sold') | Bionic;
 }
 /**
- * What the player knows, which they keep when they collapse, and later when they die. Left
- * out of `Player` while they know no recipe.
+ * What the player knows, which they keep when they die. Left out of `Player` while they know
+ * no recipe.
  */
 export interface Mind {
   /**
@@ -779,7 +778,7 @@ export interface Effect {
 }
 /**
  * Items, money or both lying `at` a tile in the world for the player to pick up, such as
- * salvage, a secret's cash, or what they left when they collapsed.
+ * salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed.
  */
 export interface Pile {
   at: MapTile;
@@ -1052,16 +1051,6 @@ export interface Lead {
    * For the journal, e.g. "Kofi saw her the evening before she went missing. Ask him where she was going."
    */
   text: string;
-}
-/**
- * The player collapsed of `cause`: they starved, their power cell ran flat, or they had no
- * health left. They wake at home, at `position`, with their lamp, switched off. Everything else
- * they carried stays where they fell, in `player_state`'s `left`.
- */
-export interface PlayerCollapsedMessage {
-  type: 'player_collapsed';
-  position: Position;
-  cause: Vital;
 }
 /**
  * The player died of `cause`: they starved, their power cell ran flat, or they had no health

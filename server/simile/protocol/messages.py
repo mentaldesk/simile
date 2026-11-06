@@ -578,21 +578,11 @@ class PlayerStateMessage(Model):
 
 
 class Vital(StrEnum):
-    """What runs out when the player collapses or dies."""
+    """What runs out when the player dies."""
 
     HUNGER = "hunger"
     POWER = "power"
     HEALTH = "health"
-
-
-class PlayerCollapsedMessage(Model):
-    """The player collapsed of `cause`: they starved, their power cell ran flat, or they had no
-    health left. They wake at home, at `position`, with their lamp, switched off. Everything else
-    they carried stays where they fell, in `player_state`'s `left`."""
-
-    type: Literal["player_collapsed"] = "player_collapsed"
-    position: Position
-    cause: Vital
 
 
 class PlayerDiedMessage(Model):
@@ -817,7 +807,6 @@ type ServerMessage = Annotated[
     | PaintingsMessage
     | PlayerStateMessage
     | JournalMessage
-    | PlayerCollapsedMessage
     | PlayerDiedMessage,
     Field(discriminator="type"),
 ]

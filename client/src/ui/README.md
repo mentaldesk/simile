@@ -127,7 +127,7 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
-- For six seconds after `player_collapsed`, why they collapsed, by its `cause`: "You collapsed from
+- For six seconds after `player_died`, why they collapsed, by its `cause`: "You collapsed from
   hunger and woke at home.", "Your power cell ran flat. You collapsed and woke at home.", or "You
   collapsed from your wounds and woke at home." The world scene puts the player at home.
 - **On a power cell** (a `power_cell` grade in their stomach) they never eat: no F, no meals, and
@@ -149,7 +149,7 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
 
 Every time the player takes damage, the screen says so (#468). `Hurts` in [`hurt.ts`](hurt.ts) hears
 a hit from `player_state`'s health dropping by 0.015 or more, so an infection's slow drain (0.01 at a
-time) isn't one, or from `player_collapsed` with `cause: health`. A hit's `strength` is the health it
+time) isn't one, or from `player_died` with `cause: health`. A hit's `strength` is the health it
 took over a bot's or a dog's 0.1, up to 1: a bat's is 0.3, a rat's bite 0.5. It forgets the health it
 last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` hears each one.
 

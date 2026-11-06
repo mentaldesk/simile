@@ -275,7 +275,7 @@ describe('the player', () => {
     server.dispatch(JSON.stringify({ type: 'snapshot', time: '2026-03-14T09:10:03Z', map_id: 'high_street', entities: [player], conversations: [] }));
     expect(sideResidents.start).toEqual({ x: 51, y: 15, map: 'high_street' });
 
-    server.dispatch(JSON.stringify({ type: 'player_collapsed', position: { x: 13, y: 2, map: 'maker_space_floor_0' } }));
+    server.dispatch(JSON.stringify({ type: 'player_died', cause: 'hunger', position: { x: 13, y: 2, map: 'maker_space_floor_0' } }));
 
     expect(sideResidents.start).toEqual({ x: 13, y: 2, map: 'maker_space_floor_0' });
   });
