@@ -56,6 +56,12 @@ describe('HelpPanel', () => {
     expect(what.L).toMatch(/lamp on or off.*plug to charge it/);
   });
 
+  it('gives firing to X and reloading to R', () => {
+    const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
+    expect(what.X).toMatch(/fire your weapon/);
+    expect(what.R).toMatch(/reload your weapon/);
+  });
+
   it('gives the character screen to C', () => {
     const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
     expect(what.C).toMatch(/character.*vitals.*body.*carry.*recipes/);

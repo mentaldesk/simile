@@ -426,6 +426,39 @@ describe('gear', () => {
   });
 });
 
+describe('a weapon in the gear', () => {
+  const pistol = (rounds: number, condition: number) =>
+    item('plastic_pistol', 'Plastic pistol', 0.5, { kind: 'weapon', material: 'plastic', rounds, capacity: 6, condition });
+  const carrying = (...items: Item[]): Player => ({ ...STATE.player, items });
+
+  it('has its condition on its tile', () => {
+    const { section, page } = opened({ ...STATE, player: carrying(pistol(4, 0.8)) });
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+
+    const cell = page.querySelector<HTMLElement>('[data-item="plastic_pistol"]')!;
+    expect(cell.querySelector<HTMLElement>('.character-meter > span')!.style.width).toBe('80%');
+    expect(cell.ariaLabel).toBe('Plastic pistol, 80% condition');
+  });
+
+  it('shows the condition of the one that fires, and none on a tile that isn’t a weapon', () => {
+    expect(gear(carrying(pistol(1, 0), pistol(1, 0.5))).tiles[0].condition).toBe(0.5);
+    expect(gear(carrying(pistol(1, 0))).tiles[0].condition).toBe(0);
+    expect(gear(carrying(LAMP)).tiles[0].condition).toBeUndefined();
+  });
+
+  it('details each one’s rounds and condition, and the keys', () => {
+    const player = carrying(pistol(4, 0.8), pistol(2, 0));
+    const [tile] = gear(player).tiles;
+
+    expect(itemDetails(tile, player).lines).toEqual([
+      '2 of them, 0.5 kg each, 1 kg in all.',
+      '4 of 6 rounds loaded, 80% condition.',
+      'Worn out.',
+      'X fires it and R reloads it.',
+    ]);
+  });
+});
+
 describe('CharacterPanel', () => {
   it('has a tab each for vitals, body and gear, and none for recipes', () => {
     const { section } = opened();

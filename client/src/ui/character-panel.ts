@@ -1,4 +1,5 @@
-import type { Bionic, Body, BodyPart, Effect, ItemKind, Player, PlayerStateMessage, Recipe } from '../net';
+import type { Bionic, Body, BodyPart, Effect, Item, ItemKind, Player, PlayerStateMessage, Recipe } from '../net';
+import { FIRE_KEY, RELOAD_KEY } from '../side/input';
 import { LAMP_KEY, lampHere, lampOf } from '../side/lamp';
 import { callCue } from './call-cue';
 import { CHART, gradeOf, partDetails, pictureOf, PLACES } from './character-body';
@@ -104,6 +105,10 @@ export type GearTile = {
   picture: string;
   charge?: number;
   on?: boolean;
+  /** Each weapon of this kind they carry. */
+  weapons?: Item[];
+  /** Of the first of them that isn't worn out, which is the one that fires. */
+  condition?: number;
 };
 export type Gear = { tiles: GearTile[]; load: number; limit: number };
 
@@ -112,7 +117,8 @@ const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
 /** What they carry, a tile per kind of item in the order they got it, against the carry limit. */
 export function gear(player: Player): Gear {
   const tiles = new Map<string, GearTile>();
-  for (const { id, kind, name, weight, charge, on } of player.items) {
+  for (const item of player.items) {
+    const { id, kind, name, weight, charge, on } = item;
     const tile = tiles.get(id) ?? {
       id,
       kind,
@@ -125,6 +131,10 @@ export function gear(player: Player): Gear {
     };
     tile.count += 1;
     tile.weight += weight;
+    if (kind === 'weapon') {
+      tile.weapons = [...(tile.weapons ?? []), item];
+      tile.condition = tile.weapons.find(({ condition }) => condition)?.condition ?? 0;
+    }
     tiles.set(id, tile);
   }
   const load = player.items.reduce((sum, { weight }) => sum + weight, 0);
@@ -146,12 +156,16 @@ const listed = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).jo
 
 export type ItemDetails = { title: string; kind: ItemKind; status: string; lines: string[] };
 
-/** What it's for, its weight, the lamp's charge, and which recipes they know use it. */
+/** What it's for, its weight, the lamp's charge, each weapon's rounds and condition, and which recipes they know use it. */
 export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = []): ItemDetails {
   const { id, kind, name, count, each, weight } = tile;
   const lines = [count > 1 ? `${count} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
   if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}. ${LAMP_KEY} switches it.`);
   if (kind === 'food') lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
+  for (const { rounds, capacity, condition } of tile.weapons ?? []) {
+    lines.push(condition ? `${rounds} of ${capacity} rounds loaded, ${percent(condition)} condition.` : 'Worn out.');
+  }
+  if (kind === 'weapon') lines.push(`${FIRE_KEY} fires it and ${RELOAD_KEY} reloads it.`);
   const using = (player.mind?.recipes ?? [])
     .filter((bionic) => recipes.find((recipe) => recipe.bionic === bionic)?.parts[id])
     .map((bionic) => `the ${bionicName(bionic, recipes).toLowerCase()}`);
@@ -369,7 +383,8 @@ export class CharacterPanel {
       const cell = grid.appendChild(el('button', undefined, `character-tile character-tile-${tile.kind}`));
       cell.type = 'button';
       cell.tabIndex = -1;
-      cell.ariaLabel = tile.count > 1 ? `${tile.name} ×${tile.count}` : tile.name;
+      const label = tile.count > 1 ? `${tile.name} ×${tile.count}` : tile.name;
+      cell.ariaLabel = tile.condition === undefined ? label : `${label}, ${percent(tile.condition)} condition`;
       cell.dataset.item = tile.id;
       cell.dataset.picture = tile.picture;
       const url = iconUrl(tile.picture);
@@ -380,6 +395,7 @@ export class CharacterPanel {
       }
       if (tile.count > 1) cell.appendChild(el('span', `×${tile.count}`, 'character-count'));
       if (tile.charge !== undefined) cell.appendChild(meter({ fill: tile.charge, good: tile.charge }));
+      if (tile.condition !== undefined) cell.appendChild(meter({ fill: tile.condition, good: tile.condition }));
       cell.appendChild(el('span', tile.name, 'character-tile-name'));
       cell.addEventListener('mouseenter', () => this.pick(i));
       cell.addEventListener('click', () => this.pick(i));
