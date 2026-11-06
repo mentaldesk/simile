@@ -1287,6 +1287,34 @@
         {
           "height": 16,
           "id": 72,
+          "name": "metro_track_rubble",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"metal_sheet\", \"kind\": \"part\", \"name\": \"Metal sheet\", \"weight\": 3.0, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Rubble"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "163,15 164,15"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 2608,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 73,
           "name": "metro_tool_crate",
           "properties": [
             {
@@ -1314,7 +1342,7 @@
         },
         {
           "height": 32,
-          "id": 73,
+          "id": 74,
           "name": "metro_lockers",
           "properties": [
             {
@@ -1354,7 +1382,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 74,
+          "id": 75,
           "name": "metro_scrap_trader",
           "properties": [
             {
@@ -1384,7 +1412,7 @@
       "objects": [
         {
           "height": 320,
-          "id": 75,
+          "id": 76,
           "name": "metro_entrance",
           "properties": [
             {
@@ -1402,7 +1430,7 @@
         },
         {
           "height": 192,
-          "id": 76,
+          "id": 77,
           "name": "metro_vault",
           "properties": [
             {
@@ -1420,7 +1448,7 @@
         },
         {
           "height": 128,
-          "id": 77,
+          "id": 78,
           "name": "metro_platform",
           "properties": [
             {
@@ -1438,7 +1466,7 @@
         },
         {
           "height": 160,
-          "id": 78,
+          "id": 79,
           "name": "metro_gantry",
           "properties": [
             {
@@ -1456,7 +1484,7 @@
         },
         {
           "height": 160,
-          "id": 79,
+          "id": 80,
           "name": "metro_tunnel_west",
           "properties": [
             {
@@ -1474,7 +1502,7 @@
         },
         {
           "height": 320,
-          "id": 80,
+          "id": 81,
           "name": "metro_maintenance",
           "properties": [
             {
@@ -1492,7 +1520,7 @@
         },
         {
           "height": 320,
-          "id": 81,
+          "id": 82,
           "name": "metro_tunnel_east",
           "properties": [
             {
@@ -1510,7 +1538,7 @@
         },
         {
           "height": 320,
-          "id": 82,
+          "id": 83,
           "name": "metro_depot",
           "properties": [
             {
@@ -1528,7 +1556,7 @@
         },
         {
           "height": 320,
-          "id": 83,
+          "id": 84,
           "name": "metro_siding",
           "properties": [
             {
@@ -1546,7 +1574,7 @@
         },
         {
           "height": 320,
-          "id": 84,
+          "id": 85,
           "name": "metro_track",
           "properties": [
             {
@@ -1564,7 +1592,7 @@
         },
         {
           "height": 320,
-          "id": 85,
+          "id": 86,
           "name": "metro_shed",
           "properties": [
             {
@@ -1594,7 +1622,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 86,
+          "id": 87,
           "name": "metro_secret_stairwell",
           "properties": [
             {
@@ -1617,7 +1645,7 @@
         },
         {
           "height": 16,
-          "id": 87,
+          "id": 88,
           "name": "metro_salvage_1",
           "properties": [],
           "rotation": 0,
@@ -1629,7 +1657,7 @@
         },
         {
           "height": 16,
-          "id": 88,
+          "id": 89,
           "name": "metro_secret_catwalk",
           "properties": [
             {
@@ -1652,7 +1680,7 @@
         },
         {
           "height": 16,
-          "id": 89,
+          "id": 90,
           "name": "metro_secret_gantry",
           "properties": [
             {
@@ -1675,7 +1703,7 @@
         },
         {
           "height": 16,
-          "id": 90,
+          "id": 91,
           "name": "metro_salvage_2",
           "properties": [],
           "rotation": 0,
@@ -1687,7 +1715,7 @@
         },
         {
           "height": 16,
-          "id": 91,
+          "id": 92,
           "name": "metro_salvage_3",
           "properties": [],
           "rotation": 0,
@@ -1699,7 +1727,7 @@
         },
         {
           "height": 16,
-          "id": 92,
+          "id": 93,
           "name": "metro_salvage_4",
           "properties": [
             {
@@ -1717,7 +1745,7 @@
         },
         {
           "height": 16,
-          "id": 93,
+          "id": 94,
           "name": "metro_secret_alcove",
           "properties": [
             {
@@ -1755,7 +1783,7 @@
         },
         {
           "height": 16,
-          "id": 94,
+          "id": 95,
           "name": "metro_salvage_5",
           "properties": [],
           "rotation": 0,
@@ -1767,7 +1795,7 @@
         },
         {
           "height": 16,
-          "id": 95,
+          "id": 96,
           "name": "metro_salvage_6",
           "properties": [
             {
@@ -1785,7 +1813,7 @@
         },
         {
           "height": 16,
-          "id": 96,
+          "id": 97,
           "name": "metro_secret_ledge",
           "properties": [
             {
@@ -1808,7 +1836,7 @@
         },
         {
           "height": 16,
-          "id": 97,
+          "id": 98,
           "name": "metro_secret_container",
           "properties": [
             {
@@ -1831,7 +1859,7 @@
         },
         {
           "height": 16,
-          "id": 98,
+          "id": 99,
           "name": "metro_secret_crane",
           "properties": [
             {
@@ -1854,7 +1882,7 @@
         },
         {
           "height": 16,
-          "id": 99,
+          "id": 100,
           "name": "metro_salvage_10",
           "properties": [
             {
@@ -1892,7 +1920,7 @@
         },
         {
           "height": 16,
-          "id": 100,
+          "id": 101,
           "name": "metro_salvage_7",
           "properties": [
             {
@@ -1925,7 +1953,7 @@
         },
         {
           "height": 16,
-          "id": 101,
+          "id": 102,
           "name": "metro_salvage_8",
           "properties": [
             {
@@ -1958,7 +1986,7 @@
         },
         {
           "height": 16,
-          "id": 102,
+          "id": 103,
           "name": "metro_salvage_9",
           "properties": [
             {
@@ -1991,7 +2019,7 @@
         },
         {
           "height": 16,
-          "id": 103,
+          "id": 104,
           "name": "metro_secret_tunnel",
           "properties": [
             {
@@ -2014,7 +2042,7 @@
         },
         {
           "height": 16,
-          "id": 104,
+          "id": 105,
           "name": "metro_salvage_11",
           "properties": [
             {
@@ -2052,7 +2080,7 @@
         },
         {
           "height": 16,
-          "id": 105,
+          "id": 106,
           "name": "metro_secret_store",
           "properties": [
             {
@@ -2087,7 +2115,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 106,
+          "id": 107,
           "name": "metro_bot_1",
           "properties": [
             {
@@ -2110,7 +2138,7 @@
         },
         {
           "height": 16,
-          "id": 107,
+          "id": 108,
           "name": "metro_bot_2",
           "properties": [
             {
@@ -2140,7 +2168,7 @@
     }
   ],
   "nextlayerid": 14,
-  "nextobjectid": 108,
+  "nextobjectid": 109,
   "orientation": "orthogonal",
   "properties": [
     {

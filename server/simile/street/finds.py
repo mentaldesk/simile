@@ -14,6 +14,8 @@ def part(item_id: str, name: str, weight: float) -> Item:
 LITHIUM_CELL = part("lithium_cell", "Lithium cell", 0.3)
 CHARGE_CONTROLLER = part("charge_controller", "Charge controller", 0.2)
 USB_C_CONNECTOR = part("usb_c_connector", "USB-C connector", 0.1)
+METAL_SHEET = part("metal_sheet", "Metal sheet", 3.0)
+LINEAR_ACTUATOR = part("linear_actuator", "Linear actuator", 1.5)
 COPPER_WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 """The same as the metro's salvage on the dead train's roof."""
 

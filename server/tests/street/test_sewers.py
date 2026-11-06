@@ -19,11 +19,12 @@ from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy.config import EconomyConfig
 from simile.npc import load_npcs
 from simile.persistence import investigation_of, player_of
-from simile.schema import PLAYER_ID, Bionic, Body, DoorKind, InteractableKind, ItemKind
+from simile.schema import PLAYER_ID, Bionic, Body, DoorKind, InteractableKind, ItemKind, Tile
 from simile.sim import Clock, World
 from simile.story import make_disappearance
 from simile.story.content import HATCH as HATCH_CLUE
 from simile.story.disappearance import HATCH_LOG, LIFT_LOG
+from simile.street.finds import LINEAR_ACTUATOR
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
@@ -33,6 +34,7 @@ from simile.street.sewers import (
     CAVE_SECRET,
     CEILING,
     DEN,
+    DEN_BEDROLL,
     DEN_LADDER,
     DEN_SECRET,
     FINDS,
@@ -42,15 +44,19 @@ from simile.street.sewers import (
     HATCH,
     LANDING,
     LEVELS,
+    PRINTER_CRATES,
     SECURITY_TERMINAL,
     SEWERS,
     SHAFT,
+    SPRINT_SALVAGE,
     TAPS,
     WALKS,
     WEIR,
     WEIR_AT,
+    problems,
     routes,
     sewers,
+    spread,
     stranded,
 )
 from simile.street.village import JUMPING, UNDERGROUND
@@ -365,6 +371,135 @@ def test_each_zone_teaches_its_recipes_and_holds_their_parts_where_youd_reach_th
     [terminal] = [f for f in finds if f.teaches is Bionic.INFRARED_EYE]
     assert terminal.id == SECURITY_TERMINAL and terminal.kind is InteractableKind.JACK
     assert {f.kind for f in finds} - {terminal.kind} == {InteractableKind.SEARCHABLE}
+
+
+LEGS_NAME = Bionic.BIONIC_LEGS.value
+
+
+def stand_of(played_level: Played, thing: str) -> tuple[int, int]:
+    [item] = [item for item in played_level.town.interactables if item.id == thing]
+    return item.stand[0].x, item.stand[0].y
+
+
+def searched_on(played_level: Played, kit: str) -> Counter[str]:
+    """What's searched once, so can't be had again, in reach of `kit`."""
+    return Counter(
+        item.id
+        for thing in played_level.town.interactables
+        if (thing.stand[0].x, thing.stand[0].y) in played_level.reached[kit]
+        for item in thing.items
+    )
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_the_printer_s_actuator_is_on_their_own_legs_and_the_recycler_s_parts_deeper(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    played_level = level(seed)
+    found = played_level.reached
+    actuator = stand_of(played_level, PRINTER_CRATES)
+    [crates] = [i for i in played_level.town.interactables if i.id == PRINTER_CRATES]
+    [board] = [p for p in played_level.town.pickups if p.id == SPRINT_SALVAGE]
+    batteries = [stand_of(played_level, id) for id in ("sewers_crates_cell", DEN_BEDROLL)]
+
+    assert crates.items == [LINEAR_ACTUATOR]
+    assert LINEAR_ACTUATOR.kind is ItemKind.PART
+    assert all(actuator in cells for cells in found.values())
+    assert board.item is not None and board.item.id == "apex_board"
+    assert played_level.needs[SPRINT_SALVAGE] == LEGS_NAME
+    assert (board.x, board.y) in found[LEGS_NAME]
+    assert (board.x, board.y) not in found[OWN_JUMP]
+    for cell in batteries:
+        assert cell in found[LEGS_NAME] and cell not in found[OWN_JUMP]
+
+
+NO_SALVAGED_BATTERY = (2, 3)
+"""The committed levels where the batteries to search are all there are."""
+
+
+def test_no_battery_lies_about_on_levels_2_and_3_alone() -> None:
+    def lying(number: int) -> bool:
+        return any(
+            p.kind is PickupKind.SALVAGE and p.item and p.item.id == "old_battery"
+            for p in played(number).town.pickups
+        )
+
+    assert [number for number in range(LEVELS) if not lying(number)] == list(NO_SALVAGED_BATTERY)
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_both_the_second_power_cell_and_the_recycler_are_built_from_what_s_searched_once(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    held = searched_on(level(seed), LEGS_NAME)
+    needed = Counter(RECIPES[Bionic.POWER_CELL_2].parts) + Counter({"old_battery": 2})
+
+    assert held >= needed, held
+
+
+@pytest.mark.parametrize("number", range(LEVELS))
+def test_the_parts_placed_are_the_parts_the_machines_use_up(number: int) -> None:
+    workshop = pytest.importorskip("simile.machines.workshop")
+    towns = load_maps(level=number).values()
+    things = [thing for town in towns for thing in town.interactables]
+    placed = Counter(item.id for thing in things for item in thing.items)
+    placed.update(p.item.id for town in towns for p in town.pickups if p.item and not spread(p))
+    taught = {thing.teaches for thing in things if thing.teaches is not None}
+    recipes = sum((Counter(RECIPES[bionic].parts) for bionic in taught), Counter())
+    machines = sum((Counter(each.parts) for each in workshop.MACHINES.values()), Counter())
+
+    assert machines
+    assert placed - recipes >= machines, (placed - recipes, machines)
+
+
+def test_a_level_with_a_part_out_of_reach_or_missing_is_no_level() -> None:
+    def fresh() -> Any:
+        return sewers(2)
+
+    sound = fresh()
+    assert problems(sound) == []
+
+    gone = fresh()
+    gone.interactables = [i for i in gone.interactables if i.id != PRINTER_CRATES]
+    assert any("linear_actuator" in problem for problem in problems(gone))
+
+    deep = fresh()
+    [ledge] = [p for p in deep.pickups if p.id == SPRINT_SALVAGE]
+    deep.interactables = [
+        i.model_copy(update={"stand": [Tile(x=ledge.x, y=ledge.y)]})
+        if i.id == PRINTER_CRATES
+        else i
+        for i in deep.interactables
+    ]
+    assert any(
+        problem.startswith("fewer than 1 linear_actuator in reach") for problem in problems(deep)
+    )
+
+    no_board = fresh()
+    no_board.pickups = [p for p in no_board.pickups if p.id != SPRINT_SALVAGE]
+    assert any("apex_board" in problem for problem in problems(no_board))
+
+    short = fresh()
+    short.interactables = [i for i in short.interactables if i.id != DEN_BEDROLL]
+    assert any("old_battery" in problem for problem in problems(short))
+
+
+@pytest.mark.parametrize(
+    ("thing", "left"), [(DEN_BEDROLL, 1), ("sewers_crates_cell", 3)], ids=["bedroll", "crates"]
+)
+def test_a_battery_lying_about_doesn_t_hide_one_cut_from_what_s_searched(
+    thing: str, left: int
+) -> None:
+    plan = sewers(0)
+    assert any(p.item and p.item.id == "old_battery" and spread(p) for p in plan.pickups)
+    assert problems(plan) == []
+
+    plan.interactables = [
+        i.model_copy(update={"items": i.items[:left]}) if i.id == thing else i
+        for i in plan.interactables
+    ]
+
+    assert any(problem.startswith("fewer than 6 old_battery") for problem in problems(plan))
 
 
 def test_the_feet_find_salvage_and_the_legs_find_more() -> None:

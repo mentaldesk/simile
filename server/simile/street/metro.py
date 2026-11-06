@@ -20,6 +20,7 @@ from simile.street.finds import (
     CHARGE_CONTROLLER,
     COPPER_WIRE,
     LITHIUM_CELL,
+    METAL_SHEET,
     USB_C_CONNECTOR,
     searchable,
     under,
@@ -68,6 +69,7 @@ SWITCHBOARD = "metro_switchboard"
 RELAY_RACK = "metro_relay_rack"
 SIGNAL_DESK = "metro_signal_desk"
 TOOL_CRATE = "metro_tool_crate"
+TRACK_RUBBLE = "metro_track_rubble"
 LOCKERS = "metro_lockers"
 STACK = 124
 """The west end of the two containers stacked on the siding, with a ladder up their side."""
@@ -309,10 +311,12 @@ def signal_box(plan: Plan) -> None:
 
 
 def track(plan: Plan) -> None:
-    """The disused track into the dark, and a ledge a hop above a pipe ledge."""
+    """The disused track into the dark, its rubble to search, and a ledge over a pipe ledge."""
     plan.piece("tunnel_arch", 156, GROUND - 7, 3, 8)
     plan.piece("pipes", 160, GROUND - 3, 14, 1)
     plan.piece("rubble", 163, GROUND, 2, 1)
+    area = TileArea(x=163, y=GROUND, width=2, height=1)
+    searchable(plan, TRACK_RUBBLE, "Rubble", area, under(area), [METAL_SHEET])
     plan.piece("crates", 168, GROUND, 1, 1)
     area = TileArea(x=168, y=GROUND, width=1, height=1)
     searchable(plan, TOOL_CRATE, "Tool crate", area, under(area), [COPPER_WIRE, LITHIUM_CELL])
