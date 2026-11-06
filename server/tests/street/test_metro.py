@@ -9,8 +9,8 @@ from simile.behaviour.scoring import Places
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
 from simile.economy.config import DEFAULT_CONFIG as ECONOMY
 from simile.player.config import SALVAGE
-from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
-from simile.street.finds import COPPER_WIRE
+from simile.schema import Bionic, DoorKind, Facing, InteractableKind, ItemKind, LocationKind
+from simile.street.finds import COPPER_WIRE, METAL_SHEET
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
     ALCOVE_SECRET,
@@ -47,6 +47,7 @@ from simile.street.metro import (
     SWITCHBOARD,
     TICKET_MACHINE,
     TOOL_CRATE,
+    TRACK_RUBBLE,
 )
 from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
@@ -313,6 +314,21 @@ def test_the_light_areas_cover_every_cell_of_the_metro_once() -> None:
     assert dark == DARK
 
 
+def test_the_printer_s_sheet_and_wires_are_walked_to_past_the_clinic() -> None:
+    walking = reachable(False)
+    wires = sum(
+        item == COPPER_WIRE
+        for thing in METRO_MAP.interactables
+        if thing.area.x >= DEPOT_END and stands(thing.id) <= walking
+        for item in thing.items
+    )
+
+    assert machine(TRACK_RUBBLE).items == [METAL_SHEET]
+    assert METAL_SHEET.kind is ItemKind.PART
+    assert stands(TRACK_RUBBLE) <= walking
+    assert wires >= 2
+
+
 def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
     secrets = pickups("secret")
 
@@ -394,6 +410,7 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         SWITCHBOARD: [(143, 11), (144, 11)],
         RELAY_RACK: [(146, 11), (147, 11)],
         SIGNAL_DESK: [(150, 11)],
+        TRACK_RUBBLE: [(163, 15), (164, 15)],
         TOOL_CRATE: [(168, 15)],
         LOCKERS: [(210, 15), (211, 15)],
     }
@@ -423,7 +440,7 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
     assert (LIFT_FOOT.map, LIFT_FOOT.x, LIFT_FOOT.y) == (METRO, 100, 15)
 
 
-BEYOND = (SWITCHBOARD, RELAY_RACK, CONTAINER, FREIGHT_CRATES, TOOL_CRATE, LOCKERS)
+BEYOND = (SWITCHBOARD, RELAY_RACK, CONTAINER, FREIGHT_CRATES, TRACK_RUBBLE, TOOL_CRATE, LOCKERS)
 
 
 def walk(start: tuple[int, int]) -> set[tuple[int, int]]:
