@@ -168,9 +168,7 @@ FINDS = (
     Find("sewers_crates_cell", 1, "crates", ("old_battery",) * 4),
     Find(PRINTER_CRATES, 0, "crates", parts=(LINEAR_ACTUATOR,)),
 )
-"""Each level's recipes and their parts: the legs' before the gate, the feet's past it, and in the
-security station the eye's with the second power cell's, which the eye needs. Last, so it moves
-nothing, the printer's actuator before the gate."""
+"""What each level holds to search: recipes and their parts by zone, and the printer's actuator."""
 ZONES = {find.id: find.zone for find in FINDS}
 
 
@@ -187,8 +185,7 @@ WANTED = (
     Wanted(APEX_BOARD.id, 1, Bionic.BIONIC_LEGS.value),
     Wanted("old_battery", 6, Bionic.BIONIC_LEGS.value),
 )
-"""The machines' parts in the sewers. Six batteries are the recycler's two on top of the second
-power cell's four, as the salvage that respawns isn't in every level."""
+"""The machines' parts in the sewers, with the second power cell's four batteries on top."""
 
 
 def slab(tier: int) -> int:
@@ -938,6 +935,11 @@ def cave(level: Level, plan: Plan) -> None:
         plan.creatures.append(bat)
 
 
+def spread(pickup: Any) -> bool:
+    """Whether it's salvage lying at random on the way through, which no level can count on."""
+    return pickup.id.removeprefix("sewers_salvage_").isdigit()
+
+
 def stops(town: Any, zone: int) -> list[Cell]:
     [gate] = [light.area for light in town.light if light.id == "sewers_gate"]
     things = [
@@ -948,8 +950,7 @@ def stops(town: Any, zone: int) -> list[Cell]:
     things += [
         (pickup.x, pickup.y)
         for pickup in town.pickups
-        if pickup.id.removeprefix("sewers_salvage_").isdigit()
-        or pickup.id in (PIPE_SECRET, ACTUATOR_SECRET, DEN_SECRET)
+        if spread(pickup) or pickup.id in (PIPE_SECRET, ACTUATOR_SECRET, DEN_SECRET)
     ]
     if zone == 0:
         return [cell for cell in things if cell[0] < gate.x]
@@ -1146,14 +1147,16 @@ def unwalked(town: Any, near: list[Interactable]) -> list[str]:
 
 
 def held_within(plan: Plan, item: str, cells: set[Cell]) -> int:
-    """How many of `item` a level holds at the `cells`, to search or lying there."""
+    """How many of `item` a level can count on at the `cells`, to search or lying there."""
     searched = sum(
         held.id == item
         for thing in plan.interactables
         if (thing.stand[0].x, thing.stand[0].y) in cells
         for held in thing.items
     )
-    lying = sum(p.item.id == item for p in plan.pickups if p.item and (p.x, p.y) in cells)
+    lying = sum(
+        p.item.id == item for p in plan.pickups if p.item and not spread(p) and (p.x, p.y) in cells
+    )
     return searched + lying
 
 

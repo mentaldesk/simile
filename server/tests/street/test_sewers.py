@@ -56,6 +56,7 @@ from simile.street.sewers import (
     problems,
     routes,
     sewers,
+    spread,
     stranded,
 )
 from simile.street.village import JUMPING, UNDERGROUND
@@ -372,8 +373,6 @@ def test_each_zone_teaches_its_recipes_and_holds_their_parts_where_youd_reach_th
     assert {f.kind for f in finds} - {terminal.kind} == {InteractableKind.SEARCHABLE}
 
 
-RECYCLER = {"apex_board": 1, "old_battery": 2}
-PRINTER = {"metal_sheet": 1, "linear_actuator": 1, "copper_wire": 2}
 LEGS_NAME = Bionic.BIONIC_LEGS.value
 
 
@@ -415,8 +414,7 @@ def test_the_printer_s_actuator_is_on_their_own_legs_and_the_recycler_s_parts_de
 
 
 NO_SALVAGED_BATTERY = (2, 3)
-"""The committed levels where the batteries to search are all there are: elsewhere one lies about
-as salvage, and comes back."""
+"""The committed levels where the batteries to search are all there are."""
 
 
 def test_no_battery_lies_about_on_levels_2_and_3_alone() -> None:
@@ -439,11 +437,19 @@ def test_both_the_second_power_cell_and_the_recycler_are_built_from_what_s_searc
     assert held >= needed, held
 
 
-def test_the_parts_placed_are_the_parts_the_machines_use_up() -> None:
+@pytest.mark.parametrize("number", range(LEVELS))
+def test_the_parts_placed_are_the_parts_the_machines_use_up(number: int) -> None:
     workshop = pytest.importorskip("simile.machines.workshop")
+    towns = load_maps(level=number).values()
+    things = [thing for town in towns for thing in town.interactables]
+    placed = Counter(item.id for thing in things for item in thing.items)
+    placed.update(p.item.id for town in towns for p in town.pickups if p.item and not spread(p))
+    taught = {thing.teaches for thing in things if thing.teaches is not None}
+    recipes = sum((Counter(RECIPES[bionic].parts) for bionic in taught), Counter())
+    machines = sum((Counter(each.parts) for each in workshop.MACHINES.values()), Counter())
 
-    assert workshop.MACHINES["printer_3d"].parts == PRINTER
-    assert workshop.MACHINES["recycler"].parts == RECYCLER
+    assert machines
+    assert placed - recipes >= machines, (placed - recipes, machines)
 
 
 def test_a_level_with_a_part_out_of_reach_or_missing_is_no_level() -> None:
@@ -476,6 +482,24 @@ def test_a_level_with_a_part_out_of_reach_or_missing_is_no_level() -> None:
     short = fresh()
     short.interactables = [i for i in short.interactables if i.id != DEN_BEDROLL]
     assert any("old_battery" in problem for problem in problems(short))
+
+
+@pytest.mark.parametrize(
+    ("thing", "left"), [(DEN_BEDROLL, 1), ("sewers_crates_cell", 3)], ids=["bedroll", "crates"]
+)
+def test_a_battery_lying_about_doesn_t_hide_one_cut_from_what_s_searched(
+    thing: str, left: int
+) -> None:
+    plan = sewers(0)
+    assert any(p.item and p.item.id == "old_battery" and spread(p) for p in plan.pickups)
+    assert problems(plan) == []
+
+    plan.interactables = [
+        i.model_copy(update={"items": i.items[:left]}) if i.id == thing else i
+        for i in plan.interactables
+    ]
+
+    assert any(problem.startswith("fewer than 6 old_battery") for problem in problems(plan))
 
 
 def test_the_feet_find_salvage_and_the_legs_find_more() -> None:

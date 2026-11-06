@@ -526,9 +526,7 @@ def zone_0(level: int, frame: float = FRAME) -> Walkthrough:
 
 
 def den(level: int, frame: float = FRAME, first: Sequence[str] = ()) -> Walkthrough:
-    """From the lift on the first legs through the gate, by way of `first` to search or take, to
-    the den, up its ladder by the door to the loft's stash, to the delver's bedroll, along the loft
-    into the bat cave by lamplight off, and back out."""
+    """On the first legs, by way of `first`, along the den's loft to the cave and back out."""
     walk = sewers(level, LEGS[Bionic.BIONIC_LEGS], LEGGED, frame)
     town = walk.town
     for thing in first:

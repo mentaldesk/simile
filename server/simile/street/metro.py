@@ -311,8 +311,7 @@ def signal_box(plan: Plan) -> None:
 
 
 def track(plan: Plan) -> None:
-    """The disused track into the dark, the printer's metal sheet under its rubble, and a ledge a
-    hop above a pipe ledge."""
+    """The disused track into the dark, its rubble to search, and a ledge over a pipe ledge."""
     plan.piece("tunnel_arch", 156, GROUND - 7, 3, 8)
     plan.piece("pipes", 160, GROUND - 3, 14, 1)
     plan.piece("rubble", 163, GROUND, 2, 1)
