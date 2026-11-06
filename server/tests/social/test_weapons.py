@@ -308,6 +308,21 @@ def test_trust_recovers_and_a_later_outing_dents_it_only_back_to_the_floor() -> 
 
     later = street.store.relationship("ana", PLAYER_ID)
     assert later is not None and later.trust == pytest.approx(first.trust)
+    assert as_of(later, street.clock.now).trust == pytest.approx(first.trust)
+
+
+def test_a_dent_starts_from_what_trust_has_recovered_to() -> None:
+    street = Street(body=Body())
+    street.sightings.carried = lambda: (PISTOL,)
+    trusting = meet(ANA, PLAYER_ID).model_copy(update={"trust": 0.95, "last_interaction": NOW})
+    street.store.add(trusting)
+    street.clock.now += timedelta(days=120)
+    recovered = as_of(trusting, street.clock.now).trust
+
+    street.look()
+
+    after = street.store.relationship("ana", PLAYER_ID)
+    assert after is not None and after.trust < recovered and after.trust < 0.6
 
 
 def test_a_restart_while_armed_adds_no_dent(tmp_path: Path) -> None:
@@ -376,6 +391,20 @@ def test_unease_follows_the_pistol() -> None:
 
     street.player_at("ana", 1)
     carried[0] = ()
+    assert street.sightings.unease(ANA) == 0
+
+
+def test_a_new_outing_causes_no_unease_until_they_see_it_again() -> None:
+    carried: list[Sequence[Item]] = [(PISTOL,)]
+    street = Street(body=Body())
+    street.sightings.carried = lambda: carried[0]
+    street.look()
+
+    carried[0] = ()
+    street.look()
+    carried[0] = (PISTOL,)
+    street.player_at("ana", street.sightings.config.sight + 1)
+
     assert street.sightings.unease(ANA) == 0
 
 
