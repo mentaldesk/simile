@@ -170,8 +170,9 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, !used && !ordered && lookedAtByV(player)?.kind === 'mural' && !this.news.isOpen);
     const prompted = used?.kind === 'jack' || used?.kind === 'searchable';
-    this.counter.update(prompted ? used.interactable : ordered, !this.chat.isOpen);
-    this.machines.update(player, doorOnE(here) || used !== undefined, !this.chat.isOpen);
+    const atMachine = this.machines.prompt(player, doorOnE(here) || used !== undefined);
+    this.counter.update(prompted ? used.interactable : (ordered ?? atMachine), !this.chat.isOpen);
+    this.machines.update(player);
     const buyer = trading(used);
     this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
     const sells = !this.clinic.isOpen && !doorOnE(here);

@@ -131,7 +131,6 @@ describe('MachinePanel', () => {
   const element = () => parent.querySelector<HTMLElement>('.machine-panel')!;
   const lines = () => [...parent.querySelectorAll('li')].map((line) => line.textContent);
   const press = (key: string) => element().dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
-  const hint = () => parent.querySelector<HTMLElement>('.counter-hint')!;
 
   beforeEach(() => {
     parent = document.body.appendChild(document.createElement('div'));
@@ -171,7 +170,7 @@ describe('MachinePanel', () => {
     expect(parent.querySelector('footer p')?.textContent).toBe('It needs 2 copper wire, and you have 1.');
 
     playerState.latest = { player: player([SHEET, ACTUATOR, WIRE, WIRE]) } as PlayerStateMessage;
-    panel.update(AT_THE_PRINTER, false, true);
+    panel.update(AT_THE_PRINTER);
     press('Enter');
 
     expect(sent).toEqual([{ type: 'repair', machine: 'printer_3d' }]);
@@ -181,7 +180,7 @@ describe('MachinePanel', () => {
     playerState.latest = { player: player([PLASTIC]) } as PlayerStateMessage;
     panel.use(AT_THE_PRINTER, false);
     machines.set(WORKING.id, WORKING);
-    panel.update(AT_THE_PRINTER, false, true);
+    panel.update(AT_THE_PRINTER);
 
     expect(parent.querySelector('.clinic-money')?.textContent).toBe('Working');
     expect(lines()).toEqual(['Plastic pistol8/6', 'Rounds ×68/2']);
@@ -209,7 +208,7 @@ describe('MachinePanel', () => {
     press('ArrowDown');
 
     playerState.latest = { player: player([{ ...PLASTIC, amount: 5 }]) } as PlayerStateMessage;
-    panel.update(AT_THE_PRINTER, false, true);
+    panel.update(AT_THE_PRINTER);
 
     expect(parent.querySelector('.clinic-selected')?.textContent).toBe('Rounds ×65/2');
   });
@@ -224,7 +223,7 @@ describe('MachinePanel', () => {
     expect(panel.isOpen).toBe(false);
 
     panel.use(AT_THE_PRINTER, false);
-    panel.update({ ...AT_THE_PRINTER, x: 8 }, false, true);
+    panel.update({ ...AT_THE_PRINTER, x: 8 });
     expect(panel.isOpen).toBe(false);
   });
 
@@ -240,16 +239,17 @@ describe('MachinePanel', () => {
   });
 
   it("prompts at a machine, but not while E does something else or it's open", () => {
-    panel.update(AT_THE_PRINTER, false, true);
-    expect(hint().hidden).toBe(false);
-    expect(hint().textContent).toBe('Press E to use the 3D printer.');
-
-    panel.update(AT_THE_PRINTER, true, true);
-    expect(hint().hidden).toBe(true);
+    expect(panel.prompt(AT_THE_PRINTER, false)?.id).toBe('printer_3d');
+    expect(panel.prompt({ ...AT_THE_PRINTER, x: 8 }, false)).toBeUndefined();
+    expect(panel.prompt(AT_THE_PRINTER, true)).toBeUndefined();
 
     panel.use(AT_THE_PRINTER, false);
-    panel.update(AT_THE_PRINTER, false, true);
-    expect(hint().hidden).toBe(true);
+    expect(panel.prompt(AT_THE_PRINTER, false)).toBeUndefined();
+  });
+
+  it("leaves the first clinic panel and the only prompt on the page to the clinic's and the scene's", () => {
+    expect(parent.querySelector('section.clinic')).toBeNull();
+    expect(parent.querySelector('.counter-hint')).toBeNull();
   });
 
   it('draws each part with its icon, or a blank frame until one is painted', () => {

@@ -2,7 +2,6 @@ import { playerState, server, type ClientMessage, type Item, type Machine, type 
 import { interactableAt, type Interactable } from '../world/interactables';
 import { mapOf } from '../world/map';
 import './clinic-panel.css';
-import { CounterPrompt } from './counter';
 import { iconUrl } from './icons';
 import { pressedNewsKey } from './keys';
 import './machine-panel.css';
@@ -117,7 +116,6 @@ export class MachinePanel {
   private readonly state: HTMLElement;
   private readonly list: HTMLOListElement;
   private readonly status: HTMLElement;
-  private readonly prompt: CounterPrompt;
   private readonly send: (action: Action) => void;
   private shown?: Machine;
   private rows: Row[] = [];
@@ -126,8 +124,7 @@ export class MachinePanel {
 
   constructor(parent: HTMLElement, send: (action: Action) => void = (action) => server.send(action as unknown as ClientMessage)) {
     this.send = send;
-    this.prompt = new CounterPrompt(parent);
-    this.panel = parent.appendChild(el('section', undefined, 'clinic machine-panel'));
+    this.panel = parent.appendChild(el('div', undefined, 'clinic machine-panel'));
     this.panel.tabIndex = -1;
     this.panel.hidden = true;
     const header = this.panel.appendChild(el('header'));
@@ -177,11 +174,15 @@ export class MachinePanel {
     this.panel.hidden = true;
   }
 
-  /** Each frame: E's prompt at a machine, and the open panel, which closes once they've left it. */
-  update(position: Position | undefined, blocked: boolean, shown: boolean): void {
-    const here = machineAt(position);
-    this.prompt.update(here?.interactable, shown && !blocked && !this.isOpen);
+  /** What E's prompt is for here, while E would open it. */
+  prompt(position: Position | undefined, blocked: boolean): Interactable | undefined {
+    return blocked || this.isOpen ? undefined : machineAt(position)?.interactable;
+  }
+
+  /** Each frame: shows what's changed, and closes once they've left the machine. */
+  update(position: Position | undefined): void {
     if (!this.isOpen) return;
+    const here = machineAt(position);
     if (here && here.machine.id === this.shown?.id && playerState.latest) this.show(here.machine, playerState.latest.player);
     else this.close();
   }
