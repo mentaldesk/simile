@@ -35,6 +35,7 @@ from simile.story import NOTES, load_story, says
 from simile.story.content import TERMINAL
 from simile.story.journal import Journal
 from simile.story.recording import Recorder
+from simile.street.village import ARIS_SPOOL
 from simile.world import Point, movement_of
 
 from ..conversation.test_bionics import watched
@@ -407,6 +408,7 @@ def test_e_takes_the_nearer_of_a_clue_and_a_pile_and_the_pile_on_a_tie(
 
         def stand() -> None:
             player.left = [pile]
+            player.searched = [ARIS_SPOOL]
             movement_of(app).track(PLAYER_ID, Point(x, notes.y, notes.map))
             hub_of(app).receive(PickUpMessage().model_dump_json())
 

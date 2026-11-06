@@ -277,6 +277,24 @@ describe('gear', () => {
   const picked = (page: HTMLElement) => page.querySelector<HTMLElement>('.character-tile.character-picked')?.dataset.item;
   const details = (page: HTMLElement) => texts(page, '.character-item > :is(h3, b, p)');
 
+  it('counts a stack by its amount and weighs all of it', () => {
+    const plastic = (amount: number) => item('plastic', 'Plastic', 0.5, { kind: 'material', material: 'plastic', amount });
+    const rounds = item('plastic_rounds', 'Plastic rounds', 0.02, { kind: 'rounds', material: 'plastic', amount: 6 });
+    const carrying: Player = { ...PLAYER, items: [plastic(2.5), rounds, plastic(1)] };
+
+    const { tiles: [spool, loose], load } = gear(carrying);
+
+    expect([spool.count, spool.weight, spool.each]).toEqual([3.5, 1.75, 0.5]);
+    expect([loose.count, Number(loose.weight.toFixed(2))]).toEqual([6, 0.12]);
+    expect(Number(load.toFixed(2))).toBe(1.87);
+    expect(itemDetails(spool, carrying).lines[0]).toBe('3.5 of them, 0.5 kg each, 1.75 kg in all.');
+    const crumb: Player = { ...PLAYER, items: [plastic(0.5)] };
+    const { page } = onGear({ ...STATE, player: crumb });
+    expect(page.querySelector('.character-count')?.textContent).toBe('×0.5');
+    expect(page.querySelector<HTMLElement>('[data-item="plastic"]')?.ariaLabel).toBe('Plastic ×0.5');
+    expect(itemDetails(gear(crumb).tiles[0], crumb).lines[0]).toBe('0.5 of them, 0.5 kg each, 0.25 kg in all.');
+  });
+
   it('has a tile per kind of item in the order they got it, with its count, weight and picture', () => {
     const { tiles, load, limit } = gear(LADEN);
     expect(tiles.map(({ id, count, weight }) => [id, count, Number(weight.toFixed(2))])).toEqual([

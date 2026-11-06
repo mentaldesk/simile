@@ -339,8 +339,36 @@
           "y": 32
         },
         {
-          "height": 32,
+          "height": 16,
           "id": 12,
+          "name": "maker_space_spool",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"plastic\", \"kind\": \"material\", \"name\": \"Plastic\", \"weight\": 0.5, \"amount\": 8.0, \"charge\": null, \"on\": null, \"material\": \"plastic\"}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Aris's spool"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "4,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 32
+        },
+        {
+          "height": 32,
+          "id": 13,
           "name": "laser_cutter",
           "properties": [
             {
@@ -363,7 +391,7 @@
         },
         {
           "height": 32,
-          "id": 13,
+          "id": 14,
           "name": "printer_3d",
           "properties": [
             {
@@ -386,7 +414,7 @@
         },
         {
           "height": 32,
-          "id": 14,
+          "id": 15,
           "name": "recycler",
           "properties": [
             {
@@ -409,7 +437,7 @@
         },
         {
           "height": 32,
-          "id": 15,
+          "id": 16,
           "name": "loom",
           "properties": [
             {
@@ -432,7 +460,7 @@
         },
         {
           "height": 32,
-          "id": 16,
+          "id": 17,
           "name": "sewing_machine",
           "properties": [
             {
@@ -455,7 +483,7 @@
         },
         {
           "height": 16,
-          "id": 17,
+          "id": 18,
           "name": "maker_space_plug",
           "properties": [
             {
@@ -490,7 +518,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 18,
+          "id": 19,
           "name": "desk-3-5",
           "properties": [
             {
@@ -508,7 +536,7 @@
         },
         {
           "height": 16,
-          "id": 19,
+          "id": 20,
           "name": "desk-4-5",
           "properties": [
             {
@@ -526,7 +554,7 @@
         },
         {
           "height": 16,
-          "id": 20,
+          "id": 21,
           "name": "desk-3-7",
           "properties": [
             {
@@ -544,7 +572,7 @@
         },
         {
           "height": 16,
-          "id": 21,
+          "id": 22,
           "name": "desk-4-7",
           "properties": [
             {
@@ -562,7 +590,7 @@
         },
         {
           "height": 16,
-          "id": 22,
+          "id": 23,
           "name": "desk-2-3",
           "properties": [
             {
@@ -580,7 +608,7 @@
         },
         {
           "height": 16,
-          "id": 23,
+          "id": 24,
           "name": "desk-3-3",
           "properties": [
             {
@@ -598,7 +626,7 @@
         },
         {
           "height": 16,
-          "id": 24,
+          "id": 25,
           "name": "desk-6-3",
           "properties": [
             {
@@ -616,7 +644,7 @@
         },
         {
           "height": 16,
-          "id": 25,
+          "id": 26,
           "name": "desk-10-3",
           "properties": [
             {
@@ -634,7 +662,7 @@
         },
         {
           "height": 16,
-          "id": 26,
+          "id": 27,
           "name": "desk-11-3",
           "properties": [
             {
@@ -652,7 +680,7 @@
         },
         {
           "height": 16,
-          "id": 27,
+          "id": 28,
           "name": "desk-15-3",
           "properties": [
             {
@@ -699,7 +727,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 28,
+  "nextobjectid": 29,
   "orientation": "orthogonal",
   "properties": [
     {

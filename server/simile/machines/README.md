@@ -16,6 +16,19 @@ A machine's `id` is its interactable's, on the maker space's map. Each `Machine`
 `Workshop.repair` works only while the player stands on the machine's stand tile, with every part,
 on a machine that's still broken. Otherwise nothing changes.
 
+## What the printer makes
+
+`printer.py`. Plastic is `plastic(amount)` in `materials.py`, 0.5 kg each.
+
+| Offer | `id` | Weighs | Takes |
+|---|---|---|---|
+| Plastic pistol: holds 6, none loaded, new | `plastic_pistol` | 0.5 kg | 6 plastic |
+| 6 loose rounds, which join any carried | `plastic_rounds` | 0.02 kg each | 2 plastic |
+
+A pistol's 30 rounds of wear are `simile.combat`'s. Aris's spool on the bench holds 8 plastic, one of
+each. It's `maker_space_spool` rather than one of the bench's finds, so a save that's already
+searched the bench can still find it.
+
 ## Adding a machine's offers
 
 Add a file beside this one with an `offers` function. `register_offers` calls it at startup, so you

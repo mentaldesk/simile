@@ -6,6 +6,7 @@ from simile.behaviour import Behaviour
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy import PLAYER, Kind
 from simile.economy.economy import Economy
+from simile.machines.materials import plastic
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.finds import Finds
@@ -24,11 +25,12 @@ from simile.schema import (
     Player,
     Tile,
     TileArea,
+    lamp,
 )
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.finds import COPPER_WIRE, USB_C_CONNECTOR
 from simile.street.metro import DEAD_TERMINAL, LIFT
-from simile.street.village import SHELF
+from simile.street.village import ARIS_SPOOL, SHELF
 from simile.world import Movement, Point
 from simile.world.map import TownMap, load_maps
 
@@ -244,3 +246,59 @@ def test_only_a_searchable_or_a_jack_is_searched() -> None:
     searching.e(BENCH)
 
     assert searching.player.searched == []
+
+
+SPOOL = Point(4, 2, "maker_space_floor_0")
+
+
+def test_aris_spool_is_found_on_the_bench_even_by_a_save_that_searched_it_already() -> None:
+    searching = Searching(Player(searched=["maker_space_bench"]))
+
+    searching.e(SPOOL)
+
+    assert searching.player.searched == ["maker_space_bench", ARIS_SPOOL]
+    assert [(item.id, item.amount) for item in searching.player.items[1:]] == [("plastic", 8)]
+
+
+def test_the_spool_stands_apart_from_the_bench() -> None:
+    searching = Searching()
+
+    searching.e(BENCH)
+    assert searching.player.items == Player().items
+
+    searching.e(SPOOL)
+    searching.e(SPOOL)
+    assert searching.player.searched == ["maker_space_bench", ARIS_SPOOL]
+    assert sum(item.amount for item in searching.player.items if item.id == "plastic") == 8
+
+
+def test_the_spool_joins_plastic_they_carry() -> None:
+    searching = Searching(Player(items=[plastic(1.5)]))
+
+    searching.e(SPOOL)
+
+    assert searching.player.items == [plastic(9.5)]
+
+
+def test_a_stack_with_room_for_a_unit_but_not_all_of_it_is_left_whole() -> None:
+    searching = Searching(Player(items=[lamp()], carry_limit=3.0))
+
+    searching.e(SPOOL)
+
+    assert searching.player.items == [lamp()]
+    [left] = searching.player.left
+    assert left.items == [plastic(8.0)]
+    searching.player.carry_limit = 5.0
+    searching.e(SPOOL)
+    assert searching.player.items == [lamp(), plastic(8.0)]
+
+
+def test_a_stack_found_uses_up_the_room_of_all_of_it() -> None:
+    bun = Item(id="bun", kind="food", name="Bun", weight=0.2)
+    maps = holding(SPOOL.map, ARIS_SPOOL, items=[plastic(4.0), bun])
+    searching = Searching(Player(items=[lamp()], carry_limit=3.1), maps)
+
+    searching.e(SPOOL)
+
+    assert searching.player.items == [lamp(), plastic(4.0)]
+    assert [pile.items for pile in searching.player.left] == [[bun]]

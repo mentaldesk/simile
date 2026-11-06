@@ -3,7 +3,7 @@ from collections.abc import Callable, Collection
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.player.pickups import Claim
+from simile.player.pickups import Claim, joined
 from simile.player.where import here, location
 from simile.schema import (
     HOLDS,
@@ -84,9 +84,9 @@ class Finds:
         taken: list[Item] = []
         kept: list[Item] = []
         for item in thing.items:
-            if item.weight <= room + 1e-9:
+            if item.load <= room + 1e-9:
                 taken.append(item)
-                room -= item.weight
+                room -= item.load
             else:
                 kept.append(item)
         if kept:
@@ -95,7 +95,7 @@ class Finds:
                 *self.player.left,
                 Pile(at=MapTile(map=at.map, x=x, y=y), items=kept),
             ]
-        self.player.items = [*self.player.items, *taken]
+        self.player.items = joined(self.player.items, taken)
         self.player.searched = [*self.player.searched, thing.id]
         logger.info("The player searches %s", thing.label)
 

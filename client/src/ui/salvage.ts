@@ -8,6 +8,10 @@ export const amount = (money: number) => String(Number(money.toFixed(2)));
 const lowerFirst = (text: string) => (/^[A-Z][A-Z]/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1));
 const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
+/** What it weighs, all of a stack. */
+export const loadOf = ({ weight, amount = 1 }: Item) => weight * amount;
+export const totalLoad = (items: readonly Item[]) => items.reduce((load, item) => load + loadOf(item), 0);
+
 /** "a", "a and b", or "a, b and c". */
 export function listed(parts: readonly string[]): string {
   return parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
@@ -16,19 +20,19 @@ export function listed(parts: readonly string[]): string {
 /** Each kind once, with how many: "copper wire ×2". */
 export function counted(items: readonly Item[]): string[] {
   const counts = new Map<string, number>();
-  for (const { name } of items) counts.set(lowerFirst(name), (counts.get(lowerFirst(name)) ?? 0) + 1);
-  return [...counts].map(([name, n]) => (n > 1 ? `${name} ×${n}` : name));
+  for (const { name, amount: many = 1 } of items) counts.set(lowerFirst(name), (counts.get(lowerFirst(name)) ?? 0) + many);
+  return [...counts].map(([name, n]) => (n !== 1 ? `${name} ×${amount(n)}` : name));
 }
 
 /** What of a pile fits under their carry limit, in order, as the server takes it. */
 export function fitting(pile: Pile, player: Player): { taken: Item[]; kept: Item[] } {
-  let room = player.carry_limit - player.items.reduce((load, item) => load + item.weight, 0);
+  let room = player.carry_limit - totalLoad(player.items);
   const taken: Item[] = [];
   const kept: Item[] = [];
   for (const item of pile.items) {
-    if (item.weight <= room + 1e-9) {
+    if (loadOf(item) <= room + 1e-9) {
       taken.push(item);
-      room -= item.weight;
+      room -= loadOf(item);
     } else kept.push(item);
   }
   return { taken, kept };

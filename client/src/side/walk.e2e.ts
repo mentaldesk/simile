@@ -512,6 +512,14 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 2600);
   const after = (await api.state())!;
   if (after.used === 'searchable') throw new Error(`${name}: E still searches the bench`);
+  await teleport(page, api, { map: 'maker_space_floor_0', x: 4, y: 2 }, `${name}, then her spool`);
+  await run(page, 300);
+  const spoolHint = await shown(page, '.counter-hint');
+  if (spoolHint !== "Press E to search Aris's spool.") throw new Error(`${name}: at the spool the hint is ${spoolHint}`);
+  await pressingE(page, api, `${name}, E at her spool`);
+  const spool = await shown(page, '.counter-hint');
+  if (spool !== 'You find 8 plastic.') throw new Error(`${name}: the spool said ${spool}`);
+  await run(page, 2600);
   await teleport(page, api, { map: 'maker_space_floor_2', x: 12, y: 2 }, `${name}, then the loft's shelf`);
   await run(page, 300);
   await pressingE(page, api, `${name}, E at the loft's shelf`);
