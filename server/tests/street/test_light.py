@@ -25,7 +25,7 @@ from simile.street.metro import (
     TICKET_MACHINE,
     TOOL_CRATE,
 )
-from simile.street.sewers import GATE_BOX, LANDING, LEVELS, SEWERS, way_in, way_on
+from simile.street.sewers import DEN_BEDROLL, GATE_BOX, LANDING, LEVELS, SEWERS, way_in, way_on
 from simile.street.village import GROUND
 from simile.world.map import TownMap, load_maps
 
@@ -162,6 +162,18 @@ def test_every_run_through_a_sewers_level_fits_in_a_charge(level: int) -> None:
     found = sewers_runs(level)
 
     assert max(found) <= REACH, found
+
+
+@pytest.mark.parametrize("level", range(LEVELS))
+def test_the_den_s_bedroll_is_there_and_back_on_a_charge_from_a_plug(level: int) -> None:
+    town, _ = sewers(level)
+    ways, bedroll = Ways(town, LEGS[Bionic.BIONIC_LEGS]), place(town, DEN_BEDROLL)
+    trips = [
+        runs(town, [*ways.cells(plug, bedroll), *ways.cells(bedroll, plug)[1:]], set())[0]
+        for plug in plugs(town)
+    ]
+
+    assert min(trips) <= REACH, trips
 
 
 @pytest.mark.parametrize("level", range(LEVELS))
