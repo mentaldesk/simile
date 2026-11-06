@@ -12,10 +12,14 @@ after it's made. The player's F2 `Player` (money, items, body and hunger) is sav
 Modules get it with `player_of(app)`, the same object whenever they ask, which `restore` sets to
 the saved player in place: the starting player on a fresh start, from a save from before the
 player, or unsaved with `SIMILE_DB=:memory:`. The F2 `Investigation`, Aris's disappearance and the
-player's journal of it, is saved and restored the same way, through `investigation_of(app)`. It has
+player's journal of it, is saved and restored the same way, through `investigation_of(app)`.
+It has
 no disappearance and no entries until the world makes one, and likewise on a fresh start, from a
 save from before it, or with `:memory:`. A save from before the disappearance loads without its
 incident, and the story makes a disappearance for it, keeping only the entries still true.
+Which creatures are gone for good, and the wounds and haul of the rest, are saved with the world
+too ([`simile.creatures`](../creatures/README.md)'s *Saved*), and a save from before them has every
+creature whole.
 
 ## Saving
 
