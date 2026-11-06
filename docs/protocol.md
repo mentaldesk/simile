@@ -7,7 +7,8 @@ to its own origin and Vite proxies `/ws` to the server on port 8000.
 - **Binary frames** go from the server to the client only, and are always an [`audio_chunk`](#audio_chunk).
 
 The server is authoritative, except for the player's position, which the client sends. The server
-moves the player only when they collapse ([`player_collapsed`](#player_collapsed)).
+moves the player only when they collapse ([`player_collapsed`](#player_collapsed)) or die
+([`player_died`](#player_died)).
 
 The message models are in [`server/simile/protocol/messages.py`](../server/simile/protocol/messages.py),
 built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types in
@@ -21,7 +22,7 @@ interiors' ids; this document says where.
 
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
-  position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
+  position's `map`, an entity's `pose` and `facing`, a creature's `health`, a line's `flushed`, an article's
   `long_summary`, a wall's `map`, a player's `stash`, `left`, `corpses`, `taken`, `mind`, `power`, `health`,
   `effects`, `sales`, `searched` and `repaired`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
   `bionic`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
@@ -119,7 +120,9 @@ A `Creature` is one of the tunnels' dangers, which the sim runs and the client d
 It has its `id`; its `kind`, named as its figure is in `content/creatures/`: `"rat"`, `"bot"` (a
 recycler bot), `"dog"` (a wild dog) or `"bat"`; its `position`, with its `map`; its `facing`, a
 `SideFacing`, `"east"` to draw it facing right or `"west"` facing left, as creatures are only on
-side-view maps; and its `state`, what it's doing, which picks the pose its figure plays:
+side-view maps; its `health`, how much it has left, from 1, unhurt, to 0, when it's gone, left out
+while it's full: read it as `creature.health ?? 1`; and its `state`, what it's doing, which picks
+the pose its figure plays:
 
 | `state` | Pose |
 |---|---|
@@ -188,13 +191,20 @@ finds the bed from the furniture under that cell, and lies them down or gets the
 ### `creature_moved`
 
 `creature`: a `Creature`, all of it, as in the [`snapshot`](#snapshot). The server sends it as a
-creature moves, turns or changes state. One the client doesn't have yet has just appeared, and the
+creature moves, turns, changes state or loses health. One the client doesn't have yet has just appeared, and the
 client adds it.
 
 ### `creature_gone`
 
 `creature_id`: a creature that's gone from the world, such as a rat the player jumps on. The client
 removes it.
+
+### `creature_hit`
+
+`creature_id`: a creature that was just hurt, for the client to draw the hit and a flinch. The
+server sends it first, and then a [`creature_moved`](#creature_moved) with its lower `health`, or a
+[`creature_gone`](#creature_gone) if that killed it, so the client still has it to draw. A shot that
+stops at a wall or hits nothing sends none.
 
 ### `machine_changed`
 
@@ -487,6 +497,19 @@ happened. They wake with their lamp, switched off, so they can see to go back on
 fell: the [`player_state`](#player_state) that follows has it in a new `Pile` at the end of `left`.
 With nothing but the lamp, they leave no pile. Clients that predate it ignore it.
 
+[`player_died`](#player_died) replaces this message when collapse becomes death in Q10 (#606), which
+removes it. Until then the server sends this one, and never `player_died`.
+
+### `player_died`
+
+`position`: where the player wakes, in their bed. `cause`: the `Vital` that ran out, why they died:
+`"hunger"`, they starved; `"power"`, their power cell ran flat; or `"health"`, they had none left.
+The client puts them at `position`, snapping there as through a door, and can say what happened.
+The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
+`corpses`, where they fell, with their money, everything they carried and every bionic they had
+fitted, and a whole organic `body`. What they know, what they keep in the `stash` and what they've
+`repaired` stay theirs.
+
 ### `journal`
 
 `entries`: what the player has learned about Aris's disappearance, in the order they learned it,
@@ -670,6 +693,54 @@ can't pay for, and one that won't fit under their carry limit.
 pay its `price` from their `money`. The server sends the [`player_state`](#player_state) that
 follows. It ignores a `treat` where there's no buyer, for a treatment it doesn't give now, and one
 they can't pay for.
+
+### `fire`
+
+`facing`: the way the player faces, a `SideFacing`, since the server doesn't track it. Fires the
+first weapon they carry that's loaded and not worn out, using up a round and some of its
+`condition`. The shot goes along the row from where the server last kept them, so a `player_move`
+held back by the client's throttle goes first, as far as the first creature or wall in range. A
+creature it hits gets a [`creature_hit`](#creature_hit). The client draws the muzzle flash itself.
+The server sends the [`player_state`](#player_state) that follows, and ignores a `fire` if they
+carry no such weapon.
+
+### `reload`
+
+No fields. Loads the first weapon they carry that has room and isn't worn out, with as many as fit
+of the rounds they carry of its `material`. A stack that empties is gone. The server sends the
+[`player_state`](#player_state) that follows, and ignores a `reload` if there's no such weapon, or
+they carry no such rounds.
+
+### `repair`
+
+`machine`: a broken [`Machine`](#snapshot) the player stands at, on one of its interactable's
+`stand` tiles, by its `id`. It uses up the `parts` they carry. The server sends the
+[`machine_changed`](#machine_changed) and the [`player_state`](#player_state) that follow, with it in
+their `repaired`. It ignores a `repair` if they aren't at it, if it isn't broken, and if they don't
+carry every part.
+
+### `make`
+
+`machine` and `item`: a working [`Machine`](#snapshot) the player stands at, by its `id`, and one of
+its `makes`, by the `id` of that `Product`'s `item`. It uses up the product's `cost` of what it
+`uses`, and they carry the `item`, a stack joining any of that `id` they already carry. A product
+that `uses` `"scrap"` takes all the scrap they carry, at that rate: 3.5 kg of scrap at the recycler's
+1 plastic for 1 kg makes 3.5 plastic. Scrap is their items of kind `"salvage"`, except those a
+recipe or a machine's repair uses, such as copper wire, so making plastic never burns a part they
+need. The server sends the [`player_state`](#player_state) that
+follows. It ignores a `make` if they aren't at it, if it doesn't make that, if they don't have what
+it takes, and if what they'd end up carrying wouldn't fit under their carry limit.
+
+### `stash`
+
+`item` and `action`: one thing, by its `id`, the first of that `id`, and whether to `"store"` it, from
+what they carry into their `stash`, or `"take"` it back out. Of a stack, as much moves as fits,
+under the stash's `limit` to store or their carry limit to take, joining any of that `id` already
+there, and what doesn't fit stays where it was: rounds move whole, and material in any amount. So
+nothing is stranded in a stack too heavy to carry. The player has to stand on a `stand` tile of
+Aris's lockers, the interactable with the id `"lockers"`. The server sends the
+[`player_state`](#player_state) that follows. It ignores a `stash` away from the lockers, for
+something that isn't there to move, and when none of it fits.
 
 ### `watch_npc`
 
