@@ -31,14 +31,14 @@ STILL = Kind(CreatureKind.RAT)
 CHEST_HIGH = Kind(CreatureKind.BAT, flies=True)
 
 
-def side_view(*rows: str) -> TownMap:
+def side_view(*rows: str, map_id: str = "tunnel") -> TownMap:
     width, height = len(rows[0]), len(rows)
     solids = tuple(tuple(cell == "#" for cell in row) for row in rows)
     blocked = tuple(
         tuple(cell == "#" or y + 1 >= height or rows[y + 1][x] != "#" for x, cell in enumerate(row))
         for y, row in enumerate(rows)
     )
-    return TownMap("tunnel", width, height, blocked, (), kind=MapKind.STREET, solids=solids)
+    return TownMap(map_id, width, height, blocked, (), kind=MapKind.STREET, solids=solids)
 
 
 ROW = side_view(
@@ -191,6 +191,96 @@ def test_a_shot_goes_only_the_way_they_face() -> None:
     assert world.hits() == [west.id]
     world.shooting.fire(EAST)
     assert world.hits() == [west.id, east.id]
+
+
+@pytest.mark.parametrize(
+    ("player", "creature", "facing"),
+    [
+        (10.49, 9.5, EAST),
+        (10.0, 9.6, EAST),
+        (10.4, 10.3, EAST),
+        (9.5, 10.49, WEST),
+        (10.0, 10.4, WEST),
+        (10.6, 10.7, WEST),
+    ],
+)
+def test_a_shot_misses_one_behind_them_in_their_own_column(
+    player: float, creature: float, facing: SideFacing
+) -> None:
+    world = World(at=player)
+    world.spawn(STILL, 10).x = creature
+
+    assert world.shooting.fire(facing)
+
+    assert world.hits() == []
+
+
+@pytest.mark.parametrize(
+    ("player", "creature", "facing"),
+    [
+        (10.4, 10.45, EAST),
+        (10.49, 10.6, EAST),
+        (10.0, 10.0, EAST),
+        (10.4, 10.3, WEST),
+        (10.6, 9.6, WEST),
+        (10.0, 10.0, WEST),
+    ],
+)
+def test_a_shot_hits_one_just_ahead_of_them(
+    player: float, creature: float, facing: SideFacing
+) -> None:
+    world = World(at=player)
+    target = world.spawn(STILL, 10)
+    target.x = creature
+
+    assert world.shooting.fire(facing)
+
+    assert world.hits() == [target.id]
+
+
+def test_in_their_own_column_it_takes_the_one_ahead_not_the_one_behind() -> None:
+    world = World(at=10.2)
+    world.spawn(STILL, 10).x = 9.8
+    ahead = world.spawn(STILL, 10)
+    ahead.x = 10.4
+
+    world.shooting.fire(EAST)
+
+    assert world.hits() == [ahead.id]
+
+
+def test_in_one_column_it_takes_the_nearer() -> None:
+    world = World(at=3.0)
+    far = world.spawn(STILL, 8)
+    far.x = 8.4
+    near = world.spawn(STILL, 8)
+    near.x = 7.6
+
+    world.shooting.fire(EAST)
+
+    assert world.hits() == [near.id]
+
+
+def test_a_shot_stays_on_the_map_they_are_on() -> None:
+    rows = [f"#{'.' * 28}#" if y in (1, 2, 3) else "#" * 30 for y in range(5)]
+    other = side_view(*rows, map_id="other")
+    world = World()
+    world.creatures.maps = {**world.creatures.maps, "other": other}
+    world.creatures.spawn(STILL, MapTile(map="other", x=8, y=FLOOR))
+
+    assert world.shooting.fire(EAST)
+
+    assert world.hits() == []
+
+
+def test_a_shot_from_a_map_with_no_creatures_still_uses_a_round() -> None:
+    world = World()
+    world.where.at = Point(3.0, FLOOR, "elsewhere")
+
+    assert world.shooting.fire(EAST)
+
+    assert world.hits() == []
+    assert world.weapon.rounds == 5
 
 
 def test_a_shot_takes_only_the_first_creature_in_line() -> None:

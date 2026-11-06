@@ -69,10 +69,10 @@ export function eachOnce<E extends object>(handle: (event: E) => void): (event: 
 export const FIRE_KEY = 'X';
 export const RELOAD_KEY = 'R';
 
-/** `handle` on a fresh press of a game key: not a repeat, the browser's Cmd+R, or a key for what has focus. */
+/** `handle` on a fresh press of a game key: not a repeat, one with a modifier like the browser's Cmd+R, or a key for what has focus. */
 export function onPress(handle: () => void): (event: KeyboardEvent) => void {
   return eachOnce((event) => {
-    if (!event.repeat && !event.metaKey && !event.ctrlKey && unfocused(event)) handle();
+    if (!event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey && unfocused(event)) handle();
   });
 }
 

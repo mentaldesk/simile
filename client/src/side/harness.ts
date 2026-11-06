@@ -349,7 +349,7 @@ function placeTargets({ x, y, map }: Position): void {
   }
 }
 
-/** A `fire` as the server takes it. */
+/** A `fire`, simpler than the server's: the row of their feet, and creatures on whole cells. */
 function shoot(facing: SideFacing, scene: SideScene, village: Village): void {
   const at = scene.playing?.mapPosition;
   const map = at && village.map(at.map);
@@ -376,7 +376,7 @@ function shoot(facing: SideFacing, scene: SideScene, village: Village): void {
   }
 }
 
-/** A `reload` as the server takes it. */
+/** A `reload`, from the first stack alone. */
 function reload(): void {
   const weapon = items.find(({ kind, rounds, capacity, condition }) => kind === 'weapon' && condition && rounds! < capacity!);
   const stack = items.find(({ kind }) => kind === 'rounds');
@@ -586,6 +586,18 @@ function exposeWalk(scene: SideScene, village: Village): void {
           }),
       textureLimit: () => (scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer>).getMaxTextureSize?.() ?? null,
       rest: () => ({ health, resting, bed: bed ?? null }),
+      weapon: () => {
+        const weapon = items.find(({ kind }) => kind === 'weapon');
+        return { rounds: weapon?.rounds ?? null, condition: weapon?.condition ?? null };
+      },
+      shot: () => scene.shotView.drawn(),
+      creatureImages: () =>
+        scene.children.list
+          .filter((child) => child instanceof Phaser.GameObjects.Image && child.texture.key.startsWith('creature-'))
+          .map((child) => {
+            const image = child as Phaser.GameObjects.Image;
+            return { key: image.texture.key, x: image.x, flashing: image.tintFill };
+          }),
       hurt: (to: number) => {
         health = to;
         sendPlayerState();

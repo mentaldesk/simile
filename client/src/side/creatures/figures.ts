@@ -107,6 +107,10 @@ export const FLINCH_TILES = 0.25;
 /** How long a hit shows it all white. */
 export const FLASH_SECONDS = 0.1;
 
+/** Where one at street cell `across` is drawn when knocked `back` tiles away from the player at `from`, or against its facing from their own cell. */
+export const knockedBack = (across: number, from: number, facing: SideFacing, back: number): number =>
+  across + back * (Math.sign(across - from) || (facing === 'east' ? -1 : 1));
+
 /** Tiles back from the shot and whether it's flashing, `hit` seconds after it was hit. */
 export function flinchOf(hit: number | undefined): { back: number; flash: boolean } {
   if (hit === undefined) return { back: 0, flash: false };

@@ -32,7 +32,7 @@ import { drawSockets } from './plugs';
 import { sideResidents } from './residents';
 import { bedAt, hiddenInFront, seatHeight } from './poses';
 import { MoveReport } from './report';
-import { firing, reloading, ShotView, sideOf, weaponLine } from './shooting';
+import { canFire, firing, reloading, ShotView, sideOf, weaponLine } from './shooting';
 import { SideDoll } from './side-doll';
 import { stompedOn } from './stomp';
 import { StreetView, type Content } from './street-view';
@@ -205,6 +205,11 @@ export class SideScene extends Phaser.Scene {
   }
 
   /** For the dev harness. */
+  get shotView(): ShotView {
+    return this.shots;
+  }
+
+  /** For the dev harness. */
   get runningOn(): boolean {
     return this.running.on;
   }
@@ -300,7 +305,7 @@ export class SideScene extends Phaser.Scene {
 
   private fire(): void {
     const { player } = this;
-    if (!player || this.passing || player.climbing || player.drawn.bed > 0) return;
+    if (!player || !canFire({ passing: this.passing, climbing: player.climbing, bed: player.drawn.bed })) return;
     const messages = firing(this.moves, player.mapPosition, this.time.now / 1000, playerState.latest?.player.items, this.aim);
     for (const message of messages) server.send(message);
     if (messages.length) this.shots.fired();

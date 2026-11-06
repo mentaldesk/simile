@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { server, type Creature, type CreatureState } from '../../net';
 import { Creatures, DOWN_SECONDS, HIT_SECONDS, sideCreatures, Tracked } from './creatures';
-import { creatureFigures, FLASH_SECONDS, flinchOf, FLINCH_TILES, frameOf, goingDown, placedOf, poseOf } from './figures';
+import { creatureFigures, FLASH_SECONDS, flinchOf, FLINCH_TILES, frameOf, goingDown, knockedBack, placedOf, poseOf } from './figures';
 
 const rat: Creature = {
   id: 'rat_1',
@@ -177,6 +177,13 @@ describe('their figures', () => {
 
     expect(sideCreatures.all.get('rat_hit')!.hit).toBe(0);
     server.dispatch(JSON.stringify({ type: 'creature_gone', creature_id: 'rat_hit' }));
+  });
+
+  it('flinch away from the player, and against their facing from the player’s own cell', () => {
+    expect(knockedBack(30, 25, 'west', 0.2)).toBeCloseTo(30.2);
+    expect(knockedBack(20, 25, 'east', 0.2)).toBeCloseTo(19.8);
+    expect(knockedBack(25, 25, 'east', 0.2)).toBeCloseTo(24.8);
+    expect(knockedBack(25, 25, 'west', 0.2)).toBeCloseTo(25.2);
   });
 
   it('flinch back and return, flashing first', () => {

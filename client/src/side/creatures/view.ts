@@ -4,7 +4,7 @@ import { DEPTH } from '../depths';
 import { feetOf, PPM, xOf } from '../layout';
 import type { Village } from '../maps';
 import { sideCreatures, type Creatures } from './creatures';
-import { creatureFigures, flinchOf, frameOf, goingDown, placedOf, type CreatureManifest } from './figures';
+import { creatureFigures, flinchOf, frameOf, goingDown, knockedBack, placedOf, type CreatureManifest } from './figures';
 
 const HURT_TINT = 0xff9a8a;
 const FLASH_TINT = 0xffffff;
@@ -61,9 +61,7 @@ export class CreatureView {
       const { originX, originY, flip } = placedOf(figure, frame, tracked.facing);
       const going = tracked.down === undefined ? undefined : goingDown(figure, tracked.facing, tracked.down);
       const { back, flash } = flinchOf(tracked.hit);
-      const across = map.offset.x + tracked.at.x;
-      const away = Math.sign(across - from) || (tracked.facing === 'east' ? -1 : 1);
-      const x = xOf(across + back * away);
+      const x = xOf(knockedBack(map.offset.x + tracked.at.x, from, tracked.facing, back));
       const y = feetOf(map.offset.y + tracked.at.y + (going?.drop ?? 0));
       const depth = map.kind === 'floor' ? DEPTH.insideDoll : DEPTH.doll;
       drawn

@@ -357,8 +357,7 @@ class Creatures:
         self._send(creature)
 
     def hurt(self, creature: Creature, points: int) -> None:
-        """Takes `points` of its health, and it goes down at none. The client hears of the hit
-        first, so it still has the creature to draw it on."""
+        """Takes `points` of its health, telling the client first, and puts it down at none."""
         self.send(CreatureHitMessage(creature_id=creature.id))
         creature.wounds = min(creature.wounds + points, creature.kind.health)
         if creature.wounds == creature.kind.health:

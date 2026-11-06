@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
+import { weaponLine } from '../side/shooting';
 import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'unpainted' ? undefined : `/icons/${id}.webp`) }));
@@ -444,6 +445,12 @@ describe('a weapon in the gear', () => {
     expect(gear(carrying(pistol(1, 0), pistol(1, 0.5))).tiles[0].condition).toBe(0.5);
     expect(gear(carrying(pistol(1, 0))).tiles[0].condition).toBe(0);
     expect(gear(carrying(LAMP)).tiles[0].condition).toBeUndefined();
+  });
+
+  it('agrees with the corner line on the one that fires, an empty one first or not', () => {
+    const items = [pistol(0, 0.5), pistol(3, 0.9)];
+    expect(gear(carrying(...items)).tiles[0].condition).toBe(0.9);
+    expect(weaponLine(items)).toContain('3/6, 0 spare, 90% condition');
   });
 
   it('details each one’s rounds and condition, and the keys', () => {

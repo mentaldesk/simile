@@ -18,6 +18,14 @@ const isLoaded = (item: Item) => isUsable(item) && !!item.rounds;
 const spare = (items: readonly Item[], weapon: Item) =>
   items.filter(({ kind, material }) => kind === 'rounds' && material === weapon.material).reduce((sum, { amount }) => sum + (amount ?? 1), 0);
 
+/** Whether a press of fire goes: not through a door, on a ladder, stairs or the lift, or in bed. */
+export const canFire = ({ passing, climbing, bed }: { passing: boolean; climbing: unknown; bed: number }): boolean =>
+  !passing && !climbing && bed === 0;
+
+/** The weapon fire would use: the first loaded, else the first to reload, else any. */
+export const firesNext = (items: readonly Item[] | undefined): Item | undefined =>
+  items?.find(isLoaded) ?? items?.find(isUsable) ?? items?.find(({ kind }) => kind === 'weapon');
+
 /** What a press of fire sends, in order: the server shoots from where it last kept them, so a move the throttle is holding back goes first. */
 export function firing(
   moves: Pick<MoveReport, 'forget' | 'next'>,
@@ -38,9 +46,9 @@ export function reloading(items: readonly Item[] | undefined): ReloadMessage | u
   return weapon && spare(items!, weapon) > 0 ? { type: 'reload' } : undefined;
 }
 
-/** The weapon's rounds and condition, for the one fire would use: the first loaded, else the first to reload, else any. */
+/** The rounds and condition of the weapon fire would use. */
 export function weaponLine(items: readonly Item[] | undefined): string | undefined {
-  const weapon = items?.find(isLoaded) ?? items?.find(isUsable) ?? items?.find(({ kind }) => kind === 'weapon');
+  const weapon = firesNext(items);
   if (!weapon) return undefined;
   if (!isUsable(weapon)) return `${weapon.name}: worn out`;
   const left = spare(items!, weapon);
@@ -79,6 +87,11 @@ export class ShotView {
 
   fired(): void {
     this.since = 0;
+  }
+
+  /** For the dev harness. */
+  drawn(): { gun: boolean; flash: boolean; line: string | null } {
+    return { gun: this.since < GUN_SECONDS, flash: this.since < FLASH_SECONDS, line: this.line.visible ? this.line.text : null };
   }
 
   /** `at` is the player in street cells, while they're shown. */

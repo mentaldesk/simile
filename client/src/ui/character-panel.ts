@@ -1,5 +1,6 @@
 import type { Bionic, Body, BodyPart, Effect, Item, ItemKind, Player, PlayerStateMessage, Recipe } from '../net';
 import { FIRE_KEY, RELOAD_KEY } from '../side/input';
+import { firesNext } from '../side/shooting';
 import { LAMP_KEY, lampHere, lampOf } from '../side/lamp';
 import { callCue } from './call-cue';
 import { CHART, gradeOf, partDetails, pictureOf, PLACES } from './character-body';
@@ -107,7 +108,7 @@ export type GearTile = {
   on?: boolean;
   /** Each weapon of this kind they carry. */
   weapons?: Item[];
-  /** Of the first of them that isn't worn out, which is the one that fires. */
+  /** Of the one of them fire would use. */
   condition?: number;
 };
 export type Gear = { tiles: GearTile[]; load: number; limit: number };
@@ -133,7 +134,7 @@ export function gear(player: Player): Gear {
     tile.weight += weight;
     if (kind === 'weapon') {
       tile.weapons = [...(tile.weapons ?? []), item];
-      tile.condition = tile.weapons.find(({ condition }) => condition)?.condition ?? 0;
+      tile.condition = firesNext(tile.weapons)?.condition ?? 0;
     }
     tiles.set(id, tile);
   }

@@ -90,12 +90,16 @@ class Shooting:
             return None
         x, feet = cell_of(here)
         rows = {feet, feet - 1}
-        alive = [c for c in self.creatures.all.values() if c.map == here.map and c.down is None]
+        ahead = [
+            c
+            for c in self.creatures.all.values()
+            if c.map == here.map and c.down is None and (c.x - here.x) * way >= 0
+        ]
         for column in range(x, x + way * (RANGE + 1), way):
             rows = {row for row in rows if not town.solid(column, row)}
             if not rows:
                 return None
-            hit = [c for c in alive if c.cell[0] == column and c.cell[1] in rows]
+            hit = [c for c in ahead if c.cell[0] == column and c.cell[1] in rows]
             if hit:
                 return min(hit, key=lambda c: abs(c.x - here.x))
         return None

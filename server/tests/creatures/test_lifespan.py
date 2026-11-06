@@ -1,5 +1,8 @@
+import queue
+import threading
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import UTC, datetime
 from typing import Any
 
@@ -31,11 +34,21 @@ def make_app(make_package: MakePackage) -> Starlette:
     return app
 
 
-def next_of(ws: Any, type: str) -> dict[str, Any]:
-    for _ in range(500):
-        if (message := ws.receive_json())["type"] == type:
-            return message
-    raise AssertionError(f"no {type}")
+def next_of(ws: Any, type: str, seconds: float = 10.0) -> dict[str, Any]:
+    """On a thread, since `receive_json` waits for good if the server never sends it."""
+    found: queue.Queue[dict[str, Any]] = queue.Queue()
+
+    def read() -> None:
+        with suppress(Exception):
+            while (message := ws.receive_json())["type"] != type:
+                pass
+            found.put(message)
+
+    threading.Thread(target=read, daemon=True).start()
+    try:
+        return found.get(timeout=seconds)
+    except queue.Empty:
+        raise AssertionError(f"no {type} within {seconds} s") from None
 
 
 def move(client: TestClient, app: Starlette, ws: Any, x: float, y: float, map: str) -> None:

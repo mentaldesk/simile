@@ -7,6 +7,7 @@ takes the damage and sends `creature_hit`.
 ## The shot
 
 A shot starts in the column the player stands in and carries `RANGE` (12) columns the way they face.
+It only hits what's ahead of them, so not a creature behind them in their own column.
 It's as tall as their figure, the row their feet are in and the one above, so it hits a rat on their
 floor and a bat at their chest. A jump lifts it over a rat. A wall stops it in the row the wall is
 in. It ends at the nearest creature in line, or once walls have stopped it in both rows.
