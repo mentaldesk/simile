@@ -96,6 +96,7 @@ def test_the_hybrid_cut_keeps_a_pale_object_on_white() -> None:
 
 
 def test_solid_inside_fills_what_is_enclosed_and_leaves_the_outside_and_its_edge() -> None:
+    pytest.importorskip("cv2")
     m = np.zeros((20, 20), dtype=np.uint8)
     m[4:16, 4:16] = 255
     m[3, 4:16] = 120
