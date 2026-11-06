@@ -56,7 +56,7 @@ class Workshop:
         self.sent = self.machines()
 
     def offer(self, machine: Id, *offers: Offer) -> None:
-        """Adds to what `machine` lists once it works. A module's `register` calls this."""
+        """Adds to what `machine` lists once it works. A module's `offers` calls this."""
         if machine not in self.broken:
             raise KeyError(machine)
         self.offers[machine] = [*self.offers.get(machine, []), *offers]
@@ -137,10 +137,10 @@ class Workshop:
 
 
 def register_offers(workshop: Workshop, package: str = __package__) -> None:
-    """Calls `register(workshop)` in each module beside this one that has it, so a machine's
-    offers are added by a new file here."""
+    """Calls `offers(workshop)` in each module beside this one that has it, so a machine's offers
+    are added by a new file here."""
     path = importlib.import_module(package).__path__
     for found in pkgutil.iter_modules(path):
         module = importlib.import_module(f"{package}.{found.name}")
-        if (register := getattr(module, "register", None)) is not None:
-            register(workshop)
+        if (offers := getattr(module, "offers", None)) is not None:
+            offers(workshop)

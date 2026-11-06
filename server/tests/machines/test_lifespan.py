@@ -1,16 +1,21 @@
+import sys
 import time
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
+import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
+import simile.machines
 from simile.app import create_app
 from simile.machines.workshop import Offer
 from simile.persistence import player_of
 from simile.schema import PLAYER_ID, Item, ItemKind, Material, Player, Product
-from simile.sim import Clock, World
+from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -35,11 +40,20 @@ def make_app(make_package: MakePackage) -> Starlette:
     return app
 
 
-def next_of(ws: Any, type: str) -> dict[str, Any]:
-    for _ in range(500):
-        if (message := ws.receive_json())["type"] == type:
-            return message
-    raise AssertionError(f"no {type}")
+def next_of(ws: Any, type: str, seconds: float = 5) -> dict[str, Any]:
+    """Fails rather than hangs on a message that never comes: `receive_json` has no timeout."""
+
+    def read() -> dict[str, Any]:
+        for _ in range(500):
+            if (message := ws.receive_json())["type"] == type:
+                return message
+        raise AssertionError(f"no {type}")
+
+    pool = ThreadPoolExecutor(1)
+    try:
+        return pool.submit(read).result(timeout=seconds)
+    finally:
+        pool.shutdown(wait=False)
 
 
 def until(client: TestClient, done: Callable[[], bool]) -> None:
@@ -71,6 +85,51 @@ def test_make_reaches_what_a_machine_offers(make_package: MakePackage) -> None:
         player = player_of(app)
 
     assert made == [player]
+
+
+def test_a_module_beside_the_workshop_adds_its_offers_at_startup(
+    make_package: MakePackage, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "q4_fixture_offers.py").write_text(
+        "from simile.machines.workshop import Offer\n"
+        "from simile.schema import Item, ItemKind, Material, Product\n"
+        "ROUNDS = Item(id='fixture_rounds', kind=ItemKind.ROUNDS, name='Rounds', weight=0.01, "
+        "amount=6.0, material=Material.PLASTIC)\n"
+        "def offers(workshop):\n"
+        "    product = Product(item=ROUNDS, uses=Material.PLASTIC, cost=2)\n"
+        "    workshop.offer('printer_3d', Offer(product, lambda player: True))\n"
+    )
+    monkeypatch.setattr(simile.machines, "__path__", [*simile.machines.__path__, str(tmp_path)])
+    monkeypatch.delitem(sys.modules, "simile.machines.q4_fixture_offers", raising=False)
+    app = make_app(make_package)
+    player_of(app).repaired = ["printer_3d"]
+
+    try:
+        with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+            snapshot = next_of(ws, "snapshot")
+    finally:
+        sys.modules.pop("simile.machines.q4_fixture_offers", None)
+
+    [printer, _] = snapshot["machines"]
+    assert [product["item"]["id"] for product in printer["makes"]] == ["fixture_rounds"]
+
+
+def test_a_change_to_an_offer_reaches_the_client_on_the_sim_loop(
+    make_package: MakePackage,
+) -> None:
+    app = make_app(make_package)
+    product = Product(item=ROUNDS, uses=Material.PLASTIC, cost=2)
+    player_of(app).repaired = ["printer_3d"]
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "snapshot")
+        offered = Offer(lambda player: product if player.money else None, lambda player: True)
+        app.state.workshop.offer("printer_3d", offered)
+        player_of(app).money = 1.0
+        client.portal.call(world_of(app).loop.tick)
+        changed = next_of(ws, "machine_changed")
+
+    assert [made["item"]["id"] for made in changed["machine"]["makes"]] == [ROUNDS.id]
 
 
 def test_the_snapshot_holds_both_machines_broken(make_package: MakePackage) -> None:

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playerState, server, type Item, type Machine, type Player, type PlayerStateMessage, type Position, type Product } from '../net';
-import { carried, counted, machineAt, machines, MachinePanel, note, resetMachines, rowsOf, type Action, type Row } from './machine-panel';
+import { carried, counted, loadAfter, machineAt, machines, MachinePanel, note, resetMachines, rowsOf, type Action, type Row } from './machine-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'copper_wire' ? '/icons/copper_wire.webp' : undefined) }));
 vi.mock('../world/interactables', () => ({
@@ -64,6 +64,24 @@ describe('rowsOf', () => {
 
   it('says why a working recycler lists nothing', () => {
     expect(note(undefined, [], 'recycler')).toBe("You're carrying no scrap it can use. It leaves the parts you'll need.");
+  });
+
+  it("won't make what they couldn't carry, and says why", () => {
+    const heavy: Product = { item: { ...PISTOL.item, weight: 10 }, uses: 'plastic', cost: 2 };
+    const machine: Machine = { ...WORKING, makes: [heavy] };
+    const items = [{ ...PLASTIC, amount: 4, weight: 0.5 }];
+
+    expect(loadAfter(heavy, items)).toBe(11);
+    expect(rowsOf(machine, items, 11)[0]).not.toHaveProperty('heavy');
+
+    const rows = rowsOf(machine, items, 10);
+    expect(note(rows[0], rows)).toBe("You'd end up carrying 11 kg, and you can carry 10.");
+  });
+
+  it('counts a press of scrap as taking its kilos off what they carry', () => {
+    const press: Product = { item: { ...PLASTIC, amount: 3 }, uses: 'scrap', cost: 3 };
+
+    expect(loadAfter(press, [WIRE, WIRE])).toBe(1.5);
   });
 
   it('offers nothing while broken, however much they carry', () => {
@@ -158,6 +176,56 @@ describe('MachinePanel', () => {
     expect(panel.use({ ...AT_THE_PRINTER, x: 8 }, false)).toBe(false);
     expect(panel.use(AT_THE_PRINTER, true)).toBe(false);
     expect(panel.isOpen).toBe(false);
+  });
+
+  it('takes the keyboard while open and gives it back on closing', () => {
+    panel.use(AT_THE_PRINTER, false);
+    expect(document.activeElement).toBe(element());
+
+    press('Escape');
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('acts on a click on a row that can, and not on a part', () => {
+    playerState.latest = { player: player([SHEET, ACTUATOR, WIRE, WIRE]) } as PlayerStateMessage;
+    panel.use(AT_THE_PRINTER, false);
+    const rows = () => [...parent.querySelectorAll('li')];
+
+    rows()[0].click();
+    expect(sent).toEqual([]);
+
+    rows().at(-1)!.click();
+    expect(sent).toEqual([{ type: 'repair', machine: 'printer_3d' }]);
+  });
+
+  it('makes the row clicked, but not one they lack the material for', () => {
+    resetMachines([WORKING]);
+    playerState.latest = { player: player([{ ...PLASTIC, amount: 3 }]) } as PlayerStateMessage;
+    panel.use(AT_THE_PRINTER, false);
+    const rows = [...parent.querySelectorAll('li')];
+
+    rows[0].click();
+    expect(sent).toEqual([]);
+
+    rows[1].click();
+    expect(sent).toEqual([{ type: 'make', machine: 'printer_3d', item: 'rounds' }]);
+  });
+
+  it("sends no make they're short of material for, or couldn't carry", () => {
+    resetMachines([WORKING]);
+    playerState.latest = { player: player([{ ...PLASTIC, amount: 3 }]) } as PlayerStateMessage;
+    panel.use(AT_THE_PRINTER, false);
+    press('Enter');
+    expect(sent).toEqual([]);
+    expect(parent.querySelector('footer p')?.textContent).toBe('It takes 6 plastic, and you have 3.');
+
+    resetMachines([{ ...WORKING, makes: [{ ...PISTOL, item: { ...PISTOL.item, weight: 50 } }] }]);
+    playerState.latest = { player: player([PLASTIC]) } as PlayerStateMessage;
+    panel.update(AT_THE_PRINTER);
+    press('Enter');
+    expect(sent).toEqual([]);
+    expect(parent.querySelector('footer p')?.textContent).toBe("You'd end up carrying 51 kg, and you can carry 20.");
+    expect(parent.querySelector('li')?.classList.contains('clinic-short')).toBe(true);
   });
 
   it('sends nothing until they have every part', () => {

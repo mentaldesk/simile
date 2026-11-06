@@ -224,7 +224,7 @@ def test_offering_on_a_machine_that_isnt_one_fails_loudly() -> None:
 def test_a_new_module_beside_it_registers_its_offers(make_package: MakePackage) -> None:
     package = make_package(
         {
-            "printer.py": "def register(workshop):\n    workshop.registered = True\n",
+            "printer.py": "def offers(workshop):\n    workshop.registered = True\n",
             "plain.py": "VALUE = 1\n",
         }
     )

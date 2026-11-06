@@ -18,7 +18,7 @@ on a machine that's still broken. Otherwise nothing changes.
 
 ## Adding a machine's offers
 
-Add a file beside this one with a `register` function. `register_offers` calls it at startup, so you
+Add a file beside this one with an `offers` function. `register_offers` calls it at startup, so you
 edit nothing else:
 
 ```python
@@ -31,12 +31,13 @@ def make(player: Player) -> bool:
     ...
 
 
-def register(workshop: Workshop) -> None:
+def offers(workshop: Workshop) -> None:
     workshop.offer("printer_3d", Offer(Product(item=ROUNDS, uses="plastic", cost=2), make))
 ```
 
 A broken machine lists none of them. `Workshop.make` runs the one a client asks for, while the
-machine works and the player stands at it. The next `player_state` shows what changed.
+machine works and the player stands at it. The next `player_state` shows what changed. Your `make`
+has to refuse what wouldn't fit under their carry limit: the panel says why, and sends nothing.
 
 An offer that depends on what they carry gives a function of the player as its `product`. It returns
 what a press would make now, or None to list nothing, and the client hears of each change. The

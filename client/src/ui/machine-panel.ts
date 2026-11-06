@@ -35,7 +35,7 @@ export type Action = RepairMessage | MakeMessage;
 export type Row =
   | { kind: 'part'; id: string; name: string; count: number; have: number }
   | { kind: 'repair'; id: 'repair'; name: string; short: boolean }
-  | { kind: 'make'; id: string; name: string; product: Product; have: number; short: boolean };
+  | { kind: 'make'; id: string; name: string; product: Product; have: number; short: boolean; heavy?: string };
 
 const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -44,13 +44,21 @@ export function carried(material: Material, items: readonly Item[]): number {
   return items.filter(({ id }) => id === material).reduce((sum, { amount = 1 }) => sum + amount, 0);
 }
 
+/** What they'd carry once `product` is made: what it uses goes, by a material's weight or scrap's kilos. */
+export function loadAfter({ item, uses, cost }: Product, items: readonly Item[]): number {
+  const used = uses === 'scrap' ? cost : cost * (items.find(({ id }) => id === uses)?.weight ?? 0);
+  return items.reduce((sum, { weight, amount = 1 }) => sum + weight * amount, 0) - used + item.weight * (item.amount ?? 1);
+}
+
 /** A broken machine's parts against what they carry, then repairing it; a working one's offers. */
-export function rowsOf(machine: Machine, items: readonly Item[]): Row[] {
+export function rowsOf(machine: Machine, items: readonly Item[], limit = Infinity): Row[] {
   if (machine.state === 'working') {
     return machine.makes.map((product) => {
       const have = product.uses === 'scrap' ? product.cost : carried(product.uses, items);
       const made = product.item.amount && product.item.amount > 1 ? `${product.item.name} ×${amount(product.item.amount)}` : product.item.name;
-      return { kind: 'make', id: product.item.id, name: made, product, have, short: have < product.cost - 1e-9 };
+      const after = loadAfter(product, items);
+      const heavy = after > limit + 1e-9 ? `You'd end up carrying ${amount(after)} kg, and you can carry ${amount(limit)}.` : undefined;
+      return { kind: 'make', id: product.item.id, name: made, product, have, short: have < product.cost - 1e-9, ...(heavy && { heavy }) };
     });
   }
   const parts = Object.entries(machine.parts).map(([id, count]): Row => {
@@ -73,7 +81,8 @@ export function note(chosen: Row | undefined, rows: readonly Row[], kind?: Machi
   if (!chosen) return kind === 'recycler' ? "You're carrying no scrap it can use. It leaves the parts you'll need." : 'It has nothing to offer yet.';
   if (chosen.kind === 'make') {
     const { uses, cost } = chosen.product;
-    return chosen.short ? `It takes ${amount(cost)} ${uses}, and you have ${amount(chosen.have)}.` : 'Enter to make it.';
+    if (chosen.short) return `It takes ${amount(cost)} ${uses}, and you have ${amount(chosen.have)}.`;
+    return chosen.heavy ?? 'Enter to make it.';
   }
   if (chosen.kind === 'repair' && !chosen.short) return 'Enter to repair it. It uses up these parts.';
   const missing = rows.find((row) => row.kind === 'part' && row.have < row.count);
@@ -82,7 +91,7 @@ export function note(chosen: Row | undefined, rows: readonly Row[], kind?: Machi
 
 const actionOf = (machine: Machine, row: Row | undefined): Action | undefined => {
   if (row?.kind === 'repair' && !row.short) return { type: 'repair', machine: machine.id };
-  if (row?.kind === 'make' && !row.short) return { type: 'make', machine: machine.id, item: row.id };
+  if (row?.kind === 'make' && !row.short && !row.heavy) return { type: 'make', machine: machine.id, item: row.id };
   return undefined;
 };
 
@@ -186,7 +195,7 @@ export class MachinePanel {
 
   /** Redraws only for a change, keeping the choice on the row it was on. */
   private show(machine: Machine, player: Player): void {
-    const rows = rowsOf(machine, player.items);
+    const rows = rowsOf(machine, player.items, player.carry_limit);
     const drawn = JSON.stringify([machine, rows, this.at]);
     if (drawn === this.drawn) return;
     const chosen = this.rows[this.at]?.id;
@@ -235,7 +244,7 @@ export class MachinePanel {
         const line = el('li');
         line.dataset.index = String(index);
         line.classList.toggle('clinic-selected', index === this.at && chooses(row));
-        const short = row.kind === 'part' ? row.have < row.count : row.short;
+        const short = row.kind === 'part' ? row.have < row.count : row.short || (row.kind === 'make' && !!row.heavy);
         line.classList.toggle('clinic-short', short);
         line.classList.toggle('machine-part', row.kind === 'part');
         if (row.kind !== 'repair') line.appendChild(icon(row.id));
