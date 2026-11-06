@@ -274,7 +274,7 @@ def test_a_collapse_switches_the_lamp_off(make_package: MakePackage) -> None:
         switched = next_of(ws, "player_state")
         client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
         client.portal.call(world_of(app).loop.tick)
-        next_of(ws, "player_collapsed")
+        next_of(ws, "player_died")
         woken = next_of(ws, "player_state")
 
     assert lamp_of(switched)["on"] is True

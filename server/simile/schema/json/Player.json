@@ -368,7 +368,7 @@
     },
     "Mind": {
       "additionalProperties": false,
-      "description": "What the player knows, which they keep when they collapse, and later when they die. Left\nout of `Player` while they know no recipe.",
+      "description": "What the player knows, which they keep when they die. Left out of `Player` while they know\nno recipe.",
       "properties": {
         "recipes": {
           "default": [],
@@ -411,7 +411,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed.",
+      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed, in a save from before they\ncould die.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -533,7 +533,7 @@
     },
     "hunger": {
       "default": 0.0,
-      "description": "0 is fed and 1 is starving: they collapse.",
+      "description": "0 is fed and 1 is starving, which hurts until they eat.",
       "maximum": 1,
       "minimum": 0,
       "title": "Hunger",
@@ -541,7 +541,7 @@
     },
     "power": {
       "default": 1.0,
-      "description": "Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.",
+      "description": "Their power cell's charge, from 1 (full) to 0 (flat: they die), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.",
       "maximum": 1,
       "minimum": 0,
       "title": "Power",
@@ -549,7 +549,7 @@
     },
     "health": {
       "default": 1.0,
-      "description": "From 1, unhurt, to 0, when they collapse. Left out while it's full.",
+      "description": "From 1, unhurt, to 0, when they die. Left out while it's full.",
       "maximum": 1,
       "minimum": 0,
       "title": "Health",
@@ -566,7 +566,7 @@
     },
     "left": {
       "default": [],
-      "description": "What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
+      "description": "What they left lying in the world, oldest first: what they carried when they collapsed, in a save from before they could die, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
       "items": {
         "$ref": "#/$defs/Pile"
       },

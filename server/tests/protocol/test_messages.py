@@ -45,7 +45,6 @@ from simile.protocol import (
     Painting,
     PaintingsMessage,
     PickUpMessage,
-    PlayerCollapsedMessage,
     PlayerDiedMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
@@ -255,9 +254,6 @@ WOKEN = PlayerStateMessage(
     ),
     meal=Meal(place="maker_space", name="home", price=0),
 )
-COLLAPSED = PlayerCollapsedMessage(
-    position=Position(x=13, y=2, map="maker_space_floor_0"), cause=Vital.HUNGER
-)
 SCRAP_TRADER = Buyer(place="scrap_stall", name="The scrap trader", prices={"copper_wire": 6})
 AT_THE_SCRAP_STALL = DELVING.model_copy(update={"buyer": SCRAP_TRADER})
 LEGS = Fitting(bionic=Bionic.BIONIC_LEGS, name="Bionic legs", price=80, parts=["legs"])
@@ -374,7 +370,6 @@ ARMED = PlayerStateMessage(
         stash=Stash(items=[PLASTIC]),
     ),
 )
-DRAINED = PlayerCollapsedMessage(position=Position(x=4, y=9, map="home"), cause=Vital.POWER)
 DIED = PlayerDiedMessage(position=Position(x=5, y=2, map="maker_space_floor_2"), cause=Vital.HEALTH)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
@@ -458,8 +453,6 @@ SERVER = [
     ARMED,
     JournalMessage(entries=[]),
     JOURNAL,
-    COLLAPSED,
-    DRAINED,
     IN_THE_SEWERS,
     *(CreatureMovedMessage(creature=creature) for creature in CREATURES),
     CreatureGoneMessage(creature_id="rat_2"),
@@ -1310,16 +1303,6 @@ def test_rejects_invalid_meals(update: dict[str, Any], match: str) -> None:
         Meal.model_validate(NOODLES.model_dump() | update)
 
 
-def test_a_collapse_says_where_they_wake_and_why() -> None:
-    assert json.loads(COLLAPSED.model_dump_json()) == {
-        "type": "player_collapsed",
-        "position": {"x": 13.0, "y": 2.0, "map": "maker_space_floor_0"},
-        "cause": "hunger",
-    }
-    assert json.loads(DRAINED.model_dump_json())["cause"] == "power"
-    assert {vital.value for vital in Vital} == {"hunger", "power", "health"}
-
-
 @pytest.mark.parametrize(
     ("message", "data"),
     [
@@ -1375,20 +1358,20 @@ def test_eating_picking_up_selling_the_lamp_and_resting_go_from_client_to_server
         server_messages.validate_python(data)
 
 
-def test_a_collapse_goes_only_from_server_to_client() -> None:
-    data = json.loads(COLLAPSED.model_dump_json())
-
-    assert server_messages.validate_python(data) == COLLAPSED
-    with pytest.raises(ValidationError):
-        client_messages.validate_python(data)
-
-
 def test_a_death_says_where_they_wake_and_why() -> None:
     assert json.loads(DIED.model_dump_json()) == {
         "type": "player_died",
         "position": {"x": 5.0, "y": 2.0, "map": "maker_space_floor_2"},
         "cause": "health",
     }
+    assert {vital.value for vital in Vital} == {"hunger", "power", "health"}
+
+
+def test_player_collapsed_is_gone() -> None:
+    with pytest.raises(ValidationError):
+        server_messages.validate_python(
+            {"type": "player_collapsed", "position": {"x": 5, "y": 2}, "cause": "health"}
+        )
 
 
 def test_a_death_always_says_why() -> None:
@@ -1401,12 +1384,12 @@ def test_a_death_goes_only_from_server_to_client() -> None:
         client_messages.validate_python(json.loads(DIED.model_dump_json()))
 
 
-def test_every_cause_is_one_type_in_the_exported_protocol() -> None:
+def test_the_cause_is_one_type_in_the_exported_protocol() -> None:
     defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
 
-    for message in ("PlayerCollapsedMessage", "PlayerDiedMessage"):
-        assert defs[message]["properties"]["cause"] == {"$ref": "#/$defs/Vital"}
-        assert "cause" in defs[message]["required"]
+    assert defs["PlayerDiedMessage"]["properties"]["cause"] == {"$ref": "#/$defs/Vital"}
+    assert "cause" in defs["PlayerDiedMessage"]["required"]
+    assert "PlayerCollapsedMessage" not in defs
 
 
 @pytest.mark.parametrize(

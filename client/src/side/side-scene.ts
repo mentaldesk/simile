@@ -142,7 +142,7 @@ export class SideScene extends Phaser.Scene {
         listenerPosition: () => this.positionOf(PLAYER_ID),
       }),
       server.on('snapshot', () => this.moves.reset()),
-      server.on('player_collapsed', ({ position: { x, y, map } }) => {
+      server.on('player_died', ({ position: { x, y, map } }) => {
         this.moves.collapsed();
         this.wake({ x, y, map: map ?? '' });
       }),

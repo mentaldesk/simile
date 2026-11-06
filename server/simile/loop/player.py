@@ -23,7 +23,7 @@ from simile.protocol import (
     LampMessage,
     LineMessage,
     PickUpMessage,
-    PlayerCollapsedMessage,
+    PlayerDiedMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     PlayerStateMessage,
@@ -111,7 +111,7 @@ class LoopPlayer:
         self.away = timedelta()
         """Sim time skipped while out of the game."""
         self.hurt: list[str] = []
-        """Each time they lost health, or collapsed."""
+        """Each time they lost health, or died."""
         self.dark: list[str] = []
         """Each time their lamp ran flat in the dark."""
         self.stomped = 0
@@ -151,8 +151,8 @@ class LoopPlayer:
                     self.roused.add(creature.id)
             case CreatureGoneMessage(creature_id=id):
                 self.creatures.pop(id, None)
-            case PlayerCollapsedMessage(cause=cause):
-                self.hurt.append(f"{self.world.clock}  Collapsed: {cause}")
+            case PlayerDiedMessage(cause=cause):
+                self.hurt.append(f"{self.world.clock}  Died: {cause}")
             case ConversationStartedMessage(conversation=talk) if PLAYER_ID in talk.participants:
                 self.mine.add(talk.id)
             case LineMessage(line=line) as message if line.conversation_id in self.mine:

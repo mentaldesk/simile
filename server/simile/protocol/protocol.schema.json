@@ -1455,7 +1455,7 @@
     },
     "Mind": {
       "additionalProperties": false,
-      "description": "What the player knows, which they keep when they collapse, and later when they die. Left\nout of `Player` while they know no recipe.",
+      "description": "What the player knows, which they keep when they die. Left out of `Player` while they know\nno recipe.",
       "properties": {
         "recipes": {
           "default": [],
@@ -1779,7 +1779,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed.",
+      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed, in a save from before they\ncould die.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -1839,21 +1839,21 @@
         },
         "hunger": {
           "default": 0.0,
-          "description": "0 is fed and 1 is starving: they collapse.",
+          "description": "0 is fed and 1 is starving, which hurts until they eat.",
           "maximum": 1,
           "minimum": 0,
           "type": "number"
         },
         "power": {
           "default": 1.0,
-          "description": "Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.",
+          "description": "Their power cell's charge, from 1 (full) to 0 (flat: they die), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.",
           "maximum": 1,
           "minimum": 0,
           "type": "number"
         },
         "health": {
           "default": 1.0,
-          "description": "From 1, unhurt, to 0, when they collapse. Left out while it's full.",
+          "description": "From 1, unhurt, to 0, when they die. Left out while it's full.",
           "maximum": 1,
           "minimum": 0,
           "type": "number"
@@ -1868,7 +1868,7 @@
         },
         "left": {
           "default": [],
-          "description": "What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
+          "description": "What they left lying in the world, oldest first: what they carried when they collapsed, in a save from before they could die, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Pile"
           },
@@ -1931,30 +1931,6 @@
         "hunger"
       ],
       "title": "Player",
-      "type": "object"
-    },
-    "PlayerCollapsedMessage": {
-      "additionalProperties": false,
-      "description": "The player collapsed of `cause`: they starved, their power cell ran flat, or they had no\nhealth left. They wake at home, at `position`, with their lamp, switched off. Everything else\nthey carried stays where they fell, in `player_state`'s `left`.",
-      "properties": {
-        "type": {
-          "const": "player_collapsed",
-          "default": "player_collapsed",
-          "type": "string"
-        },
-        "position": {
-          "$ref": "#/$defs/Position"
-        },
-        "cause": {
-          "$ref": "#/$defs/Vital"
-        }
-      },
-      "required": [
-        "type",
-        "position",
-        "cause"
-      ],
-      "title": "PlayerCollapsedMessage",
       "type": "object"
     },
     "PlayerDiedMessage": {
@@ -2460,7 +2436,6 @@
           "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
           "paintings": "#/$defs/PaintingsMessage",
-          "player_collapsed": "#/$defs/PlayerCollapsedMessage",
           "player_died": "#/$defs/PlayerDiedMessage",
           "player_state": "#/$defs/PlayerStateMessage",
           "snapshot": "#/$defs/SnapshotMessage",
@@ -2519,9 +2494,6 @@
         },
         {
           "$ref": "#/$defs/JournalMessage"
-        },
-        {
-          "$ref": "#/$defs/PlayerCollapsedMessage"
         },
         {
           "$ref": "#/$defs/PlayerDiedMessage"
@@ -2807,7 +2779,7 @@
       "type": "object"
     },
     "Vital": {
-      "description": "What runs out when the player collapses or dies.",
+      "description": "What runs out when the player dies.",
       "enum": [
         "hunger",
         "power",
