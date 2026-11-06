@@ -16,6 +16,9 @@ player's journal of it, is saved and restored the same way, through `investigati
 no disappearance and no entries until the world makes one, and likewise on a fresh start, from a
 save from before it, or with `:memory:`. A save from before the disappearance loads without its
 incident, and the story makes a disappearance for it, keeping only the entries still true.
+Which creatures are gone for good, and the wounds and haul of the rest, are saved with the world
+too ([`simile.creatures`](../creatures/README.md)'s *Saved*), and a save from before them has every
+creature whole.
 
 ## Saving
 

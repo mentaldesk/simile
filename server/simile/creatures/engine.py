@@ -11,6 +11,7 @@ from starlette.applications import Starlette
 
 from simile.creatures.grid import Cell, Edge, Grid, sees
 from simile.creatures.kind import Kind
+from simile.creatures.saved import SavedCreature
 from simile.creatures.ways import Aim, Senses
 from simile.protocol import Creature as Shown
 from simile.protocol import (
@@ -20,7 +21,16 @@ from simile.protocol import (
     Position,
     ServerMessage,
 )
-from simile.schema import CreatureState, DoorKind, MapTile, Player, SideFacing, TileArea
+from simile.schema import (
+    CreatureState,
+    DoorKind,
+    Item,
+    MapTile,
+    Pile,
+    Player,
+    SideFacing,
+    TileArea,
+)
 from simile.sim import Clock
 from simile.world.map import TownMap
 from simile.world.movement import Point
@@ -91,6 +101,8 @@ class Creature:
     """When it went down, while it's gone."""
     wounds: int = 0
     """Points of its kind's `health` it has lost, so three thirds come to exactly none."""
+    haul: list[Item] = field(default_factory=list)
+    """What it has collected, which it drops when it goes down."""
     sent: Shown | None = None
     sent_at: float = -math.inf
 
@@ -159,7 +171,8 @@ class Creatures:
         harm: Callable[[Kind], None] = lambda kind: None,
         send: Callable[[ServerMessage], None] = lambda message: None,
         salvage: Callable[[TownMap], Mapping[Cell, str]] = lambda town: {},
-        collect: Callable[[str], None] = lambda pickup: None,
+        collect: Callable[[str], Iterable[Item]] = lambda pickup: (),
+        drop: Callable[[Pile], None] = lambda pile: None,
     ) -> None:
         self.maps = maps
         self.clock = clock
@@ -168,11 +181,15 @@ class Creatures:
         self.send = send
         self.salvage = salvage
         self.collect = collect
+        """Takes what lies at a pickup, and says what that was."""
+        self.drop = drop
         self.now = 0.0
         self.all: dict[str, Creature] = {}
         self.numbers: dict[str, int] = {}
         self.heard: Point | None = None
         """Where the player was last tick, to tell they're falling."""
+        self.saved: dict[str, SavedCreature] = {}
+        """Those gone for good, and those saved that haven't been spawned again."""
 
     def spawn(
         self,
@@ -209,6 +226,11 @@ class Creatures:
         )
         if creature.id in self.all:
             raise ValueError(f"there's already a creature {creature.id}")
+        saved = self.saved.get(creature.id)
+        if saved is not None and not saved.gone:
+            del self.saved[creature.id]
+            creature.wounds = min(saved.wounds, kind.health - 1)
+            creature.haul = list(saved.haul)
         self.all[creature.id] = creature
         self._send(creature)
         return creature
@@ -223,6 +245,19 @@ class Creatures:
     def remove(self, creature_id: str) -> None:
         if self.all.pop(creature_id, None) is not None:
             self.send(CreatureGoneMessage(creature_id=creature_id))
+
+    def is_gone(self, creature_id: str) -> bool:
+        saved = self.saved.get(creature_id)
+        return saved is not None and saved.gone
+
+    def saving(self) -> dict[str, SavedCreature]:
+        """What a save keeps: README.md's *Saved*."""
+        held = {
+            creature.id: SavedCreature(wounds=creature.wounds, haul=list(creature.haul))
+            for creature in self.all.values()
+            if creature.down is None and (creature.wounds or creature.haul)
+        }
+        return {**self.saved, **held}
 
     def shown(self) -> list[Shown]:
         """Every creature in the world, for the snapshot."""
@@ -347,7 +382,7 @@ class Creatures:
         elif self.now >= done:
             creature.collecting = None
             self._log("A %s collects salvage", creature)
-            self.collect(pickup)
+            creature.haul += self.collect(pickup)
             self._settle(creature, CreatureState.IDLE)
         else:
             self._settle(creature, CreatureState.ATTACKING)
@@ -387,8 +422,13 @@ class Creatures:
         creature.sent = None
         self._log("A %s goes down", creature)
         self.send(CreatureGoneMessage(creature_id=creature.id))
+        if creature.haul:
+            x, y = creature.cell
+            self.drop(Pile(at=MapTile(map=creature.map, x=x, y=y), items=creature.haul))
+            creature.haul = []
         if creature.respawn is None:
             del self.all[creature.id]
+            self.saved[creature.id] = SavedCreature(gone=True)
 
     def _come_back(self, creature: Creature) -> None:
         if creature.down is None or creature.respawn is None:

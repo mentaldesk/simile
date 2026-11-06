@@ -46,9 +46,10 @@ class World:
         self.collected: list[str] = []
         self.lying = dict(salvage or {})
 
-        def collect(pickup: str) -> None:
+        def collect(pickup: str) -> tuple[()]:
             self.collected.append(pickup)
             self.lying = {cell: id for cell, id in self.lying.items() if id != pickup}
+            return ()
 
         self.creatures = Creatures(
             {ROW.id: ROW},
