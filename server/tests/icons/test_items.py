@@ -3,7 +3,7 @@ from simile.economy.config import DEFAULT_CONFIG as ECONOMY
 from simile.icons.catalogue import ICONS, ITEMS, TRADES, UNKNOWN
 from simile.machines.workshop import MACHINES, Workshop, register_offers
 from simile.player.config import DEFAULT_CONFIG as PLAYER
-from simile.schema import Bionic, Player, lamp
+from simile.schema import Bionic, Item, ItemKind, Player, lamp
 from simile.sim import World
 from simile.story.lens import LENS
 from simile.street import finds, sewers
@@ -23,7 +23,8 @@ def in_the_world() -> set[str]:
 
 def machines_make() -> set[str]:
     """What every machine lists once it works, for a player carrying scrap to recycle."""
-    player = Player(items=[sewers.SCRAP], repaired=list(MACHINES))
+    scrap = Item(id="scrap", kind=ItemKind.SALVAGE, name="Scrap", weight=1.0)
+    player = Player(items=[scrap], repaired=list(MACHINES))
     workshop = Workshop(player, Movement(load_maps(), World().bus))
     register_offers(workshop)
     return {product.item.id for machine in workshop.machines() for product in machine.makes}
