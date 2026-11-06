@@ -3,11 +3,12 @@
 from dataclasses import dataclass
 
 from simile.creatures.catalogue import Box
+from simile.dolls.figure import styled
 from simile.papercraft.painter import cartoon, grimy
 
 WHOLE: Box = (0.0, 0.0, 1.0, 1.0)
 ABOVE_THE_FEET: Box = (0.0, 0.0, 1.0, 0.84)
-LOOKS = {"cartoon": cartoon, "grimy": grimy}
+LOOKS = {"cartoon": cartoon, "grimy": grimy, "doll": styled}
 LEAD = "Make a new picture in exactly the {look} style of the reference picture: a 2D game icon: "
 ALONE = (
     " Shown whole and alone in the middle of the picture, filling most of it, on a plain flat "
@@ -22,14 +23,18 @@ class Icon:
     pieces: int = 1
     """How many separate pieces it's in, such as 2 for a pair of feet."""
     look: str = "cartoon"
-    """`LOOKS`: #329's cartoon, or its grimy version."""
+    """`LOOKS`: #329's cartoon, its grimy version, or the dolls' look for one `over` a doll."""
     tries: int = 3
     reroll: int = 0
     """A reroll number, for one that came out wrong by eye."""
     keep: Box = WHOLE
     """The share of it kept, as shares of its box."""
+    over: str | None = None
+    """The doll's frame it's an edit of, `<figure>/<frame>`, in place of the style reference."""
 
     def prompt(self) -> str:
+        if self.over:
+            return LOOKS[self.look](self.words + ALONE)
         return LOOKS[self.look](LEAD.format(look=self.look) + self.words + ALONE)
 
 
@@ -117,6 +122,44 @@ BIONICS = (
         pieces=2,
     ),
 )
+GRADES = (
+    Icon(
+        "power_cell_2",
+        "a bigger chunky bionic power cell: a fat rounded dark blue steel cylinder battery lying "
+        "on its side, bright brass terminals at its ends, two glowing amber charge windows along "
+        "it and a few coloured wires.",
+    ),
+    Icon(
+        "power_cell_3",
+        "a sleek high-end bionic power cell: a glossy black rounded cylinder battery lying on its "
+        "side, gold terminals at its ends, three glowing violet bands round it and a few thin "
+        "gold wires.",
+    ),
+    Icon(
+        "bionic_legs_2",
+        "a pair of sturdier bionic legs side by side, from the thighs down to the ankles and no "
+        "further, no feet at all: thick robot legs of rounded dark gunmetal armour plates with a "
+        "bright orange stripe down each shin and a black rubber joint at each knee.",
+        pieces=2,
+        keep=ABOVE_THE_FEET,
+    ),
+    Icon(
+        "bionic_legs_3",
+        "a pair of top-grade bionic legs side by side, from the thighs down to the ankles and no "
+        "further, no feet at all: slim robot legs of glossy cobalt blue armour plates edged in "
+        "dark steel, solid all the way down, with a glowing white ring at each knee.",
+        pieces=2,
+        keep=ABOVE_THE_FEET,
+    ),
+    Icon(
+        "spring_feet_2",
+        "a pair of stronger bionic spring feet side by side: flat dark gunmetal foot plates "
+        "shaped like shoes, each with a thick bright red coil spring round a steel piston at the "
+        "heel.",
+        pieces=2,
+    ),
+)
+"""A salvaged bionic's `id` is its grade: the lowest grade of each line is in `BIONICS`."""
 
 ITEMS = (
     Icon(
@@ -235,6 +278,37 @@ ITEMS = (
         "cylinder with chrome caps at both ends, a glowing blue ring round its middle and a short "
         "shiny piston rod sticking out of its top.",
     ),
+    Icon(
+        "plastic_pistol",
+        "a chunky little pistol 3D-printed from bright orange plastic, seen from the side and "
+        "pointing right: a blocky body, a short square barrel, a stubby grip with fine printed "
+        "layer lines and a small black trigger.",
+    ),
+    Icon(
+        "plastic_rounds",
+        "three identical fat stubby bullets of bright orange plastic with round noses, standing "
+        "upright side by side and touching each other, all the same size and the same strong "
+        "orange, seen from the side.",
+        pieces=3,
+    ),
+    Icon(
+        "plastic",
+        "a fat spool of 3D-printer filament seen from the front and a little to the side: a black "
+        "plastic reel wound with bright orange plastic strand, one loose end curling off it.",
+    ),
+    Icon(
+        "metal_sheet",
+        "a single flat rectangular sheet of dark blue-grey steel plate standing a little "
+        "tilted, its surface solid and opaque with a soft diagonal sheen, a screw hole in each "
+        "corner and one corner bent over.",
+    ),
+    Icon(
+        "linear_actuator",
+        "a short fat industrial linear actuator lying level: a thick dark grey metal tube as wide "
+        "as a fist with a stout steel piston rod coming out of its right end, a chunky round "
+        "mounting eye on each end, a big black electric motor clamped along its top and two "
+        "coloured wires.",
+    ),
 )
 USABLES = (
     Icon(
@@ -260,6 +334,16 @@ USABLES = (
         "credits",
         "a short stack of four thick round brass coins, one more coin leaning against the stack, "
         "each stamped with a simple ring round its edge, scuffed and a little worn.",
+    ),
+    Icon(
+        "corpse",
+        "Redraw image 1 with the same character, the same clothes, hair and size, now dead: "
+        "lying flat and limp on their back, seen from the side, the head on the left and the "
+        "feet on the right, the legs straight out and one arm flopped on the ground. The eyes "
+        "are two small black crosses and the mouth hangs open, the skin has gone a sickly pale "
+        "grey, and a small pool of dark red blood lies on the ground under the body.",
+        look="doll",
+        over="player/lie",
     ),
 )
 """Things the side view draws for the player to use where no furniture does, and loot's cash."""
@@ -302,5 +386,6 @@ UNKNOWN = Icon(
 )
 
 ICONS: dict[str, Icon] = {
-    icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, *USABLES, *TRADES, UNKNOWN)
+    icon.id: icon
+    for icon in (*ORGANS, *SOLD, *BIONICS, *GRADES, *ITEMS, *USABLES, *TRADES, UNKNOWN)
 }

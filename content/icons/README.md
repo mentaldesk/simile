@@ -20,6 +20,9 @@ since been retired. It's a screenshot of the client, taken by hand: take it agai
 **[`previews/gear.webp`](previews/gear.webp)** is the same for the Gear tab: carrying one of every
 item, and nearly nothing.
 
+**`corpse`** is an edit of the whole player's lying frame (the entry's `over`) rather than a picture
+in the tunnels' style, so it's you. Draw it about 0.6 m tall.
+
 ## Files
 
 - **`<id>.webp`**: each icon cut out on transparency, cropped to it with 2 px to spare, at most 256

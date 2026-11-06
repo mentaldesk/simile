@@ -145,6 +145,9 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   rooms and streets, and `picture_frame` for the gallery's paintings. A map can use one of those
   extras too, as the rooftops use the palm tree, the bicycle and the bin.
 
+  A machine you repair (`printer_3d`, `recycler`) also has **`broken`**: the piece drawn until it's
+  repaired, an edit of its working picture, drawn the same size. `muzzle_flash` is the flash of a shot.
+
   An entry can also carry measurements of its art, which hold for its variants too. Each is
   optional, and without it the client does as it does today:
 

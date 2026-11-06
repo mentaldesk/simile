@@ -48,6 +48,8 @@ type Paged = { sideWalk: SideWalk };
 type Shooting = {
   weapon(): { rounds: number | null; condition: number | null };
   shot(): { gun: boolean; flash: boolean; line: string | null };
+  playerFrame(): string | null;
+  shownPieces(name: string): string[];
   creatureImages(): { key: string; x: number; flashing: boolean }[];
 };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -91,6 +93,8 @@ const walkApi = (page: Page) => ({
   hurt: (health: number) => page.evaluate((health) => (window as unknown as Paged).sideWalk.hurt(health), health),
   weapon: () => page.evaluate(() => (window as unknown as Paged).sideWalk.weapon()),
   shot: () => page.evaluate(() => (window as unknown as Paged).sideWalk.shot()),
+  playerFrame: () => page.evaluate(() => (window as unknown as Paged).sideWalk.playerFrame()),
+  shownPieces: (name: string) => page.evaluate((name) => (window as unknown as Paged).sideWalk.shownPieces(name), name),
   creatureImages: () => page.evaluate(() => (window as unknown as Paged).sideWalk.creatureImages()),
 });
 type Api = ReturnType<typeof walkApi>;
@@ -605,9 +609,13 @@ async function shootingLeg(open: (query: string) => Promise<[Page, Api]>): Promi
     await frames();
     const fired = await api.shot();
     if ((await rounds()) !== 5 || !fired.gun || !fired.flash) throw new Error(`${name}: X didn't fire: ${await rounds()}, ${JSON.stringify(fired)}`);
+    if ((await api.shownPieces('muzzle_flash')).length !== 1) throw new Error(`${name}: no flash drawn`);
+    if ((await api.playerFrame()) !== 'aim') throw new Error(`${name}: they fired without aiming: ${await api.playerFrame()}`);
     await run(page, 150);
     if ((await api.shot()).flash) throw new Error(`${name}: the flash stayed`);
+    if ((await api.shownPieces('muzzle_flash')).length) throw new Error(`${name}: the flash stayed drawn`);
     await run(page, 800);
+    if ((await api.playerFrame()) === 'aim') throw new Error(`${name}: they stayed aiming`);
     if ((await api.creatureImages()).some(({ key }) => key === 'creature-rat')) throw new Error(`${name}: the rat wasn't killed`);
 
     await page.keyboard.press('x');
@@ -975,6 +983,10 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
     server.dispatch(JSON.stringify({ type: 'machine_changed', machine }));
   });
   await run(page, 300);
+  const drawn = async () => (await api.shownPieces('printer_3d')).filter((key) => !key.includes('shadow'));
+  if (!(await drawn()).every((key) => key.endsWith('printer_3d-broken')) || !(await drawn()).length) {
+    throw new Error(`${name}: it isn't drawn broken: ${await drawn()}`);
+  }
   const hint = await shown(page, '.counter-hint');
   if (hint !== 'Press E to use the 3D printer.') throw new Error(`${name}: the hint is ${hint}`);
   await page.keyboard.press('e');
@@ -990,6 +1002,13 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 200);
   if ((await shown(page, '.machine-panel')) !== null) throw new Error(`${name}: Esc didn't close it`);
   if ((await shown(page, '.pause')) !== null) throw new Error(`${name}: Esc opened the pause menu too`);
+  await page.evaluate(async () => {
+    const net = '/src/net/index.ts';
+    const { server } = await import(/* @vite-ignore */ net);
+    server.dispatch(JSON.stringify({ type: 'machine_changed', machine: { id: 'printer_3d', kind: 'printer', state: 'working', parts: {}, makes: [] } }));
+  });
+  await run(page, 100);
+  if (!(await drawn()).length || (await drawn()).some((key) => key.includes('broken'))) throw new Error(`${name}: repaired, it's drawn ${await drawn()}`);
 }
 
 const root = new URL('../..', import.meta.url).pathname;

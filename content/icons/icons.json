@@ -137,6 +137,46 @@
       ],
       "hash": "fc6088b579a10395"
     },
+    "power_cell_2": {
+      "file": "power_cell_2.webp",
+      "size": [
+        260,
+        152
+      ],
+      "hash": "d1bfb0dcaaf7152a"
+    },
+    "power_cell_3": {
+      "file": "power_cell_3.webp",
+      "size": [
+        260,
+        157
+      ],
+      "hash": "e801206fb87eca22"
+    },
+    "bionic_legs_2": {
+      "file": "bionic_legs_2.webp",
+      "size": [
+        220,
+        260
+      ],
+      "hash": "be32be84487f2e76"
+    },
+    "bionic_legs_3": {
+      "file": "bionic_legs_3.webp",
+      "size": [
+        183,
+        260
+      ],
+      "hash": "805ff1e783be4c71"
+    },
+    "spring_feet_2": {
+      "file": "spring_feet_2.webp",
+      "size": [
+        260,
+        178
+      ],
+      "hash": "8ad5c0336aad1180"
+    },
     "lamp": {
       "file": "lamp.webp",
       "size": [
@@ -321,6 +361,46 @@
       ],
       "hash": "5b8da755a92d2e06"
     },
+    "plastic_pistol": {
+      "file": "plastic_pistol.webp",
+      "size": [
+        260,
+        163
+      ],
+      "hash": "43f3931d4a94604f"
+    },
+    "plastic_rounds": {
+      "file": "plastic_rounds.webp",
+      "size": [
+        260,
+        230
+      ],
+      "hash": "9a7f69a4bba007f2"
+    },
+    "plastic": {
+      "file": "plastic.webp",
+      "size": [
+        260,
+        234
+      ],
+      "hash": "e59a50dd9744bc35"
+    },
+    "metal_sheet": {
+      "file": "metal_sheet.webp",
+      "size": [
+        260,
+        235
+      ],
+      "hash": "70790cebdce3069e"
+    },
+    "linear_actuator": {
+      "file": "linear_actuator.webp",
+      "size": [
+        260,
+        129
+      ],
+      "hash": "25a378dc64b41384"
+    },
     "aris_notes": {
       "file": "aris_notes.webp",
       "size": [
@@ -352,6 +432,14 @@
         202
       ],
       "hash": "ca94d3b250e122f5"
+    },
+    "corpse": {
+      "file": "corpse.webp",
+      "size": [
+        260,
+        112
+      ],
+      "hash": "ccba0c920c102aaa"
     },
     "talk": {
       "file": "talk.webp",

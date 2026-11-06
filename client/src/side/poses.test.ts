@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { dolls } from '../dolls/assets';
+import { isPlayerFigure } from '../dolls/bionics';
 import { placed, shown } from '../dolls/sprite';
 import { scenery, village } from './content';
 import { DOLL_M, feetOf, FURNITURE_DROP_M, furniturePlacement, PPM, xOf } from './layout';
@@ -17,6 +18,7 @@ import {
   settle,
   STEPS,
 } from './poses';
+import { muzzleOf } from './shooting';
 
 describe('the pose cache', () => {
   const figure = dolls.kofi;
@@ -29,6 +31,23 @@ describe('the pose cache', () => {
     expect(first).toEqual(shown(figure, 'walking', 'east', Math.floor(0.26 * STEPS) / STEPS));
     expect(cache.get('walking', 'east', 0.5)).not.toBe(first);
     expect(cache.size).toBe(2);
+  });
+
+  it('draws aiming as the aim, mirrored to the west, and a figure without one standing', () => {
+    const player = new PoseCache(dolls.player);
+    expect(player.get('aiming', 'east', 0).frame).toBe('aim');
+    expect(player.get('aiming', 'west', 0).flip).toBe(true);
+    expect(new PoseCache(figure).get('aiming', 'east', 0).frame).toBe('stand');
+  });
+
+  it('has every figure of the player aim with its muzzle ahead of its feet, below the top of its head', () => {
+    for (const [id, doll] of Object.entries(dolls)) {
+      if (!isPlayerFigure(id)) continue;
+      const { ahead, up } = muzzleOf(doll);
+      expect(ahead, id).toBeGreaterThan(0.3);
+      expect(up, id).toBeGreaterThan(0.6);
+      expect(up, id).toBeLessThan(1.9);
+    }
   });
 
   it('mirrors the westward facings and shares the rest', () => {

@@ -121,10 +121,10 @@
         {
           "height": 32,
           "id": 5,
-          "name": "fridge",
+          "name": "recycler",
           "properties": [],
           "rotation": 0,
-          "type": "fridge",
+          "type": "recycler",
           "visible": true,
           "width": 16,
           "x": 16,

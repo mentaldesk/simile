@@ -63,6 +63,15 @@ def listed(tmp_path: Path) -> dict:
     return json.loads((tmp_path / "out" / MANIFEST).read_text())
 
 
+def test_an_icon_over_a_dolls_frame_is_painted_from_it_rather_than_the_reference() -> None:
+    icon = ICONS["corpse"]
+    frame = build.doll_frame(icon.over)
+
+    assert frame.size == build.SIZE
+    assert frame.getpixel((0, 0)) == build.OVER_GROUND
+    assert frame.getpixel((build.SIZE[0] // 2, build.SIZE[1] // 2)) != build.OVER_GROUND
+
+
 def test_paints_every_icon_and_a_rerun_paints_nothing(tmp_path: Path) -> None:
     painters = Painters()
 

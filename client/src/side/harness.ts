@@ -1,6 +1,8 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
 import { server, type Bionic, type Body, type ClientMessage, type Creature, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type SideFacing, type Wall } from '../net';
+import { isPlayerFigure } from '../dolls/bionics';
+import { SpriteFigure } from '../dolls/sprite-figure';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { levels } from '../world/assets';
@@ -591,6 +593,15 @@ function exposeWalk(scene: SideScene, village: Village): void {
         return { rounds: weapon?.rounds ?? null, condition: weapon?.condition ?? null };
       },
       shot: () => scene.shotView.drawn(),
+      playerFrame: () => {
+        const dolls = scene.children.list.filter((child) => child instanceof SpriteFigure);
+        const player = dolls.find((doll) => isPlayerFigure(doll.figure.id));
+        return (player?.list[0] as Phaser.GameObjects.Image | undefined)?.frame.name ?? null;
+      },
+      shownPieces: (name: string) =>
+        scene.children.list
+          .filter((child) => child instanceof Phaser.GameObjects.Image && child.visible && child.texture.key.includes(name))
+          .map((child) => (child as Phaser.GameObjects.Image).texture.key),
       creatureImages: () =>
         scene.children.list
           .filter((child) => child instanceof Phaser.GameObjects.Image && child.texture.key.startsWith('creature-'))

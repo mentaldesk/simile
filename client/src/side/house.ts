@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Frame } from '../net';
+import type { Frame, Machine } from '../net';
 import { DEPTH } from './depths';
 import { dropShadow, furnitureKey, placeFurniture, tileAlong, type Tints } from './draw';
 import {
@@ -17,6 +17,11 @@ import type { Link, Placed, SideMap, Village } from './maps';
 import { crossing } from './runs';
 import type { Moulding, SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
+
+/** By id: only what you repair is here, and anything else is drawn working. */
+export type MachineStates = ReadonlyMap<string, Pick<Machine, 'state'>>;
+
+export const isBroken = (machine?: Pick<Machine, 'state'>) => machine?.state === 'broken';
 
 const WINDOWS = [0.3, 0.7];
 const WINDOW_ROW = 1.9;
@@ -64,6 +69,8 @@ export class House {
   private readonly frames = new Map<string, Hung>();
   private readonly tints: Tints;
   private readonly moulding: Moulding;
+  private readonly machines: { name: string; working: Phaser.GameObjects.Image[]; broken: Phaser.GameObjects.Image[] }[] = [];
+  private states?: MachineStates;
   private shown = true;
   private carKey?: string;
 
@@ -90,7 +97,9 @@ export class House {
 
   static pieces(manifest: SceneryManifest, building: string, village: Village): string[] {
     const floors = village.floors(building);
-    const furniture = floors.flatMap((map) => map.furniture.map((item) => furnitureKey(manifest, item, map.id)));
+    const furniture = floors.flatMap((map) =>
+      map.furniture.flatMap((item) => [furnitureKey(manifest, item, map.id), manifest.furniture[item.name]?.broken]),
+    );
     const { platforms } = manifest;
     return [
       ...(manifest.buildings[building]?.floors ?? []),
@@ -114,6 +123,18 @@ export class House {
       for (const part of [hung.frame, hung.shadow, hung.image]) part?.setVisible(shown);
     }
     if (!shown) for (const image of this.riding) image.setVisible(false);
+    if (this.states) this.showMachines(this.states);
+  }
+
+  /** Draws each machine you repair on these floors as it stands, broken or working. */
+  showMachines(states: MachineStates): void {
+    this.states = states;
+    if (!this.shown) return;
+    for (const { name, working, broken } of this.machines) {
+      const down = isBroken(states.get(name));
+      for (const image of working) image.setVisible(!down);
+      for (const image of broken) image.setVisible(down);
+    }
   }
 
   /** Hides the cars where a ride leaves and arrives, and draws one round the rider. */
@@ -296,9 +317,15 @@ export class House {
     const stretch = manifest.furniture[item.name]?.stretch ? stretchWidth(item) : undefined;
     const anchor = [place.originX, place.originY] as const;
     const onWall = place.originY < 1;
-    const { images, shadows } = placeFurniture(scene, textures, key, stretch, anchor, place.x, place.y, PPM);
-    for (const shadow of shadows) this.images.push(shadow.setDepth(onWall ? DEPTH.frame - 0.05 : DEPTH.furnitureShadow));
-    for (const image of images) this.add(image, onWall ? DEPTH.frame : DEPTH.furniture);
+    const placed = (picture: string): Phaser.GameObjects.Image[] => {
+      const { images, shadows } = placeFurniture(scene, textures, picture, stretch, anchor, place.x, place.y, PPM);
+      for (const shadow of shadows) this.images.push(shadow.setDepth(onWall ? DEPTH.frame - 0.05 : DEPTH.furnitureShadow));
+      for (const image of images) this.add(image, onWall ? DEPTH.frame : DEPTH.furniture);
+      return [...images, ...shadows];
+    };
+    const working = placed(key);
+    const broken = manifest.furniture[item.name]?.broken;
+    if (broken) this.machines.push({ name: item.name, working, broken: placed(broken) });
   }
 
   private shadowOf(image: Phaser.GameObjects.Image, key: string): void {

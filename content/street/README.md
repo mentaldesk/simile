@@ -69,9 +69,9 @@ Every map has every layer, bottom to top:
 | `creatures` | Objects, only on maps with creatures: the metro and the sewers. One tile per creature, where it starts, named by its id, its type its kind (`rat`, `bot`, `dog` or `bat`), with an optional `area`, `x,y,width,height`, that it keeps to. `simile.creatures` spawns them (P13). |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
-`cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
+`cafe_table`, `clean_lockers`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
 `lamp`, `laser_cutter`, `lift`, `loom`, `menu_board`, `news_terminal`, `noodle_counter`,
-`noodle_table`, `palm_tree`, `pegboard`, `plant`, `plinth`, `printer_3d`, `rope_bridge`,
+`noodle_table`, `palm_tree`, `pegboard`, `plant`, `plinth`, `printer_3d`, `recycler`, `rope_bridge`,
 `sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`,
 and in the metro `bedroll`, `breaker_box`, `bulkhead`, `catwalk`, `crates`, `dead_terminal`,
 `freight_lift`, `lockers`, `metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`,

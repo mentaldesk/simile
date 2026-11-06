@@ -43,6 +43,8 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
       return 'sit';
     case 'sleeping':
       return 'lie';
+    case 'aiming':
+      return 'aim';
     case 'reading':
     case 'working':
       return options.seated ? 'sit' : 'stand';

@@ -390,3 +390,12 @@ def test_the_player_with_bionics_is_kept_with_the_player(tmp_path: Path, fitted:
 
     names = {p.name for p in tmp_path.iterdir()}
     assert {f"{figure_id(c)}.webp" for c in build.COMBINATIONS} <= names
+
+
+def test_a_figure_of_the_players_keeps_its_aim_and_no_one_elses_is_kept(tmp_path: Path) -> None:
+    for name in ("player_aim.webp", "player_feet_aim.webp", "odalys_aim.webp"):
+        (tmp_path / name).write_bytes(b"")
+
+    assert [path.name for path in build.stale(tmp_path, ["odalys", "player"])] == [
+        "odalys_aim.webp"
+    ]

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LAYER_PLACES, layerCopies, parallaxY, streetCentreY } from './camera';
 import { pieceUrl, scenery, village } from './content';
 import { DEPTH } from './depths';
-import { MOULDING } from './house';
+import { House, isBroken, MOULDING } from './house';
 import { furniturePlacement, GROUND_LIFT_M, PPM, streetRow, TILE } from './layout';
 import { emptyLight, lightAt } from './light';
 import type { SceneryManifest } from './scenery';
@@ -361,5 +361,29 @@ describe("a street's platforms", () => {
     expect(sewers).toMatchObject({ ladder: 'fixture/sewers-ladder', ledge: 'fixture/sewers-ledge' });
     expect(platforms.steps).toBeTruthy();
     expect(sewers.steps).toBe(platforms.steps);
+  });
+});
+
+describe('a machine you repair', () => {
+  it('loads both its pictures with the house it stands in', () => {
+    const pieces = House.pieces(scenery, 'maker_space', village);
+    for (const name of ['printer_3d', 'recycler']) {
+      const { piece, broken } = scenery.furniture[name];
+      expect(pieces).toContain(piece);
+      expect(pieces).toContain(broken);
+      expect(scenery.pieces[broken!].size[1]).toBe(scenery.pieces[piece].size[1]);
+    }
+  });
+
+  it('is drawn broken only while it says so', () => {
+    expect(isBroken({ state: 'broken' })).toBe(true);
+    expect(isBroken({ state: 'working' })).toBe(false);
+    expect(isBroken(undefined)).toBe(false);
+  });
+
+  it('never shows a broken picture among the colour variants a place picks from', () => {
+    for (const entry of Object.values(scenery.furniture)) {
+      expect(Object.values(entry.variants ?? {})).not.toContain(entry.broken ?? '');
+    }
   });
 });

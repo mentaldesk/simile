@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import type { FigureManifest } from '../dolls/manifest';
+import type { DollPose } from '../dolls/rig';
 import type { ClientMessage, Facing, Item, ReloadMessage, SideFacing } from '../net';
 import { DEPTH } from './depths';
 import { FIRE_KEY, RELOAD_KEY } from './input';
@@ -58,31 +60,44 @@ export function weaponLine(items: readonly Item[] | undefined): string | undefin
 
 const GUN_SECONDS = 0.35;
 const FLASH_SECONDS = 0.08;
-/** Above the feet, the player's hand at the end of their arm. */
+/** Above the feet, for a figure with no aim painted. */
 const HAND_M = 1.2;
 const REACH_M = 0.35;
-const GUN_M = { length: 0.3, height: 0.1 };
-const FLASH_M = 0.22;
-const GUN_COLOUR = 0x2b2e36;
-const FLASH_COLOURS = [0xffb33a, 0xfff2b0];
 const LINE_PX = { x: 12, bottom: 16, font: 15 };
 
-/** Where the flash and the pistol are drawn: the placeholder until Q13 paints them. */
-export function shotAt(at: { x: number; y: number }, facing: SideFacing): { x: number; y: number; way: number } {
-  const way = facing === 'east' ? 1 : -1;
-  return { x: xOf(at.x) + way * REACH_M * PPM, y: feetOf(at.y) - HAND_M * PPM, way };
+/** Metres ahead of and above the feet, from the frame's `muzzle`. */
+export function muzzleOf(figure: FigureManifest | undefined): { ahead: number; up: number } {
+  const aim = figure?.frames.aim;
+  if (!figure || !aim?.muzzle) return { ahead: REACH_M, up: HAND_M };
+  return { ahead: (aim.muzzle[0] - aim.feet[0]) / figure.ppm, up: (aim.feet[1] - aim.muzzle[1]) / figure.ppm };
 }
 
-/** A plain pistol and flash for a moment after each shot, over the darkness since a flash lights itself, and the weapon's line in a corner. */
+/** Where the flash starts: the end of the pistol the way they face. */
+export function shotAt(at: { x: number; y: number }, facing: SideFacing, figure?: FigureManifest): { x: number; y: number; way: number } {
+  const way = facing === 'east' ? 1 : -1;
+  const { ahead, up } = muzzleOf(figure);
+  return { x: xOf(at.x) + way * ahead * PPM, y: feetOf(at.y) - up * PPM, way };
+}
+
+/** They aim from these for a moment after a shot; in anything else they couldn't have fired. */
+const AIMS_FROM = new Set<DollPose>(['standing', 'walking', 'jumping', 'landing']);
+
+/** The flash for a moment after each shot, over the darkness since a flash lights itself, the figure aiming a little longer, and the weapon's line in a corner. */
 export class ShotView {
-  private readonly graphics: Phaser.GameObjects.Graphics;
+  private readonly scene: Phaser.Scene;
   private readonly line: Phaser.GameObjects.Text;
+  private flash?: Phaser.GameObjects.Image;
   private since = Infinity;
 
   constructor(scene: Phaser.Scene) {
-    this.graphics = scene.add.graphics().setDepth(DEPTH.dark + 1);
+    this.scene = scene;
     this.line = scene.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: `${LINE_PX.font}px`, color: '#e8ecf4', backgroundColor: '#05070ea0', padding: { x: 6, y: 3 } });
     this.line.setOrigin(0, 1).setDepth(DEPTH.fade - 1).setVisible(false);
+  }
+
+  /** `texture` is the flash, once it's loaded. */
+  setFlash(texture: string): void {
+    this.flash = this.scene.add.image(0, 0, texture).setDepth(DEPTH.dark + 1).setVisible(false);
   }
 
   fired(): void {
@@ -94,11 +109,15 @@ export class ShotView {
     return { gun: this.since < GUN_SECONDS, flash: this.since < FLASH_SECONDS, line: this.line.visible ? this.line.text : null };
   }
 
-  /** `at` is the player in street cells, while they're shown. */
-  update(dt: number, at: { x: number; y: number } | undefined, facing: SideFacing, line: string | undefined, view: Phaser.Geom.Rectangle, zoom: number): void {
+  /** How the player is drawn: aiming the way they fired, for a moment after a shot. */
+  pose<T extends { pose: DollPose; facing: Facing }>(drawn: T, facing: SideFacing): T {
+    return this.since < GUN_SECONDS && AIMS_FROM.has(drawn.pose) ? { ...drawn, pose: 'aiming', facing } : drawn;
+  }
+
+  /** `at` is the player in street cells, while they're shown, as `figure`. */
+  update(dt: number, at: { x: number; y: number } | undefined, facing: SideFacing, line: string | undefined, view: Phaser.Geom.Rectangle, zoom: number, figure?: FigureManifest): void {
     this.since += dt;
-    this.graphics.clear();
-    if (at && this.since < GUN_SECONDS) this.draw(shotAt(at, facing));
+    this.drawFlash(at, facing, figure);
     this.line.setVisible(!!line);
     if (!line) return;
     const scale = 1 / zoom;
@@ -107,20 +126,17 @@ export class ShotView {
   }
 
   destroy(): void {
-    this.graphics.destroy();
+    this.flash?.destroy();
     this.line.destroy();
   }
 
-  private draw({ x, y, way }: { x: number; y: number; way: number }): void {
-    const { graphics } = this;
-    const length = GUN_M.length * PPM;
-    const height = GUN_M.height * PPM;
-    graphics.fillStyle(GUN_COLOUR).fillRect(way > 0 ? x : x - length, y - height / 2, length, height);
-    if (this.since >= FLASH_SECONDS) return;
-    const muzzle = x + way * length;
-    FLASH_COLOURS.forEach((colour, i) => {
-      const radius = (FLASH_M * PPM) / (i + 1);
-      graphics.fillStyle(colour).fillCircle(muzzle + way * radius * 0.6, y, radius);
-    });
+  private drawFlash(at: { x: number; y: number } | undefined, facing: SideFacing, figure?: FigureManifest): void {
+    const { flash } = this;
+    if (!flash) return;
+    const shown = !!at && this.since < FLASH_SECONDS;
+    flash.setVisible(shown);
+    if (!at || !shown) return;
+    const { x, y, way } = shotAt(at, facing, figure);
+    flash.setPosition(x, y).setOrigin(way > 0 ? 0 : 1, 0.5).setFlipX(way < 0);
   }
 }
