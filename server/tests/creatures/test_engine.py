@@ -2,11 +2,16 @@ from dataclasses import replace
 
 import pytest
 
-from simile.creatures.engine import SEND, STOMP_TOP, Creature, Creatures, Sight
+from simile.creatures.engine import SEND, STOMP_TOP, Creature, Creatures, Leg, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.ways import Chase, DrawnTo, FleeLight, Patrol, Roost, food, lamp_on
 from simile.creatures.ways import lamp as lamp_light
-from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, ServerMessage
+from simile.protocol import (
+    CreatureGoneMessage,
+    CreatureHitMessage,
+    CreatureMovedMessage,
+    ServerMessage,
+)
 from simile.schema import (
     CreatureKind,
     CreatureState,
@@ -306,6 +311,10 @@ def test_nothing_attacks_without_a_way_that_attacks() -> None:
 STOMPED = replace(STAND_IN, stomped=True)
 
 
+def legs_to(x: int, y: int) -> list[Leg]:
+    return [Leg((x, y))]
+
+
 def land(world: World, x: float, *, start: float = 0.8, end: float = 2 - STOMP_TOP) -> None:
     """The player falling from `start` to `end`, a tick apart."""
     for y in (start, end):
@@ -398,6 +407,51 @@ def test_landing_on_a_kind_not_stomped_leaves_it_and_one_never_back_is_gone_for_
     world.spawn(STOMPED, 10, 2)
     land(world, 10)
     assert list(world.creatures.all) == [dog.id]
+
+
+def test_landing_on_one_takes_health_and_tells_the_client_before_it_goes() -> None:
+    world = World(ROW)
+    tough = world.spawn(replace(STOMPED, health=2), 6, 2, respawn=10)
+    world.sent.clear()
+
+    land(world, 6.5)
+    assert tough.down is None
+    assert world.sent[0] == CreatureHitMessage(creature_id=tough.id)
+    moved = world.sent[1]
+    assert isinstance(moved, CreatureMovedMessage) and moved.creature.health == 0.5
+
+    land(world, 6.5)
+    hit, gone = world.sent[-2:]
+    assert hit == CreatureHitMessage(creature_id=tough.id)
+    assert gone == CreatureGoneMessage(creature_id=tough.id)
+
+    world.run(11)
+    assert [c.health for c in world.creatures.shown()] == [1]
+
+
+def test_thirds_of_its_health_come_to_exactly_none() -> None:
+    world = World(ROW)
+    dog = world.spawn(replace(STAND_IN, health=3), 6, 2)
+
+    world.creatures.hurt(dog, 1)
+    world.creatures.hurt(dog, 1)
+    assert dog.id in world.creatures.all
+    world.creatures.hurt(dog, 1)
+    assert dog.id not in world.creatures.all
+
+
+def test_a_hurt_one_on_the_move_sends_its_health_inside_the_throttle() -> None:
+    world = World(ROW)
+    dog = world.spawn(replace(STAND_IN, health=3), 3, 2, route=[(15, 2)])
+    dog.path.extend(legs_to(15, 2))
+    world.creatures.tick(SEND)
+    world.creatures.tick(0.01)
+    world.sent.clear()
+
+    world.creatures.hurt(dog, 1)
+
+    assert isinstance(world.sent[-1], CreatureMovedMessage)
+    assert world.sent[-1].creature.health < 1
 
 
 def test_each_kind_numbers_its_own_and_never_reuses_a_number() -> None:

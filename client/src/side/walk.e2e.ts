@@ -43,8 +43,13 @@ type SideWalk = {
   textureLimit(): number | null;
   rest(): { health: number; resting: boolean; bed: Place | null };
   hurt(health: number): void;
-};
+} & Shooting;
 type Paged = { sideWalk: SideWalk };
+type Shooting = {
+  weapon(): { rounds: number | null; condition: number | null };
+  shot(): { gun: boolean; flash: boolean; line: string | null };
+  creatureImages(): { key: string; x: number; flashing: boolean }[];
+};
 type Hold = 'ArrowUp' | 'ArrowDown';
 /** Walk from `start` to within `reach` of `x` on its row, then press E or hold up or down, and arrive at `arrive`. */
 type Leg = { name: string; start: Place; x: number; reach: number; key: 'e' | Hold; arrive: Place };
@@ -84,6 +89,9 @@ const walkApi = (page: Page) => ({
   textureLimit: () => page.evaluate(() => (window as unknown as Paged).sideWalk.textureLimit()),
   rest: () => page.evaluate(() => (window as unknown as Paged).sideWalk.rest()),
   hurt: (health: number) => page.evaluate((health) => (window as unknown as Paged).sideWalk.hurt(health), health),
+  weapon: () => page.evaluate(() => (window as unknown as Paged).sideWalk.weapon()),
+  shot: () => page.evaluate(() => (window as unknown as Paged).sideWalk.shot()),
+  creatureImages: () => page.evaluate(() => (window as unknown as Paged).sideWalk.creatureImages()),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -568,6 +576,77 @@ async function restLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 200);
 }
 
+/** X and R with a pistol: the flash and the flinch, and X doing nothing on a ladder, in bed or through a door. */
+async function shootingLeg(open: (query: string) => Promise<[Page, Api]>): Promise<void> {
+  const name = 'firing and reloading';
+  const [page, api] = await open('pistol&lamp=on&at=metro:58:15');
+  const rounds = async () => (await api.weapon()).rounds;
+  const frames = () => run(page, 34);
+  const dog = async () => (await api.creatureImages()).find(({ key }) => key === 'creature-dog');
+  const holdsFire = async (where: string, left: number | null) => {
+    await page.keyboard.press('x');
+    await frames();
+    if ((await rounds()) !== left) throw new Error(`${name}: X fired ${where}: ${await rounds()} rounds, not ${left}`);
+  };
+  try {
+    await until(page, async () => !!(await dog()), 30, `${name}: the dog drawn`);
+    const base = (await dog())!.x;
+    if (!(await api.shot()).line?.includes('6/6, 8 spare, 100% condition')) throw new Error(`${name}: no line: ${JSON.stringify(await api.shot())}`);
+
+    await page.keyboard.press('x');
+    await frames();
+    const fired = await api.shot();
+    if ((await rounds()) !== 5 || !fired.gun || !fired.flash) throw new Error(`${name}: X didn't fire: ${await rounds()}, ${JSON.stringify(fired)}`);
+    await run(page, 150);
+    if ((await api.shot()).flash) throw new Error(`${name}: the flash stayed`);
+    await run(page, 800);
+    if ((await api.creatureImages()).some(({ key }) => key === 'creature-rat')) throw new Error(`${name}: the rat wasn't killed`);
+
+    await page.keyboard.press('x');
+    await frames();
+    if (!(await dog())?.flashing) throw new Error(`${name}: the dog didn't flash`);
+    await run(page, 120);
+    const flinched = await dog();
+    if (flinched!.flashing || flinched!.x <= base) throw new Error(`${name}: the dog didn't flinch away from them: ${flinched!.x} from ${base}`);
+    await run(page, 300);
+    if (Math.abs((await dog())!.x - base) > 0.5) throw new Error(`${name}: the dog didn't come back: ${(await dog())!.x} from ${base}`);
+
+    await page.keyboard.press('r');
+    await frames();
+    if ((await rounds()) !== 6) throw new Error(`${name}: R didn't reload: ${await rounds()}`);
+
+    const ladder = (await api.runs()).find(({ map, kind }) => map === 'metro' && kind === 'ladder')!;
+    const foot = { map: 'metro', ...ladder.foot };
+    await teleport(page, api, await startFor(api, foot, (await api.widths()).metro), name);
+    await walkTo(page, api, foot.x, REACH.edge, name);
+    await page.keyboard.down('ArrowUp');
+    await until(page, async () => !!(await api.state())!.climbing, 3, `${name}: getting on the ladder`, 34);
+    await holdsFire('on a ladder', 6);
+    await page.keyboard.up('ArrowUp');
+
+    const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+    await teleport(page, api, bed, name);
+    await api.hurt(0.2);
+    await run(page, 200);
+    await page.keyboard.press('e');
+    await until(page, async () => (await api.state())!.bed === 1, 3, `${name}: lying down`, 34);
+    await holdsFire('in bed', 6);
+    await page.keyboard.press('ArrowLeft');
+    await until(page, async () => (await api.state())!.bed === 0, 3, `${name}: getting up`);
+    await api.hurt(1);
+
+    const away = metro(55, 15);
+    await api.teleport(away);
+    await holdsFire('through a door', 6);
+    await until(page, async () => near(await api.state(), away), 10, `${name}: through the door`);
+    await page.keyboard.press('x');
+    await frames();
+    if ((await rounds()) !== 5) throw new Error(`${name}: X didn't fire off the door: ${await rounds()}`);
+  } finally {
+    await page.close();
+  }
+}
+
 /** A standing jump at the face of the weir, walking towards it: where it lands. */
 async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
   await teleport(page, api, sewers(weir - 1, 15), name);
@@ -958,6 +1037,7 @@ try {
     ['C for the character screen', (i) => characterLeg(page, api, i)],
     ['E at the clinic', (i) => clinicLeg(page, api, i)],
     ["E at the scrap trader's stall", (i) => traderLeg(page, api, i)],
+    ['firing and reloading', () => shootingLeg(open)],
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];

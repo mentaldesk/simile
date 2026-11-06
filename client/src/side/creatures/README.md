@@ -1,6 +1,6 @@
 # Creatures
 
-The tunnels' creatures (P10), from the server's `snapshot`, `creature_moved` and `creature_gone`
+The tunnels' creatures (P10), from the server's `snapshot`, `creature_moved`, `creature_hit` and `creature_gone`
 ([`server/simile/creatures/`](../../../../server/simile/creatures/README.md)), drawn by `SideScene`
 from their figures in [`content/creatures/`](../../../../content/creatures/README.md).
 
@@ -14,3 +14,6 @@ from their figures in [`content/creatures/`](../../../../content/creatures/READM
   face west. Going down tips it on its back away from the way it faces, a bat dropping as it goes.
 - `view.ts` draws the creatures on the street shown, just behind the residents, tinted with the
   light like them, and pink while `hurt`. The darkness covers them as it covers everything else.
+- `creature_hit` flashes one white for `FLASH_SECONDS`, and knocks it back from the player and returns
+  it over `HIT_SECONDS` (`flinchOf`). It comes before the `creature_moved` or `creature_gone` that
+  follows, so one a hit kills flashes as it keels over.
