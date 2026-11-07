@@ -264,17 +264,36 @@ describe('SalvagePanel', () => {
       expect(sent).toEqual([taking(1)]);
     });
 
-    it('tries again a moment after a take the server refused, which brings no state', () => {
+    it('waits for what lies there to change, not for a state that only moves hunger or a charge', () => {
       vi.useFakeTimers();
-      opened(player({ corpses: [body({ items: [worn] })] }));
+      const corpse = body({ items: [worn, loaded] });
+      opened(player({ corpses: [corpse] }));
 
       press('Enter');
+      after(player({ corpses: [corpse], hunger: 0.31 }));
+      press('ArrowDown');
       press('Enter');
-      expect(sent).toHaveLength(1);
-      vi.advanceTimersByTime(REFUSED_MS);
-      press('Enter');
+      expect(sent).toEqual([taking(0)]);
 
+      after(player({ items: [LAMP, worn], corpses: [body({ items: [loaded] })], hunger: 0.31 }));
+      press('Enter');
       expect(sent).toEqual([taking(0), taking(0)]);
+    });
+
+    it('never sends again a take the server refused, but lets another row go a moment later', () => {
+      vi.useFakeTimers();
+      const corpse = body({ items: [worn, loaded] });
+      opened(player({ corpses: [corpse] }));
+
+      press('Enter');
+      vi.advanceTimersByTime(REFUSED_MS);
+      after(player({ corpses: [corpse], hunger: 0.32 }));
+      press('Enter');
+      expect(sent).toEqual([taking(0)]);
+
+      press('ArrowDown');
+      press('Enter');
+      expect(sent).toEqual([taking(0), taking(1)]);
     });
   });
 

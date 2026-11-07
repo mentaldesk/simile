@@ -1,4 +1,4 @@
-import { playerState, server, type Bionic, type Corpse, type Item, type MapTile, type Pile, type Player, type PlayerStateMessage, type Position, type TakeMessage } from '../net';
+import { playerState, server, type Bionic, type Corpse, type Item, type MapTile, type Pile, type Player, type Position, type TakeMessage } from '../net';
 import { mapOf } from '../world/map';
 import type { Reachable } from '../world/reach';
 import { callCue } from './call-cue';
@@ -14,7 +14,7 @@ const KEY = NEWS_KEY.toUpperCase();
 /** The server's reach: while they're in it, a take still lands. */
 const REACH_TILES = 1.5;
 const MONEY_ICON = 'credits';
-/** How long a `take` the server refused, which brings no `player_state`, holds up the next. */
+/** How long a `take` that has changed nothing holds up any other: the server refused it, or hasn't answered. */
 export const REFUSED_MS = 1000;
 
 /** What the screen is open on: a corpse, or the oldest pile in `left` on a tile. */
@@ -54,6 +54,9 @@ const nameOf = (bionic: Bionic) => {
   const words = bionic.replaceAll('_', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
+
+/** What a `take` changes: what lies there and what they carry, and not hunger or a lamp's charge, which send `player_state` too. */
+const contentsOf = (source: Source, player: Player) => JSON.stringify([holderOf(source, player) ?? null, player.items, player.money, player.carry_limit]);
 
 const partOf = (bionic: Bionic, parts: readonly Item[]): Item =>
   parts.find(({ id }) => id === bionic) ?? { id: bionic, kind: 'bionic', name: nameOf(bionic), weight: 0, bionic, charge: null, on: null };
@@ -97,8 +100,8 @@ export class SalvagePanel {
   private room = 0;
   private at = 0;
   private drawn = '';
-  /** The last `take`, until the `player_state` that follows it: an index means nothing before then. */
-  private waiting?: { state: PlayerStateMessage | undefined; until: number };
+  /** The last `take` and what lay there and what they carried when it went, until either changes: an index means nothing before then. */
+  private waiting?: { contents: string; take: string; until: number };
 
   constructor(parent: HTMLElement, send: (message: TakeMessage) => void = (message) => server.send(message)) {
     this.send = send;
@@ -231,16 +234,20 @@ export class SalvagePanel {
     }
   }
 
-  /** Takes the row under the cursor in the latest state, once the last `take` has been answered. */
+  /** Takes the row under the cursor in the latest state, once the last `take` has changed what lies there, and never one the server refused. */
   private act(): void {
     const state = playerState.latest;
-    if (this.waiting && this.waiting.state === state && Date.now() < this.waiting.until) return;
-    if (state) this.show(state.player, state.bionics ?? []);
+    if (!state || !this.source) return;
+    this.show(state.player, state.bionics ?? []);
     const thing = this.things[this.at];
-    const message = thing && this.source && takeOf(this.source, thing);
+    const message = thing && takeOf(this.source, thing);
     if (!message) return;
+    const contents = contentsOf(this.source, state.player);
+    const take = JSON.stringify(message);
+    const waiting = this.waiting?.contents === contents ? this.waiting : undefined;
+    if (waiting && (Date.now() < waiting.until || waiting.take === take)) return;
     this.send(message);
-    this.waiting = { state, until: Date.now() + REFUSED_MS };
+    this.waiting = { contents, take, until: Date.now() + REFUSED_MS };
   }
 
   private render(): void {
