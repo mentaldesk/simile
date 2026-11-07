@@ -57,8 +57,8 @@ class Platform:
 
 def test_every_salvage_lying_about_has_a_price() -> None:
     items = [salvage.item for salvage in DEFAULT_CONFIG.salvage.values()]
-    assert {item.id for item in items} <= set(ECONOMY.salvage)
-    assert all(item.kind is ItemKind.SALVAGE for item in items)
+    prices = {ItemKind.SALVAGE: ECONOMY.salvage, ItemKind.PART: ECONOMY.parts}
+    assert all(item.id in prices[item.kind] for item in items)
 
 
 def test_the_scrap_trader_offers_the_economys_price_for_the_salvage_they_carry() -> None:

@@ -1837,6 +1837,54 @@
         {
           "height": 16,
           "id": 98,
+          "name": "metro_salvage_12",
+          "properties": [],
+          "rotation": 0,
+          "type": "salvage",
+          "visible": true,
+          "width": 16,
+          "x": 1632,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 99,
+          "name": "metro_salvage_13",
+          "properties": [],
+          "rotation": 0,
+          "type": "salvage",
+          "visible": true,
+          "width": 16,
+          "x": 1568,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 100,
+          "name": "metro_salvage_14",
+          "properties": [],
+          "rotation": 0,
+          "type": "salvage",
+          "visible": true,
+          "width": 16,
+          "x": 1696,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 101,
+          "name": "metro_salvage_15",
+          "properties": [],
+          "rotation": 0,
+          "type": "salvage",
+          "visible": true,
+          "width": 16,
+          "x": 1728,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 102,
           "name": "metro_secret_container",
           "properties": [
             {
@@ -1859,7 +1907,7 @@
         },
         {
           "height": 16,
-          "id": 99,
+          "id": 103,
           "name": "metro_secret_crane",
           "properties": [
             {
@@ -1882,7 +1930,7 @@
         },
         {
           "height": 16,
-          "id": 100,
+          "id": 104,
           "name": "metro_salvage_10",
           "properties": [
             {
@@ -1920,7 +1968,7 @@
         },
         {
           "height": 16,
-          "id": 101,
+          "id": 105,
           "name": "metro_salvage_7",
           "properties": [
             {
@@ -1953,7 +2001,7 @@
         },
         {
           "height": 16,
-          "id": 102,
+          "id": 106,
           "name": "metro_salvage_8",
           "properties": [
             {
@@ -1986,7 +2034,7 @@
         },
         {
           "height": 16,
-          "id": 103,
+          "id": 107,
           "name": "metro_salvage_9",
           "properties": [
             {
@@ -2019,7 +2067,7 @@
         },
         {
           "height": 16,
-          "id": 104,
+          "id": 108,
           "name": "metro_secret_tunnel",
           "properties": [
             {
@@ -2042,7 +2090,7 @@
         },
         {
           "height": 16,
-          "id": 105,
+          "id": 109,
           "name": "metro_salvage_11",
           "properties": [
             {
@@ -2080,7 +2128,7 @@
         },
         {
           "height": 16,
-          "id": 106,
+          "id": 110,
           "name": "metro_secret_store",
           "properties": [
             {
@@ -2115,7 +2163,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 107,
+          "id": 111,
           "name": "metro_bot_1",
           "properties": [
             {
@@ -2138,7 +2186,7 @@
         },
         {
           "height": 16,
-          "id": 108,
+          "id": 112,
           "name": "metro_bot_2",
           "properties": [
             {
@@ -2168,7 +2216,7 @@
     }
   ],
   "nextlayerid": 14,
-  "nextobjectid": 109,
+  "nextobjectid": 113,
   "orientation": "orthogonal",
   "properties": [
     {

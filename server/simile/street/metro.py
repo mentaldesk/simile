@@ -107,6 +107,9 @@ VAULT_LADDER = 50
 before the catwalk's last cell, where its secret is, so that still takes a jump."""
 BOT_SPAN = 2
 """Cells either side of where it starts that a bot patrols."""
+REBUILD_PARTS = {12: 102, 13: 98, 14: 106, 15: 108}
+"""The depot's salvage by number, and the cell along its floor it lies at: what a new body needs
+for a power cell and legs, past a tile and a half from the lift's and the terminal's stands."""
 
 
 def catwalk(plan: Plan, x: int, row: int, width: int) -> None:
@@ -262,6 +265,8 @@ def depot(plan: Plan) -> list[Plan]:
     plan.piece("crates", 108, ledge, 1, 1)
     salvage(plan, 6, 108, ledge, needs=Bionic.SPRING_FEET)
     secret(plan, LEDGE_SECRET, 106, ledge, Bionic.SPRING_FEET, money=60.0)
+    for number, x in REBUILD_PARTS.items():
+        salvage(plan, number, x, GROUND)
     return clinic.floors
 
 

@@ -7,6 +7,7 @@ import { machines } from '../ui/machine-panel';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
+import { liftOpen } from '../world/jacks';
 import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
 import { setWayPrompts, type WayPrompt } from '../world/reach';
@@ -225,7 +226,7 @@ export class SideScene extends Phaser.Scene {
     const jump = jumpOf(body);
     player.rise = jump.rise;
     player.runSpeed = jump.run;
-    player.datajack = fitted(body).includes('datajack');
+    player.liftOpen = liftOpen(playerState.latest?.player);
     if (!this.passing) {
       const door = player.update(this.read(), dt);
       if (door) this.takeDoor(door);

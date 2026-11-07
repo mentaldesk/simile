@@ -9,11 +9,11 @@ from simile.economy import OUTSIDE, PILES, PLAYER, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.player.config import DEFAULT_CONFIG, SALVAGE, Salvage
+from simile.player.config import DEFAULT_CONFIG, REBUILD_RESPAWN, SALVAGE, Salvage
 from simile.player.pickups import Pickups, joined
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Material, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.finds import COPPER_PIPE
+from simile.street.finds import COPPER_PIPE, LITHIUM_CELL
 from simile.street.metro import DEPOT_END
 from simile.world import Movement, Point
 from simile.world.map import Pickup, PickupKind, TownMap, level_count, load_maps
@@ -252,8 +252,12 @@ def test_the_metros_salvage_and_secrets_lie_where_s3_put_them() -> None:
         (83, 15),
         (85, 5),
         (86, 5),
+        (98, 15),
+        (102, 15),
         (106, 12),
+        (106, 15),
         (108, 12),
+        (108, 15),
     ]
     salvage = [
         lying[cell].items for cell in ((38, 12), (63, 15), (68, 15), (85, 5), (83, 15), (108, 12))
@@ -276,8 +280,22 @@ def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_ca
     assert tunnels.player.items == [lamp(), WIRE]
     assert tunnels.player.money == 40
     assert tunnels.player.taken == {"metro_salvage_1": NOW, "metro_secret_catwalk": NOW}
-    assert len([pile for pile in tunnels.pickups.piles() if pile.at.map == "metro"]) == 18
+    assert len([pile for pile in tunnels.pickups.piles() if pile.at.map == "metro"]) == 22
     assert tunnels.balanced()
+
+
+def test_a_lithium_cell_lies_there_again_only_after_its_slow_timer() -> None:
+    tunnels = Tunnels(maps=MAPS)
+    tunnels.stand(102, "metro")
+    assert tunnels.pickups.pick_up()
+    tunnels.player.items = [lamp()]
+
+    tunnels.clock.advance(timedelta(hours=REBUILD_RESPAWN - 1).total_seconds())
+    assert not tunnels.pickups.pick_up()
+
+    tunnels.clock.advance(timedelta(hours=1).total_seconds())
+    assert tunnels.pickups.pick_up()
+    assert tunnels.player.items == [lamp(), LITHIUM_CELL]
 
 
 def test_salvage_nothing_is_set_to_lie_at_is_left_out() -> None:

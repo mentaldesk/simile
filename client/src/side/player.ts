@@ -140,8 +140,8 @@ export class SidePlayer {
   rise = JUMP_RISE;
   /** Tiles a second running: faster on the bionic legs. */
   runSpeed = RUN_PACE * PLAYER_SPEED;
-  /** With the datajack fitted, a link from a jack, the lift's, can be taken. */
-  datajack = false;
+  /** Once it's open, a link from a jack, the lift's, can be taken. */
+  liftOpen = false;
   /** What the feet bounce off, coming down on it: the scene's rats. */
   stomps: Stomps = () => undefined;
   /** They just bounced off something, until the scene has sent where. */
@@ -220,7 +220,7 @@ export class SidePlayer {
   ways(): Way[] {
     const map = this.village.map(this.map);
     if (!map || this.onRun || this.crossed || this.approaching || this.air || this.abed) return [];
-    const locked = (link: Link) => !this.datajack && jackAt(map, link);
+    const locked = (link: Link) => !this.liftOpen && jackAt(map, link);
     return waysNear(this.village, map, this.runsOf(map), this.position, locked);
   }
 

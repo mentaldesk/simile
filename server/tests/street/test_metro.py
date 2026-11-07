@@ -1,4 +1,5 @@
 import json
+import math
 from collections import Counter, deque
 from functools import cache
 from typing import Any
@@ -8,13 +9,16 @@ import pytest
 from simile.behaviour.scoring import Places
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
 from simile.economy.config import DEFAULT_CONFIG as ECONOMY
-from simile.player.config import SALVAGE
+from simile.player.config import DEFAULT_CONFIG as PLAYER
+from simile.player.config import REBUILD_RESPAWN, SALVAGE
 from simile.schema import Bionic, DoorKind, Facing, InteractableKind, ItemKind, LocationKind
-from simile.street.finds import COPPER_WIRE, METAL_SHEET
+from simile.street.charge import Ways
+from simile.street.finds import CHARGE_CONTROLLER, COPPER_WIRE, LITHIUM_CELL, METAL_SHEET
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
     ALCOVE_SECRET,
     ARRIVAL,
+    BOTS,
     CLINIC,
     CONTAINER,
     CRANE,
@@ -37,6 +41,7 @@ from simile.street.metro import (
     METRO,
     MEZZANINE,
     PLUG,
+    REBUILD_PARTS,
     RELAY_RACK,
     SCRAP_STALL,
     SCRAP_TRADER,
@@ -51,7 +56,7 @@ from simile.street.metro import (
 )
 from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
-from simile.street.sewers import LANDING, SEWERS
+from simile.street.sewers import LANDING, SCRAP, SEWERS
 from simile.street.village import GROUND, UNDERGROUND
 from simile.world.map import STREET_DIR, PickupKind, SpotKind, load_maps, with_every_location
 from simile.world.movement import Point, inside
@@ -352,7 +357,7 @@ def test_salvage_lies_about_the_metro_and_four_pieces_wait_up_high() -> None:
     salvage = pickups("salvage")
     high = {name: held["needs"] for name, (_, held) in salvage.items() if "needs" in held}
 
-    assert len(salvage) == 11
+    assert len(salvage) == 15
     assert all(METRO_MAP.standing(spot.x, spot.y) for spot, _ in salvage.values())
     assert high == {
         "metro_salvage_4": Bionic.SPRING_FEET_2,
@@ -436,6 +441,10 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         "metro_salvage_9": (174, 15),
         "metro_secret_tunnel": (195, 10),
         "metro_salvage_11": (224, 15),
+        "metro_salvage_12": (102, 15),
+        "metro_salvage_13": (98, 15),
+        "metro_salvage_14": (106, 15),
+        "metro_salvage_15": (108, 15),
         STORE_SECRET: (228, 15),
     }
     assert (LIFT_FOOT.map, LIFT_FOOT.x, LIFT_FOOT.y) == (METRO, 100, 15)
@@ -526,4 +535,58 @@ def test_every_salvage_on_the_metro_has_a_price() -> None:
     for pickup in METRO_MAP.pickups:
         if pickup.kind is PickupKind.SALVAGE:
             item = pickup.item or SALVAGE[pickup.id].item
-            assert item.id in ECONOMY.salvage, pickup.id
+            assert item.id in ECONOMY.salvage | ECONOMY.parts, pickup.id
+
+
+REBUILT = {f"metro_salvage_{number}": x for number, x in REBUILD_PARTS.items()}
+
+
+def test_a_new_body_s_parts_are_on_the_depot_floor_lit_and_walked_to_past_the_bots() -> None:
+    floors = {(x, GROUND) for _, west, east in BOTS for x in range(west - 1, east + 2)}
+    ways = Ways(METRO_MAP, avoid=floors)
+    placed = {pickup.id: pickup for pickup in METRO_MAP.pickups if pickup.id in REBUILT}
+    needing = {name for name, (_, held) in pickups("salvage").items() if "needs" in held}
+
+    assert {id: pickup.x for id, pickup in placed.items()} == REBUILT
+    for id, pickup in placed.items():
+        cell = (pickup.x, pickup.y)
+        assert id not in needing
+        assert METRO_MAP.lit(*cell), id
+        assert pickup.y == GROUND and 87 <= pickup.x < DEPOT_END, id
+        assert ways.cost((ARRIVAL.x, ARRIVAL.y), cell) < math.inf, id
+        assert ways.cost(cell, (ARRIVAL.x, ARRIVAL.y)) < math.inf, id
+
+
+def test_a_new_body_s_parts_are_out_of_reach_of_e_at_the_lift_the_terminal_and_the_clinic() -> None:
+    stands = [(tile.x, tile.y) for item in METRO_MAP.interactables for tile in item.stand]
+    ends = [end for door in METRO_MAP.doors for end in (door.outside, door.inside)]
+    doors = [(end.x, end.y) for end in ends if end.map == METRO]
+    for pickup in METRO_MAP.pickups:
+        if pickup.id in REBUILT:
+            for place in [*stands, *doors]:
+                assert math.dist((pickup.x, pickup.y), place) > PLAYER.reach, (pickup.id, place)
+
+
+def test_a_new_body_s_parts_are_the_ones_its_recipes_use_and_the_finds_and_sewers_hold() -> None:
+    held = {id: SALVAGE[id].item for id in REBUILT}
+    recipes = CLINIC_CONFIG.recipes
+
+    assert {item.id for item in held.values()} == set(recipes[Bionic.POWER_CELL].parts) | set(
+        recipes[Bionic.BIONIC_LEGS].parts
+    )
+    assert LITHIUM_CELL in held.values()
+    assert CHARGE_CONTROLLER in held.values()
+    assert SCRAP["pump_impeller"] in held.values()
+    assert SCRAP["copper_coil"] in held.values()
+
+
+def test_a_new_body_s_parts_come_back_too_slowly_to_farm() -> None:
+    days = REBUILD_RESPAWN / 24
+    daily = {
+        item.id: (ECONOMY.salvage | ECONOMY.parts)[item.id] / days
+        for item in (SALVAGE[id].item for id in REBUILT)
+    }
+
+    assert all(SALVAGE[id].respawn == REBUILD_RESPAWN for id in REBUILT)
+    assert PLAYER.respawn < REBUILD_RESPAWN
+    assert daily["lithium_cell"] <= min(ECONOMY.salvage.values())
