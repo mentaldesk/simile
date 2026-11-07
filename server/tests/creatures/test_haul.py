@@ -1,10 +1,11 @@
 from simile.creatures.engine import COLLECTING, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.kinds import BOT, DOG, RAT
-from simile.creatures.placing import populate
+from simile.creatures.placing import populate, starting_haul
 from simile.creatures.saved import SavedCreature
 from simile.schema import CreatureKind, Item, ItemKind, MapTile, Pile, Player
 from simile.street.plan import Spawn
+from simile.street.sewers import SALVAGE_ITEMS
 from simile.world.movement import Point
 
 from .conftest import side_view
@@ -161,9 +162,90 @@ def test_placing_skips_those_gone_for_good_and_keeps_placing_a_rat() -> None:
         (ROW.id, Spawn("a_rat", CreatureKind.RAT, 9, 2, None, None)),
     ]
 
-    made = populate(world.creatures, placed)
+    made = populate(world.creatures, placed, 0, {})
 
     assert [creature.id for creature in made] == ["a_rat"]
     world.creatures.hurt(made[0], RAT.health)
     world.run(121)
     assert "a_rat" in world.creatures.all and made[0].down is None
+
+
+def test_what_a_bot_starts_with_joins_what_it_collects_and_all_of_it_drops() -> None:
+    world = World({(5, 2): WIRE})
+    at = MapTile(map=ROW.id, x=3, y=2)
+    bot = world.creatures.spawn(BOT, at, route=(), haul=[VALVE])
+    world.run(40)
+    assert bot.haul == [VALVE, WIRE]
+
+    world.creatures.hurt(bot, BOT.health)
+
+    assert [pile.items for pile in world.piles] == [[VALVE, WIRE]]
+
+
+def test_a_save_keeps_a_start_only_with_what_joined_it_and_it_isnt_given_again() -> None:
+    world = World({(5, 2): WIRE})
+    at = MapTile(map=ROW.id, x=3, y=2)
+    bot = world.creatures.spawn(BOT, at, id="a_bot", route=(), haul=[VALVE])
+    assert world.creatures.saving() == {}
+
+    world.run(40)
+    saved = SavedCreature(haul=[VALVE, WIRE], stocked=True)
+    assert world.creatures.saving() == {"a_bot": saved}
+
+    world.creatures.remove(bot.id)
+    world.creatures.saved = {"a_bot": saved}
+    again = world.creatures.spawn(BOT, at, id="a_bot", route=(), haul=[VALVE])
+
+    assert again.haul == [VALVE, WIRE]
+    assert world.creatures.saving() == {"a_bot": saved}
+
+
+def test_a_wounded_bot_is_saved_with_its_start() -> None:
+    world = World()
+    at = MapTile(map=ROW.id, x=3, y=2)
+    bot = world.creatures.spawn(BOT, at, id="a_bot", route=(), haul=[VALVE])
+
+    world.creatures.hurt(bot, 1)
+
+    saved = SavedCreature(wounds=1, haul=[VALVE], stocked=True)
+    assert world.creatures.saving() == {"a_bot": saved}
+    world.creatures.remove(bot.id)
+    world.creatures.saved = {"a_bot": saved}
+    assert world.creatures.spawn(BOT, at, id="a_bot", route=(), haul=[VALVE]).haul == [VALVE]
+
+
+def test_a_bot_saved_before_starting_hauls_gets_one_ahead_of_what_it_collected() -> None:
+    world = World()
+    world.creatures.saved = {"a_bot": SavedCreature(wounds=2, haul=[WIRE])}
+    at = MapTile(map=ROW.id, x=3, y=2)
+
+    bot = world.creatures.spawn(BOT, at, id="a_bot", route=(), haul=[VALVE])
+
+    assert (bot.wounds, bot.haul, bot.stocked) == (2, [VALVE, WIRE], True)
+
+
+def test_placing_stocks_bots_from_what_doesnt_lie_on_their_map_and_nothing_else() -> None:
+    world = World()
+    placed = [
+        (ROW.id, Spawn("a_bot", CreatureKind.BOT, 3, 2, None, None)),
+        (ROW.id, Spawn("a_rat", CreatureKind.RAT, 9, 2, None, None)),
+    ]
+    lying = {item.id for item in SALVAGE_ITEMS[1:]}
+
+    bot, rat = populate(world.creatures, placed, 7, {ROW.id: lying})
+
+    assert bot.haul and {item.id for item in bot.haul} == {SALVAGE_ITEMS[0].id}
+    assert rat.haul == [] and not rat.stocked
+
+
+def test_a_starting_haul_is_one_or_two_chosen_by_the_seed() -> None:
+    hauls = [[starting_haul(f"bot_{n}", seed, ()) for n in range(20)] for seed in (0, 1)]
+
+    assert hauls[0] == [starting_haul(f"bot_{n}", 0, ()) for n in range(20)]
+    assert hauls[0] != hauls[1]
+    assert {len(haul) for haul in hauls[0]} == {1, 2}
+    assert all(item in SALVAGE_ITEMS for haul in hauls[0] for item in haul)
+
+
+def test_with_everything_lying_on_its_map_a_bot_starts_with_nothing() -> None:
+    assert starting_haul("a_bot", 0, {item.id for item in SALVAGE_ITEMS}) == []

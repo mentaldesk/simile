@@ -165,10 +165,10 @@ last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` 
 The same corner says what E picks up or sells where the player stands, in
 [`salvage.ts`](salvage.ts):
 
-- Within a tile of a pile (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), one they left
+- Within a tile of a pile (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), one in `left`
   or one in `player_state`'s `piles`, what of it fits under their carry limit, as the server takes
   it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash.", "Press E to pick up
-  what you left here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
+  what's lying here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
   too heavy to carry with what you have." E sends `pick_up`.
 - Within a tile of one of their `corpses` that holds anything (`corpseInReach`), "Press E to salvage
   what you can carry from your body." The client doesn't know what a bionic weighs, so it can't say

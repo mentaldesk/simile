@@ -102,7 +102,7 @@ class Walkthrough:
             sense=lambda: Sight(self.player, self.heard),
             harm=self._harm,
         )
-        populate(self.creatures, list(self.placed))
+        populate(self.creatures, list(self.placed), 0, {})
         self.gravity = 2 * self.jump.rise / self.jump.rise_seconds**2
 
     def _harm(self, kind: Kind) -> None:

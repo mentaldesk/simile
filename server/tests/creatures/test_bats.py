@@ -109,7 +109,7 @@ def harm(level: int, legs: list[Leg], lit: bool, cave: bool) -> float:
     heard = Point(x, y, SEWERS)
     taken: list[Kind] = []
     creatures = Creatures({SEWERS: town}, sense=lambda: Sight(player, heard), harm=taken.append)
-    populate(creatures, bats(level, cave))
+    populate(creatures, bats(level, cave), 0, {})
     now = said = 0.0
     for tx, ty, pace in legs[1:]:
         while (x, y) != (tx, ty):
