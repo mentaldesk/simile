@@ -1,4 +1,8 @@
+import contextlib
+import queue
+import threading
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -89,7 +93,15 @@ def test_storing_and_taking_move_an_item_both_ways() -> None:
     assert player.stash == Stash()
 
 
-@pytest.mark.parametrize("at", [None, Point(6, 2, "maker_space_floor_2"), Point(7, 2, "metro")])
+@pytest.mark.parametrize(
+    "at",
+    [
+        None,
+        Point(6, 2, "maker_space_floor_2"),
+        Point(7, 1, "maker_space_floor_2"),
+        Point(7, 2, "metro"),
+    ],
+)
 def test_nothing_moves_away_from_the_lockers(at: Point | None) -> None:
     player = Player(items=[WIRE], stash=Stash(items=[plastic(2)]))
     lockers = lockers_for(player, at)
@@ -157,6 +169,37 @@ def test_as_much_of_a_material_as_fits_is_taken_and_the_rest_stays_stashed() -> 
     assert player.stash.items == [plastic(7.5)]
 
 
+def test_taking_counts_what_they_already_carry_and_joins_it() -> None:
+    player = Player(items=[plastic(2), WIRE], carry_limit=4, stash=Stash(items=[plastic(10)]))
+
+    assert lockers_for(player).move("plastic", "take")
+
+    assert player.items == [plastic(5), WIRE]
+    assert player.load == player.carry_limit
+    assert player.stash.items == [plastic(7)]
+
+
+def test_rounds_taken_stop_at_the_carry_limit_and_join_what_they_carry() -> None:
+    player = Player(items=[WIRE, rounds(2)], carry_limit=2, stash=Stash(items=[rounds(10)]))
+
+    assert lockers_for(player).move("plastic_rounds", "take")
+
+    assert player.items == [WIRE, rounds(5)]
+    assert player.stash.items == [rounds(7)]
+
+
+def test_an_item_taken_fits_exactly_or_stays_with_what_they_carry_counted() -> None:
+    bolts = Item(id="bolts", kind=ItemKind.PART, name="Bolts", weight=13.5)
+    player = Player(items=[bolts], stash=Stash(items=[WIRE, WIRE, plastic(1)]))
+    lockers = lockers_for(player)
+
+    assert lockers.move("copper_wire", "take")
+    assert player.items == [bolts, WIRE]
+    assert not lockers.move("copper_wire", "take")
+    assert not lockers.move("plastic", "take")
+    assert player.stash.items == [WIRE, plastic(1)]
+
+
 def test_a_stack_joins_any_of_its_id_already_there() -> None:
     player = Player(items=[plastic(1), rounds(6)], stash=Stash(items=[plastic(2), rounds(3)]))
     lockers = lockers_for(player)
@@ -199,6 +242,8 @@ def test_what_weighs_nothing_moves_into_a_full_stash() -> None:
         (plastic(6, weight=0.1), 0.3, 3),
         (plastic(0.1 + 0.2, weight=1), 0.3, 0.1 + 0.2),
         (plastic(3.000000002, weight=1), 3, 3.000000002),
+        (plastic(2, weight=1), 1.2345678, 1.234567),
+        (plastic(2, weight=1), 0.000002, 0.000002),
         (plastic(2, weight=1), 1e-12, 0),
         (plastic(2, weight=1), -1, 0),
         (plastic(2, weight=0), -1, 2),
@@ -322,10 +367,31 @@ def test_the_stash_survives_a_death_and_can_be_taken_from_after() -> None:
     assert player.items[-1] == worn
 
 
-def next_state(ws: Any) -> dict[str, Any]:
-    while (message := ws.receive_json())["type"] != "player_state":
-        pass
-    return message
+def states_from(ws: Any) -> "queue.SimpleQueue[dict[str, Any]]":
+    """Each `player_state` as it comes, read on a thread since `receive_json` has no timeout."""
+    states: queue.SimpleQueue[dict[str, Any]] = queue.SimpleQueue()
+
+    def read() -> None:
+        with contextlib.suppress(Exception):
+            while True:
+                if (message := ws.receive_json())["type"] == "player_state":
+                    states.put(message)
+
+    threading.Thread(target=read, daemon=True).start()
+    return states
+
+
+def state_where(
+    states: "queue.SimpleQueue[dict[str, Any]]", wanted: Callable[[dict[str, Any]], bool]
+) -> dict[str, Any]:
+    deadline = time.monotonic() + 5
+    while True:
+        try:
+            state = states.get(timeout=max(deadline - time.monotonic(), 0))
+        except queue.Empty:
+            pytest.fail("no player_state followed the stash message")
+        if wanted(state):
+            return state
 
 
 def stashed(state: dict[str, Any]) -> list[str]:
@@ -341,6 +407,7 @@ def test_the_stash_message_moves_things_and_the_player_state_follows(make_packag
     x, y, map = AT_THE_LOCKERS.x, AT_THE_LOCKERS.y, AT_THE_LOCKERS.map
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        states = states_from(ws)
         ws.send_json({"type": "player_move", "position": {"x": x, "y": y, "map": map}})
         movement, deadline = movement_of(app), time.monotonic() + 2
         while client.portal.call(movement.entities).get(PLAYER_ID) != AT_THE_LOCKERS:
@@ -348,12 +415,10 @@ def test_the_stash_message_moves_things_and_the_player_state_follows(make_packag
             time.sleep(0.001)
 
         ws.send_json({"type": "stash", "item": "lamp", "action": "store"})
-        while not stashed(state := next_state(ws)):
-            pass
+        state = state_where(states, stashed)
         assert stashed(state) == ["lamp"]
         assert state["player"]["items"] == []
 
         ws.send_json({"type": "stash", "item": "lamp", "action": "take"})
-        while stashed(state := next_state(ws)):
-            pass
+        state = state_where(states, lambda state: not stashed(state))
         assert [item["id"] for item in state["player"]["items"]] == ["lamp"]

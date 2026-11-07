@@ -11,7 +11,7 @@ LOCKERS: Final = "lockers"
 SLACK: Final = 1e-9
 """Kilos a load may be over by, as `Pickups.pick_up` allows, so `0.3 / 0.1` is 3 and not 2.99..."""
 FINEST: Final = 1_000_000
-"""Material splits to a millionth, so neither side is left with a stack too small to see."""
+"""Material splits to a millionth, and a remainder smaller than that moves with the rest."""
 
 
 def fitting(item: Item, room: float) -> float:

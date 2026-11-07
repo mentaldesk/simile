@@ -43,6 +43,9 @@ describe('fitting', () => {
     ['no rounds in too little room', rounds(6), 0.05, 0],
     ['no rounds with no room', rounds(6), -1, 0],
     ['a part of a material', plastic(6, 0.1), 0.3, 3],
+    ['a material to a millionth', plastic(2, 1), 1.2345678, 1.234567],
+    ['the smallest part of a material', plastic(2, 1), 0.000002, 0.000002],
+    ['a stack whole rather than leave dust past the split', plastic(3.000000002, 1), 3, 3.000000002],
     ['a float sum whole, leaving no dust', plastic(0.1 + 0.2, 1), 0.3, 0.1 + 0.2],
     ['nothing of a material for a rounding error of room', plastic(2, 1), 1e-12, 0],
     ['what weighs nothing, even with no room', plastic(2, 0), -1, 2],
@@ -63,6 +66,13 @@ describe('rowsOf', () => {
     ]);
     expect(rows[0]!.first.rounds).toBe(2);
   });
+
+  it('says what would move of the first, whatever follows it', () => {
+    const heavy = { ...pistol(2, 0.4), weight: 2 };
+
+    expect(rowsOf([heavy, pistol(6, 1)], 1)[0]!.moves).toBe(0);
+    expect(rowsOf([pistol(6, 1), heavy], 1)[0]!.moves).toBe(1);
+  });
 });
 
 describe('note', () => {
@@ -74,6 +84,7 @@ describe('note', () => {
     expect(note(rowsOf([WIRE], 0.5)[0], 'take', 0.5)).toBe("It's too heavy. You can carry 0.5 kg more.");
     expect(note(rowsOf([WIRE], -1)[0], 'take', -1)).toBe("It's too heavy. You can carry 0 kg more.");
     expect(note(undefined, 'store', 20)).toBe("You're carrying nothing to store.");
+    expect(note(rowsOf([plastic(0.004, 1)], 0.002)[0], 'take', 0.002)).toBe("Enter to take <0.01 of <0.01. The rest won't fit.");
     expect(note(undefined, 'take', 15)).toBe('There is nothing in the lockers to take.');
   });
 });
@@ -206,14 +217,54 @@ describe('StashPanel', () => {
     opened(player([LAMP, WIRE, plastic(1)]));
     press('ArrowDown');
 
-    playerState.latest = state(player([WIRE, plastic(1)], { items: [LAMP], limit: 20 }));
+    playerState.latest = state(player([plastic(1), LAMP, WIRE]));
     panel.update(AT_THE_LOCKERS);
     expect(selected()).toBe('Copper wire1.5 kg');
 
-    playerState.latest = state(player([plastic(1)], { items: [LAMP, WIRE], limit: 20 }));
+    playerState.latest = state(player([plastic(1), LAMP, WIRE, rounds(1)]));
     panel.update(AT_THE_LOCKERS);
-    expect(selected()).toBe('Plastic0.5 kg');
-    expect(lines(1)).toEqual(['Lamp1 kg', 'Copper wire1.5 kg']);
+    press('ArrowUp');
+    expect(selected()).toBe('Lamp1 kg');
+
+    playerState.latest = state(player([plastic(1), WIRE, rounds(1)], { items: [LAMP], limit: 20 }));
+    panel.update(AT_THE_LOCKERS);
+    expect(selected()).toBe('Copper wire1.5 kg');
+    expect(lines(1)).toEqual(['Lamp1 kg']);
+  });
+
+  it('shows no real amount as 0', () => {
+    opened(player([plastic(0.004, 0.5)]));
+
+    expect(lines(0)).toEqual(['Plastic ×<0.01<0.01 kg']);
+  });
+
+  it('moves one thing for a held Enter or Space, not on down the list', () => {
+    opened(player([LAMP, WIRE, plastic(1)]));
+
+    for (const key of ['Enter', ' ']) {
+      const held = new KeyboardEvent('keydown', { key, repeat: true, bubbles: true, cancelable: true });
+      element().dispatchEvent(held);
+      expect(held.defaultPrevented).toBe(true);
+    }
+    expect(sent).toEqual([]);
+    press('Enter');
+    expect(sent).toEqual([{ type: 'stash', item: 'lamp', action: 'store' }]);
+  });
+
+  it('keeps the focus on Tab, so the arrows never walk with it open', () => {
+    opened(player([LAMP]));
+
+    expect(press('Tab').defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(element());
+    expect(panel.isOpen).toBe(true);
+  });
+
+  it('gives the focus back when it closes', () => {
+    opened(player([LAMP]));
+
+    panel.close();
+
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('wraps ↑ ↓ and clamps across to a shorter side', () => {

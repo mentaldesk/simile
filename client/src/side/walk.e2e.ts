@@ -243,8 +243,8 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
   await shot(page, index, leg.name);
-  const eHinted = (await shown(page, '.counter-hint'))?.startsWith('Press E');
-  const eFree = !used && !eHinted && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  const onLockers = (await shown(page, '.counter-hint')) === 'Press E to use the lockers.';
+  const eFree = !used && !onLockers && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
   const place = await shown(page, '.place-label');
   if (leg.key === 'e') await page.keyboard.press('e');
   else {
@@ -1122,8 +1122,10 @@ async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 100);
   const taken = JSON.stringify(await sends());
   if (taken !== JSON.stringify([{ type: 'stash', item: 'plastic_pistol', action: 'take' }])) throw new Error(`${name}: Enter on the other side sent ${taken}`);
-  await press(page, 'ArrowLeft', 'ArrowUp');
+  await press(page, 'ArrowLeft', 'ArrowUp', 'Tab', 'ArrowLeft', 'ArrowRight');
   if (!near(await api.state(), at)) throw new Error(`${name}: the arrows moved the player`);
+  const focused = await page.evaluate(() => document.activeElement?.classList.contains('stash-panel'));
+  if (!focused) throw new Error(`${name}: Tab took the focus out of the panel`);
   await shot(page, index, name);
   await page.keyboard.press('Escape');
   await run(page, 200);

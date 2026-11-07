@@ -113,7 +113,10 @@ export type GearTile = {
 };
 export type Gear = { tiles: GearTile[]; load: number; limit: number };
 
-export const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
+/** How many, without a real amount rounding away to 0. */
+export const many = (count: number) => (count > 0 && count < 0.005 ? '<0.01' : amount(count));
+
+export const kg = (weight: number) => `${many(weight)} kg`;
 
 export const stashOf = (player: Player): Stash => player.stash ?? { items: [], limit: 20 };
 
@@ -170,7 +173,7 @@ export type ItemDetails = { title: string; kind: ItemKind; status: string; lines
 /** What it's for, its weight, the lamp's charge, each weapon's rounds and condition, and which recipes they know use it. Stored, no key does anything to it. */
 export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = [], stored = false): ItemDetails {
   const { id, kind, name, count, each, weight } = tile;
-  const lines = [count !== 1 ? `${amount(count)} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
+  const lines = [count !== 1 ? `${many(count)} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
   if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}.${stored ? '' : ` ${LAMP_KEY} switches it.`}`);
   if (kind === 'food' && !stored) lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
   for (const { rounds, capacity, condition } of tile.weapons ?? []) {
@@ -395,7 +398,7 @@ export class CharacterPanel {
       const cell = grid.appendChild(el('button', undefined, `character-tile character-tile-${tile.kind}`));
       cell.type = 'button';
       cell.tabIndex = -1;
-      const label = tile.count !== 1 ? `${tile.name} ×${amount(tile.count)}` : tile.name;
+      const label = tile.count !== 1 ? `${tile.name} ×${many(tile.count)}` : tile.name;
       cell.ariaLabel = tile.condition === undefined ? label : `${label}, ${percent(tile.condition)} condition`;
       cell.dataset.item = tile.id;
       cell.dataset.picture = tile.picture;
@@ -405,7 +408,7 @@ export class CharacterPanel {
         picture.src = url;
         picture.alt = '';
       }
-      if (tile.count !== 1) cell.appendChild(el('span', `×${amount(tile.count)}`, 'character-count'));
+      if (tile.count !== 1) cell.appendChild(el('span', `×${many(tile.count)}`, 'character-count'));
       if (tile.charge !== undefined) cell.appendChild(meter({ fill: tile.charge, good: tile.charge }));
       if (tile.condition !== undefined) cell.appendChild(meter({ fill: tile.condition, good: tile.condition }));
       cell.appendChild(el('span', tile.name, 'character-tile-name'));

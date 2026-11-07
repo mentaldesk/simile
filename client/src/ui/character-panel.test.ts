@@ -523,6 +523,17 @@ describe('the stash tab', () => {
     expect(details('lamp')).toEqual(['0.5 kg.', 'Charged 60%, off.']);
   });
 
+  it('shows no real amount as 0', () => {
+    const dust = item('plastic', 'Plastic', 0.5, { kind: 'material', material: 'plastic', amount: 0.004 });
+    const holding = { ...STATE.player, stash: { items: [dust], limit: 20 } };
+    const { page } = onStash(holding);
+
+    expect(page.querySelector('[data-item="plastic"]')?.ariaLabel).toBe('Plastic ×<0.01');
+    expect(page.querySelector('.character-count')?.textContent).toBe('×<0.01');
+    expect(page.textContent).toContain('<0.01 kg of 20 kg');
+    expect(itemDetails(stashed(holding).tiles[0], holding).lines[0]).toBe('<0.01 of them, 0.5 kg each, <0.01 kg in all.');
+  });
+
   it('still says what the keys do on the Gear tab', () => {
     const tile = gear({ ...STATE.player, items: [PISTOL] }).tiles[0];
     expect(itemDetails(tile, STATE.player).lines.at(-1)).toBe('X fires it and R reloads it.');

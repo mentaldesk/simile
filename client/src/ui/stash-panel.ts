@@ -2,12 +2,12 @@ import { playerState, server, type Item, type Player, type Position, type StashM
 import { interactableAt, type Interactable } from '../world/interactables';
 import { mapOf } from '../world/map';
 import { callCue } from './call-cue';
-import { kg, stashOf } from './character-panel';
+import { kg, many, stashOf } from './character-panel';
 import './clinic-panel.css';
 import { iconUrl } from './icons';
 import { pressedNewsKey } from './keys';
 import { percent } from './lamp-gauge';
-import { amount, loadOf, totalLoad } from './salvage';
+import { loadOf, totalLoad } from './salvage';
 import { NEWS_KEY } from './tuning';
 
 const KEY = NEWS_KEY.toUpperCase();
@@ -25,13 +25,13 @@ export function lockersAt(position: Position | undefined): Interactable | undefi
 
 /** How much of the stack fits in `room` kg, as the server's `fitting` has it. */
 export function fitting(item: Item, room: number): number {
-  const { kind, weight, amount: many = 1 } = item;
-  if (!weight || loadOf(item) <= room + SLACK) return many;
+  const { kind, weight, amount: whole = 1 } = item;
+  if (!weight || loadOf(item) <= room + SLACK) return whole;
   const fits = (room + SLACK) / weight;
   if (kind === 'rounds') return Math.max(Math.floor(fits), 0);
   if (kind !== 'material') return 0;
   const part = Math.max(Math.floor(fits * FINEST) / FINEST, 0);
-  return part > 0 && many - part < 1 / FINEST ? many : part;
+  return part > 0 && whole - part < 1 / FINEST ? whole : part;
 }
 
 /** A kind of thing on one side: `first` is what moves, of `count` in all. */
@@ -46,8 +46,8 @@ export function rowsOf(items: readonly Item[], room: number): Row[] {
       row.count += item.amount ?? 1;
       row.load += loadOf(item);
     } else {
-      const { id, name, amount: many = 1 } = item;
-      rows.set(id, { id, name, first: item, count: many, load: loadOf(item), moves: fitting(item, room) });
+      const { id, name, amount: count = 1 } = item;
+      rows.set(id, { id, name, first: item, count, load: loadOf(item), moves: fitting(item, room) });
     }
   }
   return [...rows.values()];
@@ -62,8 +62,8 @@ export function note(row: Row | undefined, action: Action, room: number): string
     const left = kg(Math.max(room, 0));
     return action === 'store' ? `It won't fit. The lockers have ${left} left.` : `It's too heavy. You can carry ${left} more.`;
   }
-  const many = first.amount ?? 1;
-  return moves < many ? `Enter to ${verb} ${amount(moves)} of ${amount(many)}. The rest won't fit.` : `Enter to ${verb} it.`;
+  const whole = first.amount ?? 1;
+  return moves < whole ? `Enter to ${verb} ${many(moves)} of ${many(whole)}. The rest won't fit.` : `Enter to ${verb} it.`;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string): HTMLElementTagNameMap[K] {
@@ -172,7 +172,7 @@ export class StashPanel {
     const [carried, stored] = [totalLoad(player.items), totalLoad(stash.items)];
     const room = { store: stash.limit - stored, take: player.carry_limit - carried };
     const rows = { store: rowsOf(player.items, room.store), take: rowsOf(stash.items, room.take) };
-    const titles = { store: `You carry ${amount(carried)} of ${kg(player.carry_limit)}`, take: `In the lockers ${amount(stored)} of ${kg(stash.limit)}` };
+    const titles = { store: `You carry ${many(carried)} of ${kg(player.carry_limit)}`, take: `In the lockers ${many(stored)} of ${kg(stash.limit)}` };
     const content = JSON.stringify([rows, titles]);
     if (content !== this.drawn) {
       const chosen = this.rows[this.side][this.at]?.id;
@@ -205,7 +205,9 @@ export class StashPanel {
       this.render();
     } else if (key === 'Enter' || key === ' ') {
       event.preventDefault();
-      this.act();
+      if (!event.repeat) this.act();
+    } else if (key === 'Tab') {
+      event.preventDefault();
     }
   }
 
@@ -225,7 +227,7 @@ export class StashPanel {
           line.classList.toggle('clinic-selected', side === this.side && index === this.at);
           line.classList.toggle('clinic-short', row.moves <= 0);
           line.appendChild(icon(row.id));
-          const name = line.appendChild(el('span', row.count !== 1 ? `${row.name} ×${amount(row.count)}` : row.name, 'clinic-name'));
+          const name = line.appendChild(el('span', row.count !== 1 ? `${row.name} ×${many(row.count)}` : row.name, 'clinic-name'));
           if (row.first.kind === 'weapon') name.appendChild(el('small', weaponLine(row.first)));
           line.appendChild(el('b', kg(row.load)));
           return line;
