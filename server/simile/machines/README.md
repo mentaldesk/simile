@@ -29,6 +29,21 @@ A pistol's 30 rounds of wear are `simile.combat`'s. Aris's spool on the bench ho
 each. It's `maker_space_spool` rather than one of the bench's finds, so a save that's already
 searched the bench can still find it.
 
+## What the recycler makes
+
+`recycler.py`. Both offers list only what the player carries now, and each is `uses: "scrap"`, so the
+panel shows `item.amount` and `cost` in kilos as the server sends them.
+
+| Offer | `id` | Takes | Makes |
+|---|---|---|---|
+| Plastic | `plastic` | All their scrap: salvage no recipe or repair uses, and not copper pipe | 1 plastic a kilo |
+| Copper wire | `copper_wire` | All their copper pipe, 3 kg each | 2 wire a pipe, the same weight |
+
+A press for wire takes every pipe they carry, as a press for plastic takes all their scrap, so the
+row says what it'll make of them and goes once they're used. Wire doesn't stack: the row's `item`
+has an `amount` to say how many, and they get that many single wires, which repairs and recipes
+count one by one. Pipes lie in the sewers (`content/street/README.md`) and come back.
+
 ## Adding a machine's offers
 
 Add a file beside this one with an `offers` function. `register_offers` calls it at startup, so you

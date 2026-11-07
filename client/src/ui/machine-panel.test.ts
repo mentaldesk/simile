@@ -23,6 +23,9 @@ const ROUNDS: Product = {
 const BROKEN: Machine = { id: 'printer_3d', kind: 'printer', state: 'broken', parts: { metal_sheet: 1, linear_actuator: 1, copper_wire: 2 }, makes: [] };
 const WORKING: Machine = { id: 'printer_3d', kind: 'printer', state: 'working', parts: {}, makes: [PISTOL, ROUNDS] };
 const EMPTY: Machine = { ...WORKING, makes: [] };
+const STEEL: Item = { id: 'scrap_steel', kind: 'salvage', name: 'Scrap steel', weight: 4.5, charge: null, on: null };
+const DRAW: Product = { item: { ...WIRE, amount: 4 }, uses: 'scrap', cost: 6 };
+const RECYCLER: Machine = { id: 'recycler', kind: 'recycler', state: 'working', parts: {}, makes: [{ item: { ...PLASTIC, amount: 4.5 }, uses: 'scrap', cost: 4.5 }, DRAW] };
 const AT_THE_PRINTER: Position = { x: 9, y: 2, map: 'maker_space_floor_0' };
 const player = (items: Item[]): Player => ({ items, money: 0, carry_limit: 20 }) as unknown as Player;
 
@@ -67,6 +70,19 @@ describe('rowsOf', () => {
 
     expect(rowNames(rowsOf(press(0.5), []))).toEqual(['Plastic ×0.5']);
     expect(rowNames(rowsOf(press(), []))).toEqual(['Plastic']);
+  });
+
+  it("lists a recycler's two offers, each by the kilos it takes and what comes of them", () => {
+    const pipe: Item = { id: 'copper_pipe', kind: 'salvage', name: 'Copper pipe', weight: 3, charge: null, on: null };
+    const items = [pipe, pipe, STEEL];
+    const rows = rowsOf(RECYCLER, items, 10.5);
+
+    expect(rowNames(rows)).toEqual(['Plastic ×4.5', 'Copper wire ×4']);
+    expect(rows.map(counted)).toEqual(['4.5 kg', '6 kg']);
+    expect(rows.map((row) => row.kind === 'make' && row.short)).toEqual([false, false]);
+    expect(loadAfter(DRAW, items)).toBe(10.5);
+    expect(rows[1]).not.toHaveProperty('heavy');
+    expect(rowsOf(RECYCLER, items, 10)[1]).toMatchObject({ heavy: "You'd end up carrying 10.5 kg, and you can carry 10." });
   });
 
   it('says why a working recycler lists nothing', () => {
@@ -262,6 +278,30 @@ describe('MachinePanel', () => {
     press('Enter');
 
     expect(sent).toEqual([{ type: 'make', machine: 'printer_3d', item: 'rounds' }]);
+  });
+
+  it("makes a recycler's second offer by its item, and moves on when the first has gone", () => {
+    resetMachines([{ ...RECYCLER, id: 'printer_3d' }]);
+    playerState.latest = { player: player([STEEL]) } as PlayerStateMessage;
+    panel.use(AT_THE_PRINTER, false);
+
+    expect(lines()).toEqual(['Plastic ×4.54.5 kg', 'Copper wire ×46 kg']);
+
+    press('Enter');
+    press('ArrowDown');
+    press('Enter');
+
+    expect(sent).toEqual([
+      { type: 'make', machine: 'printer_3d', item: 'plastic' },
+      { type: 'make', machine: 'printer_3d', item: 'copper_wire' },
+    ]);
+
+    machines.set('printer_3d', { ...RECYCLER, id: 'printer_3d', makes: [DRAW] });
+    panel.update(AT_THE_PRINTER);
+
+    expect(lines()).toEqual(['Copper wire ×46 kg']);
+    press('Enter');
+    expect(sent.at(-1)).toEqual({ type: 'make', machine: 'printer_3d', item: 'copper_wire' });
   });
 
   it('says so while a working machine has nothing to make', () => {

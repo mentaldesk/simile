@@ -18,6 +18,8 @@ METAL_SHEET = part("metal_sheet", "Metal sheet", 3.0)
 LINEAR_ACTUATOR = part("linear_actuator", "Linear actuator", 1.5)
 COPPER_WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 """The same as the metro's salvage on the dead train's roof."""
+COPPER_PIPE = Item(id="copper_pipe", kind=ItemKind.SALVAGE, name="Copper pipe", weight=3.0)
+"""What the recycler draws into wire, two to a pipe, weighing what they do."""
 
 
 def searchable(

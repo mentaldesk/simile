@@ -27,7 +27,7 @@ from simile.schema import (
 )
 from simile.street import charge
 from simile.street.charge import Ways, runs, seconds
-from simile.street.finds import LINEAR_ACTUATOR, searchable, under
+from simile.street.finds import COPPER_PIPE, LINEAR_ACTUATOR, searchable, under
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets, tapped, walking
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
@@ -98,6 +98,8 @@ CAVE = 18
 """The bat cave's width: a column of its own east of the den, three tiers high."""
 CAVE_BATS = 30
 """Bats roosting under the cave's ceilings."""
+PIPES = 3
+"""Copper pipes lying past the gate, each coming back as salvage does."""
 
 ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 DEN_KIND, CAVE_KIND = "den", "cave"
@@ -184,8 +186,10 @@ WANTED = (
     Wanted(LINEAR_ACTUATOR.id, 1, OWN_JUMP),
     Wanted(APEX_BOARD.id, 1, Bionic.BIONIC_LEGS.value),
     Wanted("old_battery", 6, Bionic.BIONIC_LEGS.value),
+    Wanted(COPPER_PIPE.id, PIPES, Bionic.BIONIC_LEGS.value),
 )
-"""The machines' parts in the sewers, with the second power cell's four batteries on top."""
+"""The machines' parts in the sewers, with the second power cell's four batteries on top, and the
+pipes the recycler draws into wire, in reach once its Apex board is."""
 
 
 def slab(tier: int) -> int:
@@ -1007,6 +1011,28 @@ def boxes(level: Level, plan: Plan, cells: Stocker) -> None:
         plugs.add((x, row))
 
 
+def pipes(level: Level, plan: Plan, cells: Stocker) -> None:
+    """`PIPES` copper pipes on the floors the way on already walks, each in a room of its own where
+    there are enough, from their own random stream after the rest, so they move nothing."""
+    rng = random.Random(f"sewers/{level.seed}/pipes")
+    route = set(way_on(Cells(plan)))
+
+    def spots(node: Node) -> list[int]:
+        return [x for x in cells.free(node) if (x, FLOORS[node[1]]) in route]
+
+    used: list[Node] = []
+    for number in range(1, PIPES + 1):
+        rooms = [n for n in level.nodes(1) if spots(n) and n not in used]
+        rooms = rooms or [n for n in level.nodes(1) if spots(n)]
+        if not rooms:
+            raise ValueError(f"no room for a copper pipe in sewers level {level.seed}")
+        node = rng.choice(rooms)
+        used.append(node)
+        x, row = rng.choice(spots(node)), FLOORS[node[1]]
+        cells.taken |= {(x + d, row) for d in (-1, 0, 1)}
+        plan.pickups.append(Pickup(f"sewers_copper_{number}", SALVAGE, x, row, item=COPPER_PIPE))
+
+
 def towards(
     edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
 ) -> dict[Cell, float]:
@@ -1050,6 +1076,7 @@ def build(level: Level) -> Plan:
     den(level, plan)
     cave(level, plan)
     boxes(level, plan, cells)
+    pipes(level, plan, cells)
     cover(level, plan)
     plan.doors.append(lift())
     return plan
