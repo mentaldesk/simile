@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import icons from '../../../content/icons/icons.json';
 import type { Corpse, Item, Pile } from '../net';
-import { corpseIcons, lootIcons, sameCorpses, sameItems } from './piles';
+import { lootIcons, sameCorpses, sameItems } from './piles';
 
 const item = (id: string): Item => ({ id, kind: 'salvage', name: id, weight: 1, charge: null, on: null });
 const WIRE = item('copper_wire');
@@ -54,24 +54,12 @@ const corpse = (more: Partial<Corpse> = {}): Corpse => ({
   ...more,
 });
 
-describe('corpseIcons', () => {
-  it('heaps up what it holds, its bionics first', () => {
-    expect(corpseIcons(corpse({ bionics: ['datajack'], items: [WIRE], money: 5 }))).toEqual(['datajack', 'copper_wire', 'credits']);
-  });
-
-  it('still shows a corpse that holds nothing, or a bionic with no icon of its own', () => {
-    expect(corpseIcons(corpse())).toEqual(['unknown_item']);
-    expect(corpseIcons(corpse({ bionics: ['power_cell_3'] }))).toEqual(['unknown_item']);
-  });
-});
-
 describe('sameCorpses', () => {
-  it('tells two corpses on one tile apart, and notices when one gives something up', () => {
+  it('tells two corpses on one tile apart, and ignores what they hold, which the picture does not show', () => {
     expect(sameCorpses([corpse()], [corpse()])).toBe(true);
     expect(sameCorpses([corpse()], [corpse({ id: 'corpse_2' })])).toBe(false);
     expect(sameCorpses([corpse()], [corpse(), corpse({ id: 'corpse_2' })])).toBe(false);
-    expect(sameCorpses([corpse({ money: 5 })], [corpse()])).toBe(false);
-    expect(sameCorpses([corpse({ items: [WIRE] })], [corpse()])).toBe(false);
-    expect(sameCorpses([corpse({ bionics: ['datajack'] })], [corpse()])).toBe(false);
+    expect(sameCorpses([corpse()], [corpse({ at: { map: 'metro', x: 31, y: 15 } })])).toBe(false);
+    expect(sameCorpses([corpse({ money: 5, items: [WIRE] })], [corpse()])).toBe(true);
   });
 });

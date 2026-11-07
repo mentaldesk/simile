@@ -315,7 +315,9 @@ class Creatures:
             if self.now >= creature.strikes:
                 creature.strikes = None
                 creature.rested = self.now + kind.rest
-                if at is not None and _touches(creature, at):
+                # A strike earlier this tick may have killed them and moved them home.
+                at = self.sense().at
+                if at is not None and at.map == creature.map and _touches(creature, at):
                     self._log("A %s hurts the player", creature)
                     self.harm(kind)
             self._settle(creature, CreatureState.ATTACKING)

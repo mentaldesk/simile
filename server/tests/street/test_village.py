@@ -470,7 +470,7 @@ def test_the_cafe_the_noodle_bar_and_home_have_a_plug_downstairs() -> None:
         assert item.map == f"{building}_floor_0" and item.label == "Plug"
         assert MAPS[item.map].standing(stand.x, stand.y) and MAPS[item.map].lit(stand.x, stand.y)
     home = TOWN.location("maker_space")
-    assert plugs["maker_space_plug"].stand == [home.entry], "they wake on it after collapsing"
+    assert plugs["maker_space_plug"].stand == [home.entry], "they wake on it with no bed"
 
 
 def test_only_the_streets_under_the_village_are_underground_or_dark() -> None:

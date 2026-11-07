@@ -119,8 +119,9 @@ describe('usablesOn', () => {
     ];
     const usables = on('metro', { corpses }).filter(({ kind }) => kind === 'corpse');
     expect(usables.map(({ id }) => id)).toEqual(['corpse:corpse_1', 'corpse:corpse_2']);
-    expect(usables[0].picture).toEqual(expect.objectContaining({ icon: 'unknown_item', x: xOf(30), y: feetOf(15), originY: 1 }));
-    expect(usables[1].loot).toHaveLength(2);
+    expect(usables[0].picture).toEqual({ icon: 'corpse', height: 0.6 * PPM, x: xOf(30), y: feetOf(15), originX: 0.5, originY: 1, depth: expect.any(Number) });
+    expect(usables[1].picture).toEqual(usables[0].picture);
+    expect(usables[1].loot).toBeUndefined();
   });
 
   it('heaps up to three of what a pile holds round its middle, the first in front', () => {

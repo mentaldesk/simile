@@ -9,7 +9,7 @@ import { DEPTH } from './depths';
 import { furnitureKey } from './draw';
 import { feetOf, furniturePlacement, PPM, stretchWidth, xOf } from './layout';
 import type { Placed, SideMap, Village } from './maps';
-import { corpseIcons, lootIcons } from './piles';
+import { lootIcons } from './piles';
 import type { SceneryManifest } from './scenery';
 
 export type UsableKind = 'clue' | 'searchable' | 'jack' | 'terminal' | 'pile' | 'corpse';
@@ -41,6 +41,7 @@ const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
 /** Metres tall: the heap's first icon, and those behind it. */
 const LOOT_M = { first: 0.65, behind: 0.5 };
+const CORPSE_M = 0.6;
 /** Shares of the first icon's height that each one behind it lies off to the side. */
 const HEAP_SHIFTS = [0, -0.5, 0.5];
 /** Pinned `pinned` metres up the wall, over the player's head. */
@@ -174,9 +175,16 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       if (picture) found.push({ id: pileId(pile), kind: 'pile', ...at, picture, ...(loot.length > 0 && { loot }) });
     }
     for (const corpse of (state.corpses ?? []).filter(({ at }) => at.map === map.id)) {
-      const spot = { x: xOf(map.offset.x + corpse.at.x), y: feetOf(map.offset.y + corpse.at.y), depth: depthOf(map) + ABOVE };
-      const [picture, ...loot] = heapAt(corpseIcons(corpse), spot);
-      if (picture) found.push({ id: corpseId(corpse), kind: 'corpse', ...at, picture, ...(loot.length > 0 && { loot }) });
+      const picture: IconSprite = {
+        icon: 'corpse',
+        height: CORPSE_M * PPM,
+        x: xOf(map.offset.x + corpse.at.x),
+        y: feetOf(map.offset.y + corpse.at.y),
+        originX: 0.5,
+        originY: 1,
+        depth: depthOf(map) + ABOVE,
+      };
+      found.push({ id: corpseId(corpse), kind: 'corpse', ...at, picture });
     }
     return found;
   });

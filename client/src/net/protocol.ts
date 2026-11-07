@@ -685,7 +685,7 @@ export interface Player {
    */
   effects?: Effect[];
   /**
-   * What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, a destroyed bot's haul, on the cell it went down in, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
+   * What they left lying in the world, oldest first: what they carried when they collapsed, in a save from before they could die, a destroyed bot's haul, on the cell it went down in, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
    */
   left?: Pile[];
   /**
@@ -778,7 +778,8 @@ export interface Effect {
 }
 /**
  * Items, money or both lying `at` a tile in the world for the player to pick up, such as
- * salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed.
+ * salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed, in a
+ * save from before they could die.
  */
 export interface Pile {
   at: MapTile;

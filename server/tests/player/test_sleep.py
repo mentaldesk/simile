@@ -154,7 +154,22 @@ def test_getting_up_stops_the_skip() -> None:
     assert sleeper.world.clock.speed == 1
 
 
-def test_collapsing_stops_the_skip() -> None:
+def test_starving_sleeps_on_to_morning_without_healing_or_hurting() -> None:
+    sleeper = Sleeper(2.75, Player(health=0.5, hunger=1.0))
+
+    assert sleeper.health.rest(True)
+    sleeper.real(1)
+    assert sleeper.world.clock.skipping
+    sleeper.run(6.9)
+
+    assert sleeper.health.sleeping()
+    assert sleeper.player.health == 0.5
+    sleeper.run(7.01)
+    assert not sleeper.world.clock.skipping
+    assert not sleeper.health.resting()
+
+
+def test_dying_stops_the_skip() -> None:
     sleeper = Sleeper(2.75, Player(health=0.5))
     sleeper.health.rest(True)
     sleeper.real(1)

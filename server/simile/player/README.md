@@ -47,10 +47,10 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 
 - **The corpse.** A new `Corpse` goes at the end of `Player.corpses`, assigned as a new list so its
   validator checks the id: `next_corpse` gives an id none of the saved ones has, so a reload can't
-  reuse one. It lies on the tile they fell on or the ground below it, or where they wake if the
-  server doesn't yet know where they are, so a new body never takes the old one's bionics with it, holding their money, through the ledger as `dropped`, everything
-  they carried but the lamp, and every bionic fitted. It stays whatever it holds, and a second death
-  leaves a second. Taking from it is Q11's.
+  reuse one. It holds their money, through the ledger as `dropped`, everything they carried but the
+  lamp, and every bionic fitted. It lies on the tile they fell on or the ground below it, or where
+  they wake if the server doesn't yet know where they are, as a new body can't keep the old one's
+  bionics. It stays whatever it holds, and a second death leaves a second. Taking from it is Q11's.
 - **The lamp** stays with them, switched off, as stage 2's collapse had it, so they can see to go
   back. Everything else they carried is on the corpse.
 - **The new body.** `Body()`, whole and organic, so every part can be sold again: the clinic reads
@@ -88,8 +88,9 @@ Its constants are in `PowerConfig`, beside it.
 game, like hunger. It's `health_of(app)` once the `running` hook has made it, for P10's creatures
 to hurt and bite the player: they look it up when they do, not at startup.
 
-- **Damage.** `hurt(damage, cause)` takes that much of their health. At none they die of `cause`,
-  `health` unless they're starving. See *Death*.
+- **Damage.** `hurt(damage, cause)` takes that much of their health. At none they die of `cause`:
+  `hunger` from a pang of starving, and `health` from anything else, even while they're starving.
+  See *Death*.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
   `heal_at_home` (0.5) at home, in two, standing on their bed too. Their beds are the cells the
   `bed` furniture covers on their home's floor maps (`beds_in`), and `player_state`'s `bed` is the
@@ -106,8 +107,8 @@ to hurt and bite the player: they look it up when they do, not at startup.
   (06:00), a rest is accepted at full health or infected too, and goes on until `morning` (07:00)
   rather than ending at full health or when an infection sets in. Once they've lain down, `Sleep`
   runs the clock at `speed` (3600x, an hour a real second) with `clock.skip`, so 02:45 to 07:00
-  takes about four real seconds. Health still comes back, unless they're infected, and hunger and
-  power hold for the whole rest. At 07:00 the clock goes back to its speed and they get up. Moving
+  takes about four real seconds. Health still comes back, unless they're infected or starving, and
+  hunger and power hold for the whole rest. At 07:00 the clock goes back to its speed and they get up. Moving
   off the bed, getting up, dying or the client leaving ends it early, and the clock goes back
   at once. Waking in bed after dying at night doesn't sleep until morning.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)

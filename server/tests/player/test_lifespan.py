@@ -154,9 +154,11 @@ def test_starving_to_death_wakes_them_in_bed_with_a_corpse_where_they_fell(
         client.portal.call(lambda: setattr(player, "money", 20.0))
         died, woken = starve(client, app, ws)
         home = client.portal.call(movement_of(app).position, PLAYER_ID)
+        ledger = economy_of(app).ledger.entries
 
     assert died["cause"] == "hunger"
     assert died["position"] == BED
+    assert [entry.amount for entry in ledger if entry.kind is Kind.DROPPED] == [20.0]
     assert home == Point(5, 2, "maker_space_floor_2")
     assert woken["player"]["hunger"] == 0.75
     assert woken["player"]["money"] == 0

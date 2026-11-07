@@ -240,9 +240,11 @@ def test_a_second_death_leaves_a_second_corpse_and_both_stay() -> None:
     fall.death.die(Vital.HUNGER)
     fall.player.items = [*fall.player.items, BUN]
     fall.stand(70, 15, "high_street")
+    before = fall.player.corpses
 
     fall.death.die(Vital.HEALTH)
 
+    assert fall.player.corpses is not before, "append skips the duplicate-id check"
     first, second = fall.player.corpses
     assert first.id != second.id
     assert first.at == second.at == MapTile(map="high_street", x=70, y=15)
