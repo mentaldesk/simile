@@ -744,7 +744,7 @@ it takes, and if what they'd end up carrying wouldn't fit under their carry limi
 what they carry into their `stash`, or `"take"` it back out. Of a stack, as much moves as fits,
 under the stash's `limit` to store or their carry limit to take, joining any of that `id` already
 there, and what doesn't fit stays where it was: rounds move whole, and material in any amount. So
-nothing is stranded in a stack too heavy to carry. The player has to stand on a `stand` tile of
+nothing is stranded in a stack too heavy to carry. A lamp that's stored goes off. The player has to stand on a `stand` tile of
 Aris's lockers, the interactable with the id `"lockers"`. The server sends the
 [`player_state`](#player_state) that follows. It ignores a `stash` away from the lockers, for
 something that isn't there to move, and when none of it fits.
