@@ -6,7 +6,7 @@ import { scenery, village } from './content';
 import { DEPTH } from './depths';
 import { feetOf, furniturePlacement, PPM, xOf } from './layout';
 import { Village } from './maps';
-import { boxOf, glowing, glowKey, usablesOn, type IconSprite, type Usable, type UsableState } from './usables';
+import { boxOf, glowing, glowKey, usableShown, usablesOn, type IconSprite, type Usable, type UsableState } from './usables';
 
 vi.mock('phaser', () => ({ default: {} }));
 
@@ -18,6 +18,22 @@ const on = (street: string, more: Partial<UsableState> = {}, from: Village = vil
 const byId = (usables: Usable[], id: string) => usables.find((usable) => usable.id === id)!;
 const furniture = (map: string, name: string) => village.map(map)!.furniture.find((piece) => piece.name === name)!;
 const MAKER = village.map('maker_space_floor_0')!;
+
+describe('usableShown', () => {
+  const lying = (over: { building?: string }) => ({ picture: { x: 300 }, ...over }) as Usable;
+  const view = (open: string | undefined, ghost: number) => ({ isOpen: (name?: string) => name === open, ghost: () => ghost });
+
+  it('shows one on a floor only while its front is open', () => {
+    expect(usableShown(lying({ building: 'clinic' }), view('clinic', 0))).toBe(true);
+    expect(usableShown(lying({ building: 'clinic' }), view(undefined, 1))).toBe(false);
+  });
+
+  it('leaves out one on the street while the front behind it is off, or coming off, as the street view does its furniture', () => {
+    expect(usableShown(lying({}), view(undefined, 1))).toBe(true);
+    expect(usableShown(lying({}), view('clinic', 0.5))).toBe(false);
+    expect(usableShown(lying({}), view('clinic', 0))).toBe(false);
+  });
+});
 
 describe('usablesOn', () => {
   const street = on('high_street', {});
@@ -203,8 +219,6 @@ describe('glowing', () => {
     expect(glowing(at('metro', 30, 15), [], from({ piles: () => [pile] }))).toBe('pile:metro:30,15');
     const corpse = (id: string, money: number): Corpse => ({ id, owner: 'player', at: at('metro', 30, 15), money, items: [], bionics: [] });
     expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 5), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_1');
-    expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_2');
-    expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0)] }))).toBeUndefined();
     const heavy: Corpse = { ...corpse('corpse_1', 0), items: [{ ...WIRE, weight: 4 }] };
     expect(glowing(at('metro', 30, 15), [], from({ room: () => 1, corpses: () => [heavy, corpse('corpse_2', 40)] }))).toBe('corpse:corpse_2');
   });

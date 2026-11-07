@@ -7,12 +7,12 @@ import './clinic-panel.css';
 import { iconUrl } from './icons';
 import { pressedNewsKey } from './keys';
 import { percent } from './lamp-gauge';
-import { loadOf, totalLoad } from './salvage';
+import { loadOf, stackFits as fitting, totalLoad } from './salvage';
 import { NEWS_KEY } from './tuning';
 
+export { fitting };
+
 const KEY = NEWS_KEY.toUpperCase();
-const SLACK = 1e-9;
-const FINEST = 1_000_000;
 
 export type Action = StashMessage['action'];
 
@@ -21,17 +21,6 @@ export function lockersAt(position: Position | undefined): Interactable | undefi
   if (!position) return undefined;
   const interactable = interactableAt(mapOf(position), position);
   return interactable?.id === 'lockers' ? interactable : undefined;
-}
-
-/** How much of the stack fits in `room` kg, as the server's `fitting` has it. */
-export function fitting(item: Item, room: number): number {
-  const { kind, weight, amount: whole = 1 } = item;
-  if (!weight || loadOf(item) <= room + SLACK) return whole;
-  const fits = (room + SLACK) / weight;
-  if (kind === 'rounds') return Math.max(Math.floor(fits), 0);
-  if (kind !== 'material') return 0;
-  const part = Math.max(Math.floor(fits * FINEST) / FINEST, 0);
-  return part > 0 && whole - part < 1 / FINEST ? whole : part;
 }
 
 /** A kind of thing on one side: `first` is what moves, of `count` in all. */
@@ -66,14 +55,14 @@ export function note(row: Row | undefined, action: Action, room: number): string
   return moves < whole ? `Enter to ${verb} ${many(moves)} of ${many(whole)}. The rest won't fit.` : `Enter to ${verb} it.`;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string): HTMLElementTagNameMap[K] {
+export function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string): HTMLElementTagNameMap[K] {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
   if (className) element.className = className;
   return element;
 }
 
-function icon(id: string): HTMLElement {
+export function icon(id: string): HTMLElement {
   const cell = el('span', undefined, 'clinic-icon');
   const url = iconUrl(id);
   if (url) {
@@ -85,7 +74,7 @@ function icon(id: string): HTMLElement {
 }
 
 /** The rounds and condition a weapon keeps wherever it is. */
-const weaponLine = ({ rounds, capacity, condition }: Item) => (condition ? `${rounds} of ${capacity} rounds, ${percent(condition)}` : 'Worn out');
+export const weaponLine = ({ rounds, capacity, condition }: Item) => (condition ? `${rounds} of ${capacity} rounds, ${percent(condition)}` : 'Worn out');
 
 type Column = { box: HTMLElement; title: HTMLElement; list: HTMLOListElement };
 

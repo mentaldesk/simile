@@ -279,4 +279,4 @@ def test_a_death_switches_the_lamp_off_and_they_keep_it(make_package: MakePackag
 
     assert lamp_of(switched)["on"] is True
     assert lamp_of(woken)["on"] is False
-    assert woken["player"]["corpses"][0]["items"] == []
+    assert "corpses" not in woken["player"]

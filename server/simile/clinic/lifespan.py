@@ -22,8 +22,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.conversation import line_ids
     from simile.economy.economy import economy_of
     from simile.persistence import player_of
-    from simile.player.corpses import Salvage
-    from simile.player.pickups import claimers_of
     from simile.player.trade import keepers_of
     from simile.protocol import (
         FitMessage,
@@ -50,8 +48,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     )
     keepers = keepers_of(app)
     keepers[clinic.config.place] = clinic.keep
-    salvage = Salvage(player_of(app), economy, world.clock, clinic.config.recipes)
-    claimers_of(app).append(salvage.claim)
     snapshot = hub.snapshot
     hub.snapshot = lambda: standing(snapshot(), doctor, movement, talk.live())
     stops = [
@@ -68,6 +64,5 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         for stop in reversed(stops):
             stop()
         hub.snapshot = snapshot
-        claimers_of(app).remove(salvage.claim)
         keepers.pop(clinic.config.place, None)
         await talk.close()

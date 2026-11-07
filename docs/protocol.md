@@ -463,8 +463,7 @@ can lie on one tile; its `owner`, whose body it was, `"player"` for the player's
 `MapTile`, the tile they fell on or the ground below it; `money`; `items`, what it still carries;
 and `bionics`, each `Bionic` still in it. Like a `Pile`, it goes once nothing is left on it, and a
 save with an emptied one loads without it. Its trace in the sewers stays in `lift_open`. An `id` is
-never used twice, as `bodies` numbers them. See the note under [`take`](#take) for what the server
-does until Q19.
+never used twice, as `bodies` numbers them.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney`,
 `right_kidney`, `stomach` and `feet`. Each is `"present"`, `"sold"`, or the bionic fitted in its
@@ -507,8 +506,7 @@ The client puts them at `position`, snapping there as through a door, and can sa
 The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
 `corpses`, where they fell, or where they wake if the server didn't know where that was, with their
 money, everything they carried but the lamp and every bionic they had fitted, and a whole organic
-`body`. With nothing on them they leave no corpse, from Q19 (see the note under
-[`take`](#take)). They
+`body`. With nothing on them they leave no corpse. They
 keep the lamp, switched off, so they can see to go back. They wake with no effects, full `power`,
 `hunger` of 0.75 at most, and a little `health`, resting in their bed if they have one. What they
 know, what they keep in the `stash`, what they've sold, what they've `repaired` and what's in `left`
@@ -666,11 +664,6 @@ ignores a `take` out of reach, for something that isn't there, and when none of 
 
 Salvage and secrets in `player_state`'s `piles` aren't named by this: E takes those with
 [`pick_up`](#pick_up).
-
-Until Q19 (#636), the server ignores `take` and sends no `bionics`, and `pick_up` still salvages
-the nearest corpse it can take from, as it did since Q11. A death with nothing on them still leaves
-a corpse, and an emptied corpse stays until the save is next loaded. Corpse ids already number from
-`bodies`.
 
 ### `sell`
 

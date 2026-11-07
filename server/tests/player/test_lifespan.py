@@ -200,9 +200,13 @@ def test_two_deaths_leave_two_corpses_that_both_stay(make_package: MakePackage) 
     app = make_app(make_package)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        player = player_of(app)
+        carry = lambda: setattr(player, "items", [*player.items, BUN])  # noqa: E731
         move(client, app, ws, 12, 15, "kapok_walk")
+        client.portal.call(carry)
         starve(client, app, ws)
         move(client, app, ws, 30, 15, "kapok_walk")
+        client.portal.call(carry)
         _, woken = starve(client, app, ws)
 
     assert [(c["id"], c["at"]["x"]) for c in woken["player"]["corpses"]] == [

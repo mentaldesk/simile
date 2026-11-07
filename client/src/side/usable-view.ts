@@ -7,7 +7,7 @@ import { PPM } from './layout';
 import { sameCorpses, sameItems } from './piles';
 import type { Content, StreetView } from './street-view';
 import type { SideTextures } from './textures';
-import { glowKey, glowing, spritesOf, usablesOn, type Sprite, type Usable } from './usables';
+import { glowKey, glowing, spritesOf, usableShown, usablesOn, type Sprite, type Usable } from './usables';
 
 const GLOW = { colour: '#fff3b8', px: 7, alpha: 0.75, pulse: 0.2, seconds: 1.6 };
 const TICK = { colour: 0xe8572a, outline: 0x2b2118, m: 0.36, width: 0.055 };
@@ -79,7 +79,7 @@ export class UsableView {
 
   private show(shown: Shown, street: StreetView): void {
     const { usable } = shown;
-    const visible = !usable.building || street.isOpen(usable.building);
+    const visible = usableShown(usable, street);
     const tint = street.tints.colours[usable.building ? 'inside' : 'ground'];
     if (!shown.images.length) {
       const images = spritesOf(usable)
@@ -139,7 +139,7 @@ export class UsableView {
       if (!glow) return;
       this.glows.set(key, glow);
     }
-    const visible = !shown.usable.building || street.isOpen(shown.usable.building);
+    const visible = usableShown(shown.usable, street);
     const alpha = GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2);
     for (const image of glow.images) image.setVisible(visible).setAlpha(alpha);
   }

@@ -29,6 +29,7 @@ import { NewsPanel } from './news-panel';
 import { PauseGate, PauseMenu } from './pause-menu';
 import { fitOverlay, inOverlay } from './overlay';
 import { PlaceLabel } from './place-label';
+import { SalvagePanel } from './salvage-panel';
 import { setMaps } from './side-view';
 import { StashPanel } from './stash-panel';
 import { ChatTarget, clicked } from './target';
@@ -57,6 +58,7 @@ export class DialogueScene extends Phaser.Scene {
   private clinic!: ClinicPanel;
   private machines!: MachinePanel;
   private stash!: StashPanel;
+  private salvage!: SalvagePanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private lamp!: LampGauge;
@@ -101,6 +103,7 @@ export class DialogueScene extends Phaser.Scene {
     });
     this.machines = new MachinePanel(this.root);
     this.stash = new StashPanel(this.root);
+    this.salvage = new SalvagePanel(this.root);
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopDeaths = server.on('player_died', ({ cause }) => hunger.died(cause));
@@ -178,15 +181,16 @@ export class DialogueScene extends Phaser.Scene {
     this.counter.update(prompted ? used.interactable : (ordered ?? atMachine), !this.chat.isOpen);
     this.machines.update(player);
     this.stash.update(player);
+    this.salvage.update(player);
     const buyer = trading(used);
     this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
-    const sells = !this.clinic.isOpen && !doorOnE(here);
+    const sells = !this.clinic.isOpen && !this.salvage.isOpen && !doorOnE(here);
     const state = playerState.latest && !sells ? { ...playerState.latest, buyer: null } : playerState.latest;
-    this.hunger.update(state, used);
+    this.hunger.update(state, this.salvage.isOpen ? undefined : used);
     this.lamp.update(playerState.latest);
     this.health.update(playerState.latest);
     this.character.update(playerState.latest);
-    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen || this.character.isOpen;
+    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen || this.salvage.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     this.ways.render(panelOpen ? [] : here, this.fromGame);
     const talks = !panelOpen && !this.chat.isOpen && !this.log.isReading && !ordered;
@@ -195,7 +199,7 @@ export class DialogueScene extends Phaser.Scene {
   }
 
   private panelOpen(): boolean {
-    return this.chat.isOpen || this.log.isReading || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen;
+    return this.chat.isOpen || this.log.isReading || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen || this.salvage.isOpen;
   }
 
   private pressE(): void {
@@ -227,7 +231,7 @@ export class DialogueScene extends Phaser.Scene {
     if (used?.kind === 'terminal') {
       this.murals.close();
       this.news.open(used.terminal.label);
-    } else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+    } else if (used?.kind === 'pile') this.takeFrom(used);
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'jack') this.useJack(used.interactable);
     else if (used?.kind === 'searchable') {
@@ -235,6 +239,16 @@ export class DialogueScene extends Phaser.Scene {
       this.counter.flash(foundIn(used.interactable));
     } else if (used?.kind === 'clinic' || used?.kind === 'buyer') this.trade(used.buyer);
     else if (used?.kind === 'bed') server.send({ type: 'rest', on: true });
+  }
+
+  /** A corpse or a pile in `left` opens the screen; salvage or a secret lying about is picked up. */
+  private takeFrom(used: Extract<Reachable, { kind: 'pile' }>): void {
+    if (!this.salvage.open(used)) {
+      server.send({ type: 'pick_up' });
+      return;
+    }
+    this.murals.close();
+    this.news.close();
   }
 
   private trade(buyer: Buyer): void {

@@ -165,19 +165,19 @@ last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` 
 The same corner says what E picks up or sells where the player stands, in
 [`salvage.ts`](salvage.ts):
 
-- Within a tile of a pile (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), one in `left`
-  or one in `player_state`'s `piles`, what of it fits under their carry limit, as the server takes
-  it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash.", "Press E to pick up
-  what's lying here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
-  too heavy to carry with what you have." E sends `pick_up`.
-- Within a tile of one of their `corpses` that holds anything (`corpseInReach`), "Press E to salvage
-  what you can carry from your body." The client doesn't know what a bionic weighs, so it can't say
-  what won't fit. It says "the oldest of the 2 bodies here" where two lie on one tile, since they
-  draw as one and E takes the older first. An older one holding only items that won't fit is passed
-  over, as on the server. A corpse E can take from goes ahead of a news terminal, a buyer or a bed,
-  so one lying by any of them can still be reached. One it can't take from goes behind them and
-  gives way to a machine or the lockers on its cell, so it doesn't stop them making room. An emptied
-  one offers nothing. E sends `pick_up`.
+- Within a tile of a pile in `player_state`'s `piles` (`pileInReach` in
+  [`world/reach.ts`](../world/reach.ts)), what of it fits under their carry limit, as the server
+  takes it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash." What won't fit
+  is named: "The servo motor won't fit.", or "The servo motor is too heavy to carry with what you
+  have." E sends `pick_up`. A pile in `left`, which they left or a bot dropped, says "Press E to go
+  through what's lying here.", and E opens the salvage screen below.
+- Within a tile of one of their `corpses` (`corpseInReach`), "Press E to go through your body.", and
+  E opens the salvage screen. It says "the oldest of the 2 bodies here" where two lie on one tile,
+  since they draw as one, and "You can't carry anything on it." when nothing fits. An older one
+  holding nothing that fits is passed over for one that has something. A corpse with something
+  that fits goes ahead of a news terminal, a buyer or a bed, so one lying by any of them can still
+  be reached. One with nothing that fits goes behind them and gives way to a machine or the lockers
+  on its cell, so it doesn't stop them making room. Bionics weigh what `player_state`'s `bionics` says.
 - At a buyer (`player_state`'s `buyer`), what it pays for everything they carry that it buys:
   "Press E to sell at the scrap trader's stall: 6 for your copper wire.", or "your salvage" for
   three things or more. E opens the trading panel below, to choose what to sell. With nothing it
@@ -186,6 +186,19 @@ The same corner says what E picks up or sells where the player stands, in
   see what the scrap trader's stall buys and sells.", and E opens the panel too.
 - The world scene draws each pile on the street shown and its floors as the icons of what it
   holds (`side/piles.ts`).
+
+## The salvage screen
+
+[`salvage-panel.ts`](salvage-panel.ts) is E at a body or a pile in `left`, on the trade screen's
+styles: what they carry on the left, for show, and what lies there on the right, its money, then
+its items, then its bionics, each with its icon and weight. ↑ ↓ choose, Enter or a click sends
+`take` for that row, and Esc or E closes. A row that won't fit is dimmed and says "Too heavy", the
+footer says how much more they can carry, and Enter does nothing. Of a stack it says how much moves.
+It closes when what it's on has gone from `player_state`, or they're out of the server's reach.
+
+`salvage-panel.cases.json` holds moves the real server made, written by
+`server/tests/player/test_corpses.py`, and the panel's test checks its rows against them. Salvage and
+secrets lying about, in `player_state`'s `piles`, don't open it: E picks them up, as the corner says.
 
 ## Trading, and at the clinic
 
@@ -290,7 +303,7 @@ the page has focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, but
 its own Enter, Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it: a
-terminal, a pile, a corpse, the clinic, a buyer they can sell to, a clue, or their bed to rest in, but not on a door's cell, where E
+terminal, a pile, a corpse (for the salvage screen), the clinic, a buyer they can sell to, a clue, or their bed to rest in, but not on a door's cell, where E
 takes the door (`eUse` in [`world/reach.ts`](../world/reach.ts)), so one press never does two things. E never talks
 to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
 counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to
