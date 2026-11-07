@@ -51,6 +51,7 @@ SALVAGE: dict[Id, float] = {
     "old_battery": 5.0,
     "pressure_gauge": 8.0,
     "apex_board": 14.0,
+    "copper_pipe": 8.0,
 }
 """The metro's salvage, then the sewers' (`simile.street.sewers`)."""
 PARTS: dict[Id, float] = {

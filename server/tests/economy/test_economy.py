@@ -344,6 +344,10 @@ def test_the_buyers_pay_the_salvage_prices_for_salvage_alone() -> None:
     assert ECONOMY.salvage["servo_motor"] == 18
 
 
+def test_a_copper_pipe_sells_for_less_than_the_wire_it_draws_into() -> None:
+    assert ECONOMY.salvage["copper_pipe"] == 8 < 2 * ECONOMY.salvage["copper_wire"]
+
+
 def test_the_player_sells_and_finds_money_through_the_ledger() -> None:
     town = Town([resident("ana")])
     economy = town.economy

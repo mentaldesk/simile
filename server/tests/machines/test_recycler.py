@@ -12,6 +12,8 @@ from simile.machines.recycler import offers
 from simile.machines.workshop import MACHINES, Broken, Workshop, register_offers
 from simile.persistence import player_of
 from simile.player.config import SALVAGE
+from simile.protocol import MachineChangedMessage
+from simile.protocol.messages import server_messages
 from simile.schema import (
     PLAYER_ID,
     Bionic,
@@ -25,7 +27,7 @@ from simile.schema import (
     lamp,
 )
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.finds import COPPER_WIRE, METAL_SHEET
+from simile.street.finds import COPPER_PIPE, COPPER_WIRE, METAL_SHEET
 from simile.street.sewers import APEX_BOARD, GAUGE, SCRAP
 from simile.world import Movement, Point, movement_of
 from simile.world.map import load_maps
@@ -258,6 +260,142 @@ def test_it_makes_nothing_of_scrap_with_no_weight() -> None:
     assert player.items == items
 
 
+def wire(pipes: int) -> Product:
+    lot = Item(
+        id="copper_wire",
+        kind=ItemKind.SALVAGE,
+        name=f"Copper wire ×{2 * pipes}",
+        weight=3.0 * pipes,
+    )
+    return Product(item=lot, uses="scrap", cost=3.0 * pipes)
+
+
+def test_it_draws_every_pipe_they_carry_into_two_wires_each_and_leaves_the_rest() -> None:
+    player, shop = working([lamp(), COPPER_PIPE, METAL_SHEET, COPPER_PIPE, COPPER_WIRE])
+
+    assert listed(shop) == [wire(2)]
+    assert shop.make(RECYCLER, "copper_wire")
+
+    assert player.items == [lamp(), METAL_SHEET, COPPER_WIRE, *[COPPER_WIRE] * 4]
+    assert listed(shop) == []
+
+
+@pytest.mark.parametrize("pipes", [1, 3])
+def test_the_wire_offer_is_one_the_servers_own_protocol_parses(pipes: int) -> None:
+    _, shop = working([COPPER_PIPE] * pipes)
+    frame = MachineChangedMessage(machine=shop.machine(RECYCLER))
+
+    parsed = server_messages.validate_json(frame.model_dump_json())
+
+    assert parsed == frame
+    [draw] = parsed.machine.makes
+    assert draw.item.amount == 1 and draw.item.load == draw.cost == 3.0 * pipes
+    assert draw.item.name == f"Copper wire ×{2 * pipes}"
+
+
+def test_each_wire_drawn_is_a_copy_of_its_own_that_counts_towards_a_repair() -> None:
+    player, shop = working([COPPER_PIPE])
+
+    assert shop.make(RECYCLER, "copper_wire")
+
+    one, other = player.items
+    assert one == other == COPPER_WIRE
+    assert one is not other and one is not COPPER_WIRE and other is not COPPER_WIRE
+    assert shop.missing("printer_3d") == {"metal_sheet": 1, "linear_actuator": 1}
+
+
+def test_the_panel_lists_both_offers_and_make_takes_the_one_it_names() -> None:
+    player, shop = working([COPPER_PIPE, STEEL, lamp()])
+
+    assert listed(shop) == [Product(item=plastic(4.5), uses="scrap", cost=4.5), wire(1)]
+
+    assert shop.make(RECYCLER, "plastic")
+    assert player.items == [COPPER_PIPE, lamp(), plastic(4.5)]
+    assert listed(shop) == [wire(1)]
+
+    assert not shop.make(RECYCLER, "plastic")
+    assert shop.make(RECYCLER, "copper_wire")
+    assert player.items == [lamp(), plastic(4.5), COPPER_WIRE, COPPER_WIRE]
+    assert listed(shop) == []
+
+
+def test_drawing_wire_leaves_the_scrap_they_could_press() -> None:
+    player, shop = working([STEEL, COPPER_PIPE])
+
+    assert shop.make(RECYCLER, "copper_wire")
+
+    assert player.items == [STEEL, COPPER_WIRE, COPPER_WIRE]
+    assert [product.item.id for product in listed(shop)] == ["plastic"]
+
+
+def test_a_press_for_plastic_has_nothing_to_do_with_pipes_alone() -> None:
+    items = [lamp(), COPPER_PIPE]
+    player, shop = working(items)
+
+    assert not shop.make(RECYCLER, "plastic")
+    assert player.items == items
+
+
+def test_nothing_is_drawn_from_no_pipes() -> None:
+    items = [lamp(), STEEL]
+    player, shop = working(items)
+
+    assert not shop.make(RECYCLER, "copper_wire")
+    assert player.items == items
+
+
+@pytest.mark.parametrize(
+    ("limit", "made"),
+    [(15.0, True), (4.0, True), (4.0 - 1e-10, True), (4.0 - 1e-6, False), (1.0, False)],
+)
+def test_drawing_refuses_what_wont_fit_where_the_panels_load_after_does(
+    limit: float, made: bool
+) -> None:
+    # loadAfter of a lamp and a 3 kg pipe: 1 + 3 - 3 + 2 * 1.5 = 4.
+    items = [lamp(), COPPER_PIPE]
+    player, shop = working(items, carry_limit=limit)
+
+    assert listed(shop)
+    assert shop.make(RECYCLER, "copper_wire") is made
+    assert player.items == ([lamp(), COPPER_WIRE, COPPER_WIRE] if made else items)
+
+
+def test_a_lighter_pipe_can_draw_more_wire_than_will_fit() -> None:
+    items = [COPPER_PIPE.model_copy(update={"weight": 1.0})]
+    player, shop = working(items, carry_limit=2.0)
+
+    assert not shop.make(RECYCLER, "copper_wire")
+    assert player.items == items
+
+
+@pytest.mark.parametrize(
+    ("weights", "lists"),
+    [
+        ((0.0,), False),
+        ((0.0, 0.0), False),
+        ((1e308, 1e308), False),
+        ((5e-324,), True),
+        ((0.0, 3.0), True),
+    ],
+)
+def test_no_carried_pipes_make_the_offer_raise(weights: tuple[float, ...], lists: bool) -> None:
+    pipes = [COPPER_PIPE.model_copy(update={"weight": weight}) for weight in weights]
+    _, shop = working(pipes)
+
+    assert bool(listed(shop)) is lists
+    shop.make(RECYCLER, "copper_wire")
+    shop.machines()
+
+
+def test_a_broken_recycler_draws_no_wire() -> None:
+    player = Player(items=[COPPER_PIPE])
+    shop = workshop(player)
+
+    assert shop.machine(RECYCLER).makes == []
+    assert not shop.make(RECYCLER, "copper_wire")
+    assert player.items == [COPPER_PIPE]
+
+
 def test_register_offers_finds_it() -> None:
     world = World(Clock(datetime(2026, 1, 1, 12, tzinfo=UTC)), FakeWallClock())
     player = Player(items=[STEEL], repaired=[RECYCLER])
@@ -300,3 +438,43 @@ def test_a_press_over_the_socket_turns_scrap_into_plastic(
             until(client, lambda: BOARD not in player.items)
 
     assert player.items == [lamp(), BATTERY, plastic(0.5)]
+
+
+def test_both_presses_over_the_socket_turn_what_each_takes_into_what_it_makes(
+    make_package: Callable[[dict[str, str]], str],
+) -> None:
+    modules = ("behaviour", "economy", "memory", "protocol", "world")
+    files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in modules}
+    files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
+    files["machines/lifespan.py"] = "from simile.machines.lifespan import running\n"
+    app = create_app(make_package(files))
+    app.state.world = World(Clock(datetime(2026, 1, 1, 10, tzinfo=UTC)))
+    position = {"x": AT_IT.x, "y": AT_IT.y, "map": AT_IT.map}
+
+    def until(client: TestClient, done: Callable[[], bool]) -> None:
+        deadline = time.monotonic() + 2
+        while not client.portal.call(done):
+            assert time.monotonic() < deadline, "the server never got there"
+            time.sleep(0.001)
+
+    with TestClient(app) as client:
+        player = player_of(app)
+        player.repaired = [RECYCLER]
+        player.items = [lamp(), BOARD, COPPER_PIPE, COPPER_PIPE]
+        with client.websocket_connect("/ws") as ws:
+            snapshot = ws.receive_json()
+            [press, draw] = next(m for m in snapshot["machines"] if m["id"] == RECYCLER)["makes"]
+            assert (press["item"]["id"], press["cost"]) == ("plastic", 0.5)
+            assert draw == wire(2).model_dump(mode="json")
+            assert "amount" not in draw["item"]
+            ws.send_json({"type": "player_move", "position": position})
+            until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == AT_IT)
+
+            ws.send_json({"type": "make", "machine": RECYCLER, "item": "plastic"})
+            until(client, lambda: BOARD not in player.items)
+            assert player.items == [lamp(), COPPER_PIPE, COPPER_PIPE, plastic(0.5)]
+
+            ws.send_json({"type": "make", "machine": RECYCLER, "item": "copper_wire"})
+            until(client, lambda: COPPER_PIPE not in player.items)
+
+    assert player.items == [lamp(), plastic(0.5), *[COPPER_WIRE] * 4]

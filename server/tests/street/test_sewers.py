@@ -3,7 +3,7 @@ import random
 import time
 from collections import Counter, deque
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from functools import cache
 from itertools import combinations
@@ -24,7 +24,8 @@ from simile.sim import Clock, World
 from simile.story import make_disappearance
 from simile.story.content import HATCH as HATCH_CLUE
 from simile.story.disappearance import HATCH_LOG, LIFT_LOG
-from simile.street.finds import LINEAR_ACTUATOR
+from simile.street import sewers as sewers_module
+from simile.street.finds import COPPER_PIPE, LINEAR_ACTUATOR
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
@@ -44,6 +45,7 @@ from simile.street.sewers import (
     HATCH,
     LANDING,
     LEVELS,
+    PIPES,
     PRINTER_CRATES,
     SECURITY_TERMINAL,
     SEWERS,
@@ -58,6 +60,7 @@ from simile.street.sewers import (
     sewers,
     spread,
     stranded,
+    way_on,
 )
 from simile.street.village import JUMPING, UNDERGROUND
 from simile.world import Point, movement_of
@@ -450,6 +453,71 @@ def test_the_parts_placed_are_the_parts_the_machines_use_up(number: int) -> None
 
     assert machines
     assert placed - recipes >= machines, (placed - recipes, machines)
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_every_level_lays_copper_pipes_past_the_gate_on_the_way_on_for_any_legs_or_feet(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    played = level(seed)
+    pipes = [p for p in played.town.pickups if p.item and p.item.id == COPPER_PIPE.id]
+    [gate] = [light.area for light in played.town.light if light.id == "sewers_gate"]
+    route = set(way_on(played.town))
+
+    assert len(pipes) == PIPES == 3
+    assert COPPER_PIPE.id in PRICES
+    for pipe in pipes:
+        cell = (pipe.x, pipe.y)
+        assert pipe.kind is PickupKind.SALVAGE and played.needs[pipe.id] is None, pipe.id
+        assert pipe.x >= gate.x + gate.width, pipe.id
+        assert cell in route, pipe.id
+        assert all(cell in played.reached[name] for name in FITTED), pipe.id
+        assert cell not in played.reached[OWN_JUMP], pipe.id
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_each_copper_pipe_is_in_a_room_of_its_own(
+    seed: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = []
+    lay = sewers_module.pipes
+
+    def laying(level: Any, plan: Any, cells: Any) -> None:
+        built.append(level)
+        lay(level, plan, cells)
+
+    monkeypatch.setattr(sewers_module, "pipes", laying)
+    plan = sewers(seed)
+
+    columns = built[-1].columns
+    rooms = {
+        (next(i for i, c in enumerate(columns) if c.x <= pipe.x < c.end), pipe.y)
+        for pipe in plan.pickups
+        if pipe.item and pipe.item.id == COPPER_PIPE.id
+    }
+    assert len(rooms) == PIPES
+
+
+def test_a_level_short_of_copper_pipes_in_reach_is_no_level() -> None:
+    gone = sewers(2)
+    gone.pickups = [p for p in gone.pickups if p.id != "sewers_copper_1"]
+    assert any(problem.startswith("fewer than 3 copper_pipe") for problem in problems(gone))
+
+    deep = sewers(2)
+    [pocket] = [p for p in deep.pickups if p.id == "sewers_secret_spring"]
+    deep.pickups = [
+        replace(p, x=pocket.x, y=pocket.y) if p.id == "sewers_copper_1" else p for p in deep.pickups
+    ]
+    assert any(problem.startswith("fewer than 3 copper_pipe") for problem in problems(deep))
+
+
+def test_the_generator_fails_rather_than_make_a_level_without_copper_pipes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(sewers_module, "pipes", lambda level, plan, cells: None)
+
+    with pytest.raises(ValueError, match="no sewers level for seed 0"):
+        sewers(0)
 
 
 def test_a_level_with_a_part_out_of_reach_or_missing_is_no_level() -> None:
