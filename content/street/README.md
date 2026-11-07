@@ -438,12 +438,19 @@ counts from the way through, which every grade of legs or feet takes:
 | Needs | Place | What waits there |
 |---|---|---|
 | | On the floors, the way through | Six of lead pipe, copper coil, brass fitting, pump impeller, float valve, filter mesh and old battery |
+| | On the floors past the gate, on the way on | `sewers_copper_1` to `_3`, a copper pipe each |
 | `jump` | A pipe two rows up against a wall, past the gate | `sewers_secret_actuator`, the `APEX_ACTUATOR` |
 | `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
 | `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 | `jump` | A pipe in the den's loft, past the dogs | `sewers_secret_den`, 90 to 120 money |
 | `bionic_legs` | The cave's ledge, past the dogs, the bats and a five-cell gap under the vault | `sewers_secret_cave`, 140 to 200 money |
+
+**Copper pipes** (`pipes`): three (`PIPES`) on every level, each in a room of its own past the gate,
+coming back 24 sim hours after they're taken, as all salvage does. They lie on floors `way_on` already walks, so they add nothing to a run on the lamp, and no bot gets
+past the gate to take them. They're placed last, from their own random stream, so they move nothing
+else. The recycler draws them into copper wire. Its Apex board needs the bionic legs, so `WANTED`
+requires all three in reach of every kit with those.
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
 
@@ -503,7 +510,8 @@ own legs and on the spring feet) or tapped (`TAPS`, the same with Space let go a
 `test_sewers.py` checks needs only one-cell hops along a row): zone 0's
 finds and the gate's junction box are in reach, and from anywhere before the gate they can get
 back to the lift; each pickup is in reach on exactly the ones that meet
-its `needs`; and every salvage has a price.
+its `needs`; the three copper pipes are in reach of every kit with the bionic legs; and every
+salvage has a price.
 
 **Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
 sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,

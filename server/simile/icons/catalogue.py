@@ -213,6 +213,11 @@ ITEMS = (
         "side.",
     ),
     Icon(
+        "copper_pipe",
+        "a short length of shiny orange-brown copper plumbing pipe with one elbow bend, its round "
+        "hollow open ends showing, a little green tarnish near one end, lying on its side.",
+    ),
+    Icon(
         "copper_coil",
         "a copper electromagnet coil: tightly wound shiny copper wire on a black plastic bobbin, "
         "two wire ends sticking out.",

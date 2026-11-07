@@ -22,9 +22,9 @@ def in_the_world() -> set[str]:
 
 
 def machines_make() -> set[str]:
-    """What every machine lists once it works, for a player carrying scrap to recycle."""
+    """What every machine lists once it works, for a player carrying scrap and a pipe."""
     scrap = Item(id="scrap", kind=ItemKind.SALVAGE, name="Scrap", weight=1.0)
-    player = Player(items=[scrap], repaired=list(MACHINES))
+    player = Player(items=[scrap, finds.COPPER_PIPE], repaired=list(MACHINES))
     workshop = Workshop(player, Movement(load_maps(), World().bus))
     register_offers(workshop)
     return {product.item.id for machine in workshop.machines() for product in machine.makes}
@@ -43,6 +43,7 @@ def every_item() -> set[str]:
         finds.CHARGE_CONTROLLER,
         finds.USB_C_CONNECTOR,
         finds.COPPER_WIRE,
+        finds.COPPER_PIPE,
         *(salvage.item for salvage in PLAYER.salvage.values()),
     ]
     parts = {id for recipe in CLINIC.recipes.values() for id in recipe.parts}
@@ -56,7 +57,7 @@ def test_every_item_the_server_defines_has_a_picture() -> None:
 
 
 def test_a_repaired_machine_lists_what_it_makes_for_the_picture_test() -> None:
-    assert machines_make() == {"plastic_pistol", "plastic_rounds", "plastic"}
+    assert machines_make() == {"plastic_pistol", "plastic_rounds", "plastic", "copper_wire"}
 
 
 def test_every_grade_of_bionic_has_a_picture_for_when_it_comes_out_as_an_item() -> None:
