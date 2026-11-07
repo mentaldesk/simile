@@ -37,6 +37,8 @@ export type Moulding = { left: number; right: number; top: number; bottom: numbe
 export type FurnitureEntry = {
   piece: string;
   variants?: Record<string, string>;
+  /** A machine's picture until it's repaired. */
+  broken?: string;
   stretch?: boolean;
   /** Metres up the front edge. */
   seat?: number;

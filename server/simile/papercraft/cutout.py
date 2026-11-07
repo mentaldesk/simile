@@ -151,7 +151,19 @@ def tidy(image: Image.Image, mask: Image.Image, cut: tuple[str, ...]) -> Image.I
     if gaps:
         a = np.asarray(image.convert("RGB"), dtype=np.float32)
         m[np.abs(a - background(image)).max(axis=2) < 10] = 0
-    return _drop_specks(clean(Image.fromarray(m.astype(np.uint8)), floor=8))
+    tidied = _drop_specks(clean(Image.fromarray(m.astype(np.uint8)), floor=8))
+    return solid_inside(tidied) if "solid" in cut else tidied
+
+
+def solid_inside(mask: Image.Image, opaque: int = 250) -> Image.Image:
+    """The mask with everything less than `opaque` that doesn't reach its edge made opaque."""
+    import cv2
+
+    m = np.asarray(mask).copy()
+    count, labels = cv2.connectedComponents((m < opaque).astype(np.uint8), connectivity=8)
+    edge = set(np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]])))
+    m[np.isin(labels, [i for i in range(1, count) if i not in edge])] = 255
+    return Image.fromarray(m)
 
 
 def _drop_specks(mask: Image.Image, smallest: float = 0.03) -> Image.Image:

@@ -18,6 +18,23 @@
   "height": 163.2,
   "painted": "player.webp",
   "frames": {
+    "aim": {
+      "frame": [
+        0,
+        0,
+        133,
+        166
+      ],
+      "feet": [
+        38,
+        164
+      ],
+      "muzzle": [
+        129,
+        23
+      ],
+      "atlas": "player_aim.webp"
+    },
     "climb": {
       "frame": [
         85,
@@ -147,6 +164,10 @@
     ],
     "lie": [
       "lie"
+    ],
+    "aim": [
+      "aim"
     ]
-  }
+  },
+  "aimed": "2d580fbfd38a2406"
 }

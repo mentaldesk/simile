@@ -25,6 +25,7 @@ from simile.street.village import (
     FLOOR_ROW,
     GROUND,
     JUMPING,
+    LOCKERS,
     STOOL_M,
     STOREY,
     UNDERGROUND,
@@ -616,3 +617,20 @@ def test_a_resident_can_stop_partway_up_the_lookout_ladder() -> None:
     assert walk.outcome is Outcome.CANCELLED
     assert here.x == x and top <= here.y <= top + 1
     assert park.climb(int(here.x), int(here.y)) is DoorKind.LADDER
+
+
+@pytest.mark.parametrize(
+    ("floor", "thing", "picture"),
+    [
+        ("maker_space_floor_0", "printer_3d", "printer_3d"),
+        ("maker_space_floor_0", "recycler", "recycler"),
+        ("maker_space_floor_2", LOCKERS, "clean_lockers"),
+    ],
+)
+def test_the_village_has_its_own_lockers_and_machine_pictures(
+    floor: str, thing: str, picture: str
+) -> None:
+    plan = PLANS[floor]
+    [where] = [i.area for i in plan.interactables if i.id == thing]
+
+    assert [piece.name for piece in plan.furniture if piece.area == where] == [picture]

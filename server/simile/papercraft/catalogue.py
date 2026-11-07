@@ -616,13 +616,16 @@ class Item:
     """A run, like a counter, drawn as wide as its cells by repeating its middle."""
     cut: tuple[str, ...] = ()
     """What else to cut away: a kind of painted shadow from `cutout.SHADOWS`, `gaps` of backdrop
-    showing through the object, and for a sketched piece `outline`, all that's off its sketch."""
+    showing through the object, and for a sketched piece `outline`, all that's off its sketch.
+    `solid` fills what that leaves see-through inside an object with no real gaps."""
     reseed: int = 0
     ref: str = CLEAN_ROOMS
     sketch: str | None = None
     folder: str = "furniture"
     variants: dict[str, str] = field(default_factory=dict)
     """Colour variants: name, and what's recoloured to what."""
+    broken: str | None = None
+    """For a machine you repair: what's wrong with it, as an edit of the working picture."""
     style: Style = "clean"
     seat: float | None = None
     """Metres from its foot up to the top of its seat at the front edge."""
@@ -784,10 +787,44 @@ FURNITURE: dict[str, Item] = {
         grey=True,
     ),
     "printer_3d": clean(
-        "a 3D printer: an open frame of black metal on a desk-high stand, with a spool of blue "
-        "filament and a small half-printed boat on its bed",
+        "a 3D printer: an open frame of black metal on a desk-high stand, with a spool of bright "
+        "orange filament, one tiny round green LED lamp on its frame and a small half-printed "
+        "orange boat on its bed",
         1.5,
         (512, 768),
+        cut=("gaps",),
+        broken=(
+            "Make the 3D printer broken and dead: no spool and no boat, an empty bed, the print "
+            "head of dark steel hanging down loose on its wires and a snapped drive belt dangling "
+            "from it. The tiny green ball lamp on its short orange wire, just inside the left post "
+            "of the frame, stays exactly there and exactly as tiny, but is now a plain solid dark "
+            "grey ball. Nothing sticks out past the frame. The frame, the bed and the stand stay "
+            "solid black metal."
+        ),
+    ),
+    "recycler": clean(
+        "a plastic recycling machine: a tall boxy cabinet of teal-painted metal with a wide steel "
+        "funnel on top for scrap, a small round window in its front showing shredder blades, one "
+        "tiny round green LED lamp, and a short chute at the bottom spilling bright orange "
+        "plastic pellets into a little steel tray",
+        1.7,
+        (512, 768),
+        broken=(
+            "Make the recycling machine broken and dead: the round window smashed open with "
+            "loose coloured wires spilling out, no pellets and an empty tray of solid dark grey "
+            "steel. The machine has no power: nothing on it is lit, and the bright green lamp at "
+            "the top right of the cabinet is now plain black, the same as the lamp beside it. "
+            "Only one funnel, as it is."
+        ),
+    ),
+    "clean_lockers": clean(
+        "one steel locker cabinet painted deep sage green, a single tall unit with two narrow "
+        "doors side by side and no gap between them, each door with a small row of air vents "
+        "near its top, a small silver handle and a blank white label slot, clean and new",
+        1.9,
+        (512, 768),
+        grey=True,
+        cut=("shadows", "solid"),
     ),
     "loom": clean(
         "a wooden floor loom of pale wood with colourful warp threads in rainbow stripes and a "
@@ -1159,6 +1196,13 @@ FURNITURE: dict[str, Item] = {
     ),
 }
 EXTRAS: dict[str, Item] = {
+    "muzzle_flash": clean(
+        "a comic-book gunshot flash seen from the side: one jagged spiky star burst of bright "
+        "yellow and orange flame with a pale yellow-white middle and sharp points, nothing else, "
+        "floating in mid-air",
+        0.42,
+        grey=True,
+    ),
     "armchair": clean(
         "a modern armchair upholstered in mustard-yellow fabric with slim black metal legs",
         0.95,
@@ -1374,8 +1418,12 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
     )
 
 
+BROKEN = "broken"
+
+
 def variants(spec: Item, base: Painting) -> list[Painting]:
     texture = WORDS[spec.style].variant
+    changes = spec.variants | ({BROKEN: spec.broken} if spec.broken else {})
     return [
         Painting(
             f"{base.key}-{variant}",
@@ -1388,8 +1436,9 @@ def variants(spec: Item, base: Painting) -> list[Painting]:
             base.size,
             height=base.height,
             base=base.key,
+            cut=spec.cut if variant == BROKEN else (),
         )
-        for variant, change in spec.variants.items()
+        for variant, change in changes.items()
     ]
 
 
@@ -1659,6 +1708,8 @@ def index(layout: Layout | None = None) -> dict:
         key = f"{spec.folder}/{name}"
         found = {v: f"{key}-{v}" for v in spec.variants}
         furniture[name] = {"piece": key, **({"variants": found} if found else {})}
+        if spec.broken:
+            furniture[name][BROKEN] = f"{key}-{BROKEN}"
         if spec.stretch:
             furniture[name]["stretch"] = True
         furniture[name].update(measurements(spec))

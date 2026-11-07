@@ -31,6 +31,7 @@ from simile.icons.catalogue import ICONS, WHOLE, Box, Icon
 REPO = Path(__file__).resolve().parents[3]
 CONTENT = REPO / "content" / "icons"
 MANIFEST = "icons.json"
+DOLLS = REPO / "content" / "dolls"
 PAINTINGS = REPO / "server" / "data" / "icons" / "paintings"
 """Every painting as FLUX returned it, by what it was painted from. Ignored by git."""
 REFERENCE = "cartoon/street"
@@ -41,6 +42,9 @@ APART = 0.05
 """The share of an icon that may be in pieces apart from its `pieces` biggest."""
 PAIRED = 0.3
 """How big each of an icon's `pieces` must be, against the biggest."""
+OVER_FILL = 0.7
+"""How much of the painting's width a doll's frame fills, to leave room around it."""
+OVER_GROUND = (214, 214, 216)
 
 Cut = Callable[[Image.Image], Image.Image]
 
@@ -53,12 +57,14 @@ def fingerprint(icon: Icon) -> str:
     """What an icon is painted from: a new one means it's painted again."""
     inputs = {
         "version": VERSION,
-        "icon": asdict(icon),
+        "icon": {k: v for k, v in asdict(icon).items() if k != "over" or v},
         "prompt": icon.prompt(),
         "reference": REFERENCE,
         "size": SIZE,
         "side": SIDE,
     }
+    if icon.over:
+        inputs["from"] = json.loads((DOLLS / f"{icon.over.split('/')[0]}.json").read_text())["hash"]
     return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -104,14 +110,26 @@ def finished(figure: Image.Image, keep: Box = WHOLE) -> Image.Image:
     return out
 
 
+def doll_frame(over: str, dolls: Path = DOLLS) -> Image.Image:
+    """A committed doll's frame, `<figure>/<frame>`, on FLUX's grey at an icon's painted size."""
+    who, frame = over.split("/")
+    body = json.loads((dolls / f"{who}.json").read_text())
+    x, y, w, h = body["frames"][frame]["frame"]
+    with Image.open(dolls / body["painted"]) as sheet:
+        figure = sheet.convert("RGBA").crop((x, y, x + w, y + h))
+    big = scaled(figure, OVER_FILL * SIZE[0] / w)
+    painting = Image.new("RGB", SIZE, OVER_GROUND)
+    painting.paste(big, ((SIZE[0] - big.width) // 2, (SIZE[1] - big.height) // 2), big)
+    return painting
+
+
 def paint(
     icon: Icon, painter: Cached, cut: Cut = cut_out, log: Callable[[str], None] = print
 ) -> Painted:
-    """Paints `icon` in the style of the tunnels' reference until nothing's wrong with it, at most
-    `tries` times, keeping the one with fewest problems."""
+    """Paints `icon` at most `tries` times, keeping the try with fewest problems."""
     from simile.papercraft.painter import reference
 
-    style = [reference(REFERENCE)]
+    style = [doll_frame(icon.over) if icon.over else reference(REFERENCE)]
     made = []
     for n in range(icon.reroll, icon.reroll + icon.tries):
         number = seed(icon, n)

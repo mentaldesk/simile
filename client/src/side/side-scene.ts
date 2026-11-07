@@ -3,6 +3,7 @@ import { setPositionProvider } from '../audio';
 import { addFigureAtlas } from '../dolls/sprite-figure';
 import { playerState, server, type Position, type SideFacing } from '../net';
 import { hurts } from '../ui/hurt';
+import { machines } from '../ui/machine-panel';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
@@ -187,6 +188,8 @@ export class SideScene extends Phaser.Scene {
     await this.showStreet(content.village.map(start.map)!.street);
     this.cameras.main.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
     this.wakeIfWaiting();
+    const flash = content.scenery.furniture.muzzle_flash?.piece;
+    if (flash) this.shots.setFlash(await this.pictures.load(flash, content.pieceUrl(flash)));
   }
 
   /** For the dev harness. */
@@ -240,6 +243,7 @@ export class SideScene extends Phaser.Scene {
     const open = content.village.map(player.drawnMap);
     this.frame(dt, street);
     street.update(this.view, this.light, lightChanged, open?.kind === 'floor' ? open.building : undefined, dt);
+    street.showMachines(machines);
     this.dark?.update(glowAround(player.at, lampOf(playerState.latest), fitted(body).includes('infrared_eye')));
     const cell = cellOf(player.at);
     lampHere.dark = !!this.dark && !isLit(street.map, cell.x, cell.y);
@@ -254,7 +258,7 @@ export class SideScene extends Phaser.Scene {
     this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt, player.at.x);
     this.aim = sideOf(player.facing, this.aim);
     const shown = this.figures.get(PLAYER_ID)?.shown ? player.at : undefined;
-    this.shots.update(dt, shown, this.aim, weaponLine(playerState.latest?.player.items), this.view, this.cameras.main.zoom);
+    this.shots.update(dt, shown, this.aim, weaponLine(playerState.latest?.player.items), this.view, this.cameras.main.zoom, this.figures.get(PLAYER_ID)?.doll.figure);
     this.blood.update(dt, street.tints.colours);
     this.usables.update(content, street, this.passing ? undefined : player.mapPosition, time / 1000);
     this.report(player.mapPosition, time / 1000);
@@ -443,7 +447,7 @@ export class SideScene extends Phaser.Scene {
     }
     const { player } = this;
     if (player) {
-      this.drawFigure(PLAYER_ID, player.drawnMap, player.at, player.drawn, village, street, player.ground);
+      this.drawFigure(PLAYER_ID, player.drawnMap, player.at, this.shots.pose(player.drawn, this.aim), village, street, player.ground);
       const crossing = player.riding;
       if (crossing) this.ride(crossing, player.at, street, player.drawnMap);
     }

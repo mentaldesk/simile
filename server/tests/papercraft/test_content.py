@@ -2,12 +2,14 @@ import json
 
 import numpy as np
 import pytest
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from simile.papercraft.build import CONTENT, MANIFEST, PPM, Build
 from simile.papercraft.catalogue import paintings
 
 BUDGET = 12_000_000
+SOLID = 200
+"""The least alpha well inside a machine: the lossy save softens it a little."""
 MANIFEST_JSON = json.loads((CONTENT / MANIFEST).read_text())
 PIECES = MANIFEST_JSON["pieces"]
 
@@ -94,3 +96,13 @@ def test_a_ladders_rails_and_rungs_are_opaque(key: str) -> None:
     for side in (alpha[:, : width // 4], alpha[:, -(width // 4) :]):
         assert (np.median(side, axis=0) >= 250).sum() >= RAIL_M * PPM / 2
     assert rungs >= round(PIECES[key]["height"] / RUNG_M) - 1
+
+
+@pytest.mark.parametrize("name", ["clean_lockers", "recycler", "recycler-broken"])
+def test_a_solid_machine_has_nothing_see_through_inside_it(name: str) -> None:
+    with Image.open(CONTENT / "furniture" / f"{name}.webp") as image:
+        alpha = np.pad(np.asarray(image.convert("RGBA").getchannel("A")), 8)
+    drawn = Image.fromarray(((alpha > 8) * 255).astype(np.uint8))
+    inside = np.asarray(drawn.filter(ImageFilter.MinFilter(9))) > 0
+
+    assert alpha[inside].min() >= SOLID
