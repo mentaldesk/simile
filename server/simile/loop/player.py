@@ -580,8 +580,9 @@ class LoopPlayer:
         return weight <= self.player.carry_limit - self.player.load + 1e-9
 
     async def take(self, pickup: Pickup) -> None:
+        emptied = self.player.taken.get(pickup.id)
         await self.to(Spot(pickup.map, pickup.x, pickup.y))
-        if not any(found.id == pickup.id for found, _ in self.lying({pickup.map})):
+        if self.player.taken.get(pickup.id) != emptied:
             self.note(f"Something had taken what lay at {pickup.id} before they got there")
             return
         money, items = self.money, list(self.player.items)
