@@ -1,4 +1,4 @@
-import { playerState, type Buyer, type MapTile, type Pile, type PlayerStateMessage, type Position, type Wall } from '../net';
+import { playerState, type Buyer, type Corpse, type MapTile, type Pile, type PlayerStateMessage, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { trades } from './buyers';
 import { sideClock } from '../side/clock';
@@ -10,12 +10,15 @@ import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { searches } from './searchables';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
 
+/** The corpse E takes from, as a pile since E is `pick_up` for both, and how many more that hold anything lie on its tile. */
+export type Salvage = { corpse: Corpse; others: number };
+
 /** Something E uses, V looks at or T orders at, `tiles` along the street from the player. */
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
   | { kind: 'counter' | 'painting' | 'jack' | 'searchable'; tiles: number; interactable: Interactable }
   | { kind: 'mural'; tiles: number; wall: Wall }
-  | { kind: 'pile'; tiles: number; pile: Pile }
+  | { kind: 'pile'; tiles: number; pile: Pile; salvage?: Salvage }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
   | { kind: 'clinic'; tiles: number; buyer: Buyer }
   | { kind: 'clue'; tiles: number; clue: Clue }
@@ -26,6 +29,7 @@ export type Reachables = {
   walls(): readonly Wall[];
   interactableAt(map: string, position: Position): Interactable | undefined;
   piles(): readonly Pile[];
+  corpses?: () => readonly Corpse[];
   buyer(): Buyer | undefined;
   clues: readonly Clue[];
   /** Whether the datajack is fitted. */
@@ -59,6 +63,7 @@ export const reachables: Reachables = {
   walls: () => (muralView() ? muralWalls.walls : []),
   interactableAt,
   piles: () => [...(playerState.latest?.player.left ?? []), ...(playerState.latest?.piles ?? [])],
+  corpses: () => playerState.latest?.player.corpses ?? [],
   buyer: () => playerState.latest?.buyer ?? undefined,
   clues,
   jacked: () => jacked(playerState.latest?.player.body),
@@ -79,6 +84,22 @@ export function pileInReach(position: Position, piles: readonly Pile[]): { pile:
     if (tiles <= PICK_UP_TILES && (!best || tiles < best.tiles)) best = { pile, tiles };
   }
   return best;
+}
+
+const holds = ({ money, items, bionics }: Corpse) => money > 0 || items.length > 0 || bionics.length > 0;
+
+/** The nearest corpse on this map within reach that holds anything, the oldest on a tie, as the server takes it. */
+export function corpseInReach(position: Position, corpses: readonly Corpse[]): { salvage: Salvage; tiles: number } | undefined {
+  let best: { corpse: Corpse; tiles: number } | undefined;
+  const holding = corpses.filter((corpse) => holds(corpse) && corpse.at.map === mapOf(position));
+  for (const corpse of holding) {
+    const tiles = Math.hypot(corpse.at.x - position.x, corpse.at.y - position.y);
+    if (tiles <= PICK_UP_TILES && (!best || tiles < best.tiles)) best = { corpse, tiles };
+  }
+  if (!best) return undefined;
+  const { at } = best.corpse;
+  const others = holding.filter((corpse) => corpse.at.x === at.x && corpse.at.y === at.y).length - 1;
+  return { salvage: { corpse: best.corpse, others }, tiles: best.tiles };
 }
 
 const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
@@ -108,13 +129,17 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   if (wall) found.push({ kind: 'mural', tiles: tilesToWall(wall, position), wall });
   const pile = pileInReach(position, from.piles());
   if (pile) found.push({ kind: 'pile', ...pile });
+  const body = corpseInReach(position, from.corpses?.() ?? []);
+  if (body) found.push({ kind: 'pile', pile: body.salvage.corpse, ...body });
+  // A buyer or a bed is always 0 tiles away, and would hide a body lying beside it for good.
+  const behind = body?.tiles ?? 0;
   const buyer = from.buyer();
-  if (buyer && trades(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
-  else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
+  if (buyer && trades(buyer)) found.push({ kind: 'clinic', tiles: behind, buyer });
+  else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: behind, buyer });
   const clue = clueInReach(position, from.clues);
   if (clue) found.push({ kind: 'clue', ...clue });
   const bed = from.bed?.();
-  if (bed) found.push({ kind: 'bed', tiles: 0, bed });
+  if (bed) found.push({ kind: 'bed', tiles: behind, bed });
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 

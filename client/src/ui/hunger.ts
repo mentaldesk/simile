@@ -1,7 +1,7 @@
 import { server } from '../net';
 import type { EffectKind, Item, Meal, Player, PlayerStateMessage, Shut, Vital } from '../net';
 import type { Reachable } from '../world/reach';
-import { amount, pickUpPrompt, sellPrompt } from './salvage';
+import { amount, pickUpPrompt, salvagePrompt, sellPrompt } from './salvage';
 import { EAT_KEY, NEWS_KEY } from './tuning';
 
 /** Hunger from which F eats. */
@@ -141,16 +141,16 @@ export class HungerHint {
     this.diedUntil = now + DIED_MS;
   }
 
-  /** `used` is what E uses, if any: a pile to pick up from, or their bed. */
+  /** `used` is what E uses, if any: a pile or a corpse to take from, or their bed. */
   update(state: PlayerStateMessage | undefined, used: Reachable | undefined, now = Date.now()): void {
-    const pile = used?.kind === 'pile' ? used.pile : undefined;
+    const pile = used?.kind === 'pile' ? used : undefined;
     this.show('died', now < this.diedUntil ? DIED[this.cause] : undefined);
     this.show('feeling', state && feelingOf(state.player));
     this.show('health', state && healthFeeling(state.player, !!state.resting));
     this.show('rest', used?.kind === 'bed' ? REST_PROMPT : undefined);
     this.show('eat', state && eatPrompt(state));
-    this.show('pile', state && pile && pickUpPrompt(pile, state.player));
-    this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);
+    this.show('pile', state && pile && (pile.salvage ? salvagePrompt(pile.salvage, state.player) : pickUpPrompt(pile.pile, state.player)));
+    this.show('sell', state?.buyer && !pile?.salvage ? sellPrompt(state.buyer, state.player) : undefined);
   }
 
   private show(line: Line, text: string | undefined): void {

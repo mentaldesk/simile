@@ -63,6 +63,30 @@ She has one of each bionic (`stock`), so once fitted it's gone.
   of a part, so `Economy.pay` never raises.
 - They only work in the clinic. The next `player_state` follows on the sim loop.
 
+## Refitting
+
+A bionic salvaged from their own corpse (`simile.player`'s *Salvaging your own body*) is a `bionic`
+item they carry. While they carry one, its fitting is a refit:
+
+- **The fee** is `refit` (a quarter) of its recipe's credits, rounded up to a whole credit, taken as
+  a `purchase` to `OUTSIDE` at the clinic like her other fees:
+
+  | Bionic | Fee |
+  |---|--:|
+  | Power cell, datajack | 25 |
+  | Bionic legs, spring feet | 38 |
+  | Infrared eye | 50 |
+  | Power cell, grade 2 | 63 |
+  | Bionic legs, grade 2, spring feet, grade 2 | 75 |
+  | Power cell, grade 3 | 150 |
+  | Bionic legs, grade 3 | 175 |
+
+- **No parts.** It uses up that item and nothing its recipe lists, and doesn't need her `stock`.
+- **Everything else is as for building it.** They must know its recipe, which they do if they ever
+  had it fitted since stage 2. The slot must be free: their own part or a lower grade of its line,
+  which she takes back. A higher grade fitted means no fitting at all, and the item stays with them.
+  Everything in its `after` must be in, so the cell goes first, and their cell must run it.
+
 ## Patching them up
 
 The doctor treats the player (P9), for prices in `ClinicConfig`:

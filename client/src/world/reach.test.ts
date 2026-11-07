@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { server, type Buyer, type Effect, type Pile, type PlayerStateMessage, type Wall } from '../net';
+import { server, type Buyer, type Corpse, type Effect, type Pile, type PlayerStateMessage, type Position, type Wall } from '../net';
 import { interactableAt } from './interactables';
 import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
@@ -7,7 +7,7 @@ import { sideClock } from '../side/clock';
 import { SidePlayer } from '../side/player';
 import { prompts } from '../side/ways';
 import { village } from '../side/content';
-import { eUse, inReach, lookedAtByV, orderedAtByT, pileInReach, reachables, restsAt, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
+import { corpseInReach, eUse, inReach, lookedAtByV, orderedAtByT, pileInReach, reachables, restsAt, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -277,5 +277,69 @@ describe('eUse', () => {
 
   it('uses the clinic a cell inside it', () => {
     expect(at(2)).toEqual({ kind: 'clinic', tiles: 0, buyer: clinic });
+  });
+});
+
+describe('a corpse E takes from', () => {
+  const at = (x: number, y = 15): Position => ({ x, y, map: 'metro' });
+  const corpse = (id: string, x: number, held: Partial<Corpse> = { money: 5 }): Corpse => ({
+    id,
+    owner: 'player',
+    at: { map: 'metro', x, y: 15 },
+    money: 0,
+    items: [],
+    bionics: [],
+    ...held,
+  });
+  const from = (corpses: Corpse[], more: Partial<Reachables> = {}): Reachables => ({
+    terminals: [],
+    walls: () => [],
+    interactableAt: () => undefined,
+    piles: () => [],
+    buyer: () => undefined,
+    clues: [],
+    corpses: () => corpses,
+    ...more,
+  });
+  const CLINIC: Buyer = { place: 'clinic', name: 'The clinic', prices: {}, parts: { left_kidney: 100 } };
+
+  it('is the nearest that holds anything, the oldest on one tile, counting the others there', () => {
+    const [older, newer, beside] = [corpse('corpse_1', 10), corpse('corpse_2', 10), corpse('corpse_3', 11)];
+    expect(corpseInReach(at(10), [older, newer, beside])).toEqual({ tiles: 0, salvage: { corpse: older, others: 1 } });
+    expect(corpseInReach(at(10.8), [older, newer, beside])).toMatchObject({ salvage: { corpse: beside, others: 0 } });
+  });
+
+  it('is never an emptied one, one out of reach or one on another map', () => {
+    expect(corpseInReach(at(10), [corpse('corpse_1', 10, {})])).toBeUndefined();
+    expect(corpseInReach(at(10), [corpse('corpse_1', 10, {}), corpse('corpse_2', 10)])).toMatchObject({ salvage: { others: 0 } });
+    expect(corpseInReach(at(12), [corpse('corpse_1', 10)])).toBeUndefined();
+    expect(corpseInReach({ ...at(10), map: 'rooftops' }, [corpse('corpse_1', 10)])).toBeUndefined();
+  });
+
+  it('holds on bionics or items alone', () => {
+    expect(corpseInReach(at(10), [corpse('corpse_1', 10, { bionics: ['datajack'] })])).toBeDefined();
+    expect(corpseInReach(at(10), [corpse('corpse_1', 10, { items: [{ id: 'x', kind: 'salvage', name: 'X', weight: 1, charge: null, on: null }] })])).toBeDefined();
+  });
+
+  it('is a pile to E, for `pick_up`, and comes from the last player_state', () => {
+    const body = corpse('corpse_1', 10);
+    expect(usedByE(at(10), from([body]))).toEqual({ kind: 'pile', tiles: 0, pile: body, salvage: { corpse: body, others: 0 } });
+  });
+
+  it('goes behind a pile as near, as on the server, and ahead of a further one', () => {
+    const body = corpse('corpse_1', 10);
+    const pile: Pile = { at: { map: 'metro', x: 10, y: 15 }, items: [], money: 1 };
+    expect(usedByE(at(10), from([body], { piles: () => [pile] }))).toMatchObject({ kind: 'pile', pile });
+    const further: Pile = { ...pile, at: { map: 'metro', x: 11, y: 15 } };
+    expect(usedByE(at(10), from([body], { piles: () => [further] }))).toMatchObject({ salvage: { corpse: body } });
+  });
+
+  it("isn't hidden by a buyer or a bed, which are always 0 tiles away, and they come back once it's emptied", () => {
+    const body = corpse('corpse_1', 10);
+    const bed = { map: 'metro', x: 10, y: 15 };
+    expect(usedByE(at(10.5), from([body], { buyer: () => CLINIC }))).toMatchObject({ salvage: { corpse: body } });
+    expect(usedByE(at(10.5), from([body], { bed: () => bed }))).toMatchObject({ salvage: { corpse: body } });
+    expect(usedByE(at(10.5), from([corpse('corpse_1', 10, {})], { buyer: () => CLINIC }))).toMatchObject({ kind: 'clinic', tiles: 0 });
+    expect(usedByE(at(10.5), from([corpse('corpse_1', 10, {})], { bed: () => bed }))).toMatchObject({ kind: 'bed', tiles: 0 });
   });
 });

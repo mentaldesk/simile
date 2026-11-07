@@ -32,7 +32,7 @@ export type Deal =
   | { kind: 'item'; name: string; label: string; price: number; item: string; count: number }
   | { kind: 'buy'; name: string; label: string; price: number; item: string; count: number; weight: number; short?: 'money' | 'weight' }
   | { kind: 'part'; name: string; label: string; price: number; part: BodyPart }
-  | { kind: 'fit'; name: string; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean; blocked?: string }
+  | { kind: 'fit'; name: string; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean; blocked?: string; refit?: boolean }
   | { kind: 'recipe'; name: string; label: string; price: number; bionic: Bionic }
   | { kind: 'treat'; name: string; label: string; price: number; effect: EffectKind | null; short: boolean };
 
@@ -110,12 +110,14 @@ export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: re
   }
   const recipe = (bionic: Bionic) => recipes.find((known) => known.bionic === bionic);
   for (const { bionic, name, price, parts, blocked } of buyer.fittings ?? []) {
-    const needed = needs(recipe(bionic), player.items);
+    const refit = player.items.some((item) => item.bionic === bionic);
+    const needed = refit ? [] : needs(recipe(bionic), player.items);
     const short = player.money < price || needed.some(({ count, have }) => have < count);
+    const shown = refit ? `Your ${name.charAt(0).toLowerCase()}${name.slice(1)}` : name;
     for (const part of parts) {
-      const label = `${name}, in place of ${PARTS[part]}`;
-      const row = parts.length > 1 ? `${name}, ${part.replace('_', ' ')}` : name;
-      found.push({ kind: 'fit', name: row, label, price, bionic, part, needs: needed, short, ...(blocked && { blocked }) });
+      const label = `${refit ? 'Refit: ' : ''}${shown}, in place of ${PARTS[part]}`;
+      const row = parts.length > 1 ? `${shown}, ${part.replace('_', ' ')}` : shown;
+      found.push({ kind: 'fit', name: row, label, price, bionic, part, needs: needed, short, ...(blocked && { blocked }), ...(refit && { refit }) });
     }
   }
   for (const [bionic, price] of Object.entries(buyer.recipes ?? {}) as [Bionic, number][]) {
@@ -136,6 +138,7 @@ export function details(deal: Deal, money: number): string[] {
   if (sideOf(deal) === 'yours') return [`Pays ${amount(deal.price)}`];
   const lines = [`Costs ${amount(deal.price)} of your ${amount(money)}`];
   if (deal.kind === 'fit' && deal.needs.length) lines.push(needed(deal.needs));
+  if (deal.kind === 'fit' && deal.refit) lines.push('Salvaged from your body, so it uses no parts');
   if (deal.kind === 'buy') lines.push(`Weighs ${amount(deal.weight)} kg${deal.count > 1 ? ` · ${deal.count} for sale` : ''}`);
   return lines;
 }
@@ -158,7 +161,7 @@ export function note(deal: Deal | undefined, armed: boolean, money: number): str
   if (deal.kind === 'item') return 'Enter to sell one.';
   if (deal.kind === 'treat') return deal.short ? `It costs ${amount(deal.price)}, and you have ${amount(money)}.` : 'Enter to go ahead.';
   if (deal.kind === 'talk' || deal.kind === 'sell') return 'Enter to go ahead.';
-  const what = deal.kind === 'part' ? `sell ${PARTS[deal.part]}` : `have this fitted in place of ${PARTS[deal.part]}`;
+  const what = deal.kind === 'part' ? `sell ${PARTS[deal.part]}` : `have this ${deal.refit ? 'refitted' : 'fitted'} in place of ${PARTS[deal.part]}`;
   return armed ? `Enter again to ${what} for ${amount(deal.price)}. It can't be undone.` : 'Enter to go ahead.';
 }
 

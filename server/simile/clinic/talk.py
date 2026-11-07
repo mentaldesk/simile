@@ -226,6 +226,9 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "and bring the parts it lists, which the fitting uses up. Without the recipe you "
             f"can't build it. Nothing you build runs without a {cell} in place of the stomach, "
             "so the cell goes in first.",
+            f"- You refit a bionic cut out of a customer's own old body for {config.refit:.0%} of "
+            "your fee and no parts, since they still know its recipe, in the same order as "
+            "building it.\n"
             "- You buy each recipe a customer knows once, at your price, and they still know it.",
             f"- You patch up the hurt, for up to {_money(config.patch_up)} by how hurt they are, "
             f"and you {_cures(config)}: a rat bite left untreated can turn infected.",
@@ -289,6 +292,8 @@ def _fitting(clinic: Clinic, bionic: Bionic, name: str, price: float) -> str:
     recipe = clinic.config.recipes.get(bionic)
     if recipe is None:
         return f"fit {name.lower()} for {_money(price)}"
+    if clinic.salvaged(bionic):
+        return f"refit their own {name.lower()}, salvaged, for {_money(price)} and no parts"
     said = f"build the {name.lower()} for {_money(price)}, using up {_parts(recipe.parts)}"
     if missing := clinic.missing(bionic):
         said += f", though they're short of {_parts(missing)}"

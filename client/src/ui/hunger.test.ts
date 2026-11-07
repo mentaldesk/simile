@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { server } from '../net';
-import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
+import type { Buyer, Corpse, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
 import { DIED, eatPrompt, feeling, getsUp, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, toEat, when } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
@@ -190,6 +190,16 @@ describe('HungerHint', () => {
 
     hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), undefined);
     expect(shown(root)).toEqual(["Press E to sell at the scrap trader's stall: 6 for your copper wire."]);
+  });
+
+  it('offers a corpse in reach in place of the buyer that E no longer opens', () => {
+    const root = document.createElement('div');
+    const hint = new HungerHint(root);
+    const corpse: Corpse = { id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 1, y: 1 }, money: 5, items: [], bionics: [] };
+
+    hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), { kind: 'pile', tiles: 0, pile: corpse, salvage: { corpse, others: 0 } });
+
+    expect(shown(root)).toEqual(['Press E to salvage what you can carry from your body.']);
   });
 
   it('shows their power in place of hunger once a cell is in', () => {

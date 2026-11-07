@@ -200,7 +200,7 @@ function reachedId(reached: Reachable): string | undefined {
     case 'terminal':
       return thingId(reached.terminal.map, reached.terminal.id);
     case 'pile':
-      return pileId(reached.pile);
+      return reached.salvage ? corpseId(reached.salvage.corpse) : pileId(reached.pile);
     default:
       return undefined;
   }

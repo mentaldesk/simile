@@ -99,7 +99,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   `attackerOf`: the nearest creature attacking them within `HIT_FROM_TILES` (3 tiles, across rows
   too) on their map, else the nearest there, never one going down. With none, the drops burst
   straight up.
-- **Corpses** (`player_state`'s `corpses`): each is the `corpse` icon, 0.6 m tall, where it lies, however much it holds. E does nothing at one until Q11.
+- **Corpses** (`player_state`'s `corpses`): each is the `corpse` icon, 0.6 m tall, where it lies, however much it holds, emptied or not. E takes from the nearest that holds anything and it glows then, the oldest of those on one tile (`world/reach.ts`'s `corpseInReach`).
 - **Loot** (`piles.ts`'s `lootIcons`): what a pile or a searchable holds is drawn as a heap of up
   to three icons from [`content/icons/`](../../../content/icons/README.md), the first in front: a
   `schematic` for a recipe, each kind of item, or `unknown_item` for one without an icon, then

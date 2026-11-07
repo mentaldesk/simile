@@ -201,6 +201,10 @@ describe('glowing', () => {
     expect(glowing(at('metro', 70, 15), [], from())).toBe('metro/metro_fridge');
     expect(glowing(at('high_street', 60, 15), [], from())).toBe('high_street/terminal_1');
     expect(glowing(at('metro', 30, 15), [], from({ piles: () => [pile] }))).toBe('pile:metro:30,15');
+    const corpse = (id: string, money: number): Corpse => ({ id, owner: 'player', at: at('metro', 30, 15), money, items: [], bionics: [] });
+    expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 5), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_1');
+    expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_2');
+    expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0)] }))).toBeUndefined();
   });
 
   it('glows round nothing out of reach, at a door E takes, or at a searchable already searched', () => {

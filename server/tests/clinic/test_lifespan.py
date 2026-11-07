@@ -10,10 +10,12 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.clinic.config import DEFAULT_CONFIG
 from simile.clinic.doctor import DOCTOR
-from simile.economy import OUTSIDE, PLAYER, Kind
+from simile.economy import OUTSIDE, PILES, PLAYER, Kind
 from simile.economy.economy import economy_of
 from simile.persistence import player_of
-from simile.schema import PLAYER_ID, Bionic, Effect, EffectKind, Item, ItemKind, Mind, Player
+from simile.player.health import health_of
+from simile.protocol import Vital
+from simile.schema import PLAYER_ID, Bionic, Body, Effect, EffectKind, Item, ItemKind, Mind, Player
 from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
 
@@ -106,6 +108,66 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_cell(make_package: Mak
     assert economy.ledger.net(PLAYER) == 0
     assert economy.ledger.gap(economy.money) == pytest.approx(0)
     assert Player.model_validate(fitted["player"]).humanity < 1
+
+
+def test_dying_salvaging_and_refitting_gives_a_bionic_back_at_its_grade(
+    make_package: MakePackage,
+) -> None:
+    app = make_app(make_package)
+    cell, legs = Bionic.POWER_CELL_2, Bionic.BIONIC_LEGS_2
+    start = player_of(app)
+    start.money = 150.0
+    start.body = Body(stomach=cell, legs=legs)
+    start.mind = Mind(recipes=[cell, legs])
+    move = {"type": "player_move", "position": {"x": 4, "y": 2, "map": CLINIC.map}}
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        player, tick = player_of(app), world_of(app).loop.tick
+        ws.send_json(move)
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        client.portal.call(health_of(app).hurt, 1.0, Vital.HEALTH)
+        client.portal.call(tick)
+        next_of(ws, "player_died")
+        dead = next_of(ws, "player_state")
+        ws.send_json(move)
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        ws.send_json({"type": "pick_up"})
+        until(client, lambda: player.money == 150)
+        salvaged = next_of(ws, "player_state")
+        while "fittings" not in salvaged["buyer"]:
+            client.portal.call(tick)
+            salvaged = next_of(ws, "player_state")
+        ws.send_json({"type": "fit", "bionic": "bionic_legs_2", "part": "legs"})
+        ws.send_json({"type": "fit", "bionic": "power_cell_2", "part": "stomach"})
+        ws.send_json({"type": "fit", "bionic": "bionic_legs_2", "part": "legs"})
+        until(client, lambda: player.money == 150 - 63 - 75)
+        client.portal.call(tick)
+        fitted = next_of(ws, "player_state")
+        economy = economy_of(app)
+
+    assert "stomach" not in dead["player"]["body"]
+    [corpse] = dead["player"]["corpses"]
+    assert corpse["money"] == 150
+    assert sorted(corpse["bionics"]) == ["bionic_legs_2", "power_cell_2"]
+    taken = [item for item in salvaged["player"]["items"] if item["kind"] == "bionic"]
+    assert sorted(item["bionic"] for item in taken) == ["bionic_legs_2", "power_cell_2"]
+    assert salvaged["player"]["corpses"] == [corpse | {"money": 0, "bionics": []}]
+    fittings = {f["bionic"]: f for f in salvaged["buyer"]["fittings"]}
+    assert fittings["power_cell_2"]["price"] == 63
+    assert fittings["bionic_legs_2"]["price"] == 75
+    assert fittings["bionic_legs_2"]["blocked"] == "Needs a power cell first."
+    assert fitted["player"]["body"]["stomach"] == "power_cell_2"
+    assert fitted["player"]["body"]["legs"] == "bionic_legs_2"
+    assert [item["id"] for item in fitted["player"]["items"]] == ["lamp"]
+    entries = [(e.kind, e.payer, e.payee, e.amount) for e in economy.ledger.entries]
+    assert entries == [
+        (Kind.DROPPED, PLAYER, PILES, 150),
+        (Kind.RECOVERED, PILES, PLAYER, 150),
+        (Kind.PURCHASE, PLAYER, OUTSIDE, 63),
+        (Kind.PURCHASE, PLAYER, OUTSIDE, 75),
+    ]
+    assert economy.ledger.gap(economy.money) == pytest.approx(0)
 
 
 def test_the_player_sells_a_recipe_they_know_and_still_knows_it(make_package: MakePackage) -> None:

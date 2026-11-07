@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Buyer, Item, Pile, Player } from '../net';
-import { counted, fitting, listed, pickUpPrompt, sellPrompt } from './salvage';
+import type { Buyer, Corpse, Item, Pile, Player } from '../net';
+import { counted, fitting, listed, pickUpPrompt, salvagePrompt, sellPrompt } from './salvage';
 
 const salvage = (id: string, name: string, weight: number): Item => ({ id, kind: 'salvage', name, weight, charge: null, on: null });
 const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 1, on: false };
@@ -114,5 +114,26 @@ describe('sellPrompt', () => {
     const plug: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
     const stall: Buyer = { ...TRADER, stock: [{ item: plug, price: 24 }] };
     expect(sellPrompt(stall, player([WIRE]))).toBe("Press E to see what the scrap trader's stall buys and sells.");
+  });
+});
+
+describe('salvagePrompt', () => {
+  const corpse = (held: Partial<Corpse>): Corpse => ({ id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 38, y: 12 }, money: 0, items: [], bionics: [], ...held });
+  const said = (held: Partial<Corpse>, others = 0, items: Item[] = [LAMP]) => salvagePrompt({ corpse: corpse(held), others }, player(items));
+
+  it('offers what they can carry of cash, what fits or a bionic it cannot weigh', () => {
+    const offer = 'Press E to salvage what you can carry from your body.';
+    expect(said({ money: 5 })).toBe(offer);
+    expect(said({ items: [WIRE] })).toBe(offer);
+    expect(said({ bionics: ['datajack'] })).toBe(offer);
+    expect(said({ bionics: ['datajack'] }, 0, [LAMP, SERVO, SERVO, SERVO])).toBe(offer);
+  });
+
+  it('says so when nothing on it can fit', () => {
+    expect(said({ items: [SERVO] }, 0, [LAMP, SERVO, SERVO, WIRE, WIRE])).toBe("You can't carry any more of what's on your body.");
+  });
+
+  it('says which of two on one tile, since they draw as one', () => {
+    expect(said({ money: 5 }, 1)).toBe('Press E to salvage what you can carry from the oldest of the 2 bodies here.');
   });
 });
