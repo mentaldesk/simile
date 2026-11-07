@@ -1,13 +1,26 @@
 import logging
-from collections.abc import Callable
+import math
+from collections.abc import Callable, Iterable, Mapping
 from itertools import count
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.health import DEFAULT_HEALTH, HealthConfig
+from simile.player.pickups import Claim, joined
 from simile.player.where import here
 from simile.protocol import Vital
-from simile.schema import PLAYER_ID, Body, Corpse, Id, ItemKind, MapTile, Player
+from simile.schema import (
+    PLAYER_ID,
+    Bionic,
+    Body,
+    Corpse,
+    Id,
+    Item,
+    ItemKind,
+    MapTile,
+    Player,
+    Recipe,
+)
 from simile.sim import Clock
 from simile.world.movement import Movement, Point, cell_of
 from simile.world.paths import Spot
@@ -16,6 +29,20 @@ if TYPE_CHECKING:
     from simile.economy.economy import Economy
 
 logger = logging.getLogger(__name__)
+
+BIONIC_WEIGHTS: Final[dict[Bionic, float]] = {
+    Bionic.DATAJACK: 0.5,
+    Bionic.INFRARED_EYE: 0.5,
+    Bionic.POWER_CELL: 2.0,
+    Bionic.POWER_CELL_2: 3.0,
+    Bionic.POWER_CELL_3: 4.0,
+    Bionic.BIONIC_LEGS: 6.0,
+    Bionic.BIONIC_LEGS_2: 7.0,
+    Bionic.BIONIC_LEGS_3: 8.0,
+    Bionic.SPRING_FEET: 2.0,
+    Bionic.SPRING_FEET_2: 3.0,
+}
+"""What each bionic weighs in kg once it's out of the body, against their carry limit."""
 
 
 class Death:
@@ -81,6 +108,89 @@ class Death:
             return MapTile(map=bed.map, x=bed.x, y=bed.y)
         house = self.movement.town.location(self.config.home)
         return MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
+
+
+class Salvage:
+    """E at their own corpse, one more claim on `pick_up`: its money, then each of its items and
+    bionics that fits under their carry limit. What doesn't fit stays on it."""
+
+    def __init__(
+        self,
+        player: Player,
+        economy: "Economy",
+        clock: Clock,
+        recipes: Mapping[Bionic, Recipe],
+        config: PlayerConfig = DEFAULT_CONFIG,
+    ) -> None:
+        self.player = player
+        self.economy = economy
+        """Its `player` is this one, so the money comes back through its ledger."""
+        self.clock = clock
+        self.recipes = recipes
+        """What each bionic is called."""
+        self.config = config
+
+    def claim(self, at: Point) -> Claim | None:
+        """The nearest corpse in reach that they can take something from, the oldest on a tie."""
+        near = [
+            (distance, corpse)
+            for corpse in self.player.corpses
+            if corpse.at.map == at.map
+            and self._gives(corpse)
+            and (distance := math.dist(at, (corpse.at.x, corpse.at.y))) <= self.config.reach
+        ]
+        if not near:
+            return None
+        distance, corpse = min(near, key=lambda found: found[0])
+        return Claim(distance, lambda: self.take(corpse))
+
+    def take(self, corpse: Corpse) -> None:
+        """Leaves the corpse in its place with what didn't fit, however little that is."""
+        room = self._room()
+        items, kept_items, room = _fitting(corpse.items, room)
+        bionics, kept, _ = _fitting(map(self.item, corpse.bionics), room)
+        rest = corpse.model_copy(
+            update={
+                "money": 0.0,
+                "items": kept_items,
+                "bionics": [item.bionic for item in kept if item.bionic],
+            }
+        )
+        self.player.corpses = [rest if c.id == corpse.id else c for c in self.player.corpses]
+        self.player.items = joined(self.player.items, [*items, *bionics])
+        if corpse.money:
+            self.economy.recover(corpse.money)
+        logger.info("%s  The player salvages %s", self.clock, corpse.id)
+
+    def item(self, bionic: Bionic) -> Item:
+        """`bionic` as a part they carry, to have refitted."""
+        return Item(
+            id=bionic.value,
+            kind=ItemKind.BIONIC,
+            name=self.recipes[bionic].name,
+            weight=BIONIC_WEIGHTS[bionic],
+            bionic=bionic,
+        )
+
+    def _room(self) -> float:
+        return self.player.carry_limit - self.player.load
+
+    def _gives(self, corpse: Corpse) -> bool:
+        things = [*corpse.items, *map(self.item, corpse.bionics)]
+        return bool(corpse.money) or any(thing.load <= self._room() + 1e-9 for thing in things)
+
+
+def _fitting(items: Iterable[Item], room: float) -> tuple[list[Item], list[Item], float]:
+    """Of `items`, in order, those that fit in `room`, those that don't, and the room left."""
+    taken: list[Item] = []
+    kept: list[Item] = []
+    for item in items:
+        if item.load <= room + 1e-9:
+            taken.append(item)
+            room -= item.load
+        else:
+            kept.append(item)
+    return taken, kept, room
 
 
 def next_corpse(corpses: list[Corpse]) -> Id:

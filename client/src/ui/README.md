@@ -169,6 +169,14 @@ The same corner says what E picks up or sells where the player stands, in
   it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash.", "Press E to pick up
   what you left here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
   too heavy to carry with what you have." E sends `pick_up`.
+- Within a tile of one of their `corpses` that holds anything (`corpseInReach`), "Press E to salvage
+  what you can carry from your body." The client doesn't know what a bionic weighs, so it can't say
+  what won't fit. It says "the oldest of the 2 bodies here" where two lie on one tile, since they
+  draw as one and E takes the older first. An older one holding only items that won't fit is passed
+  over, as on the server. A corpse E can take from goes ahead of a news terminal, a buyer or a bed,
+  so one lying by any of them can still be reached. One it can't take from goes behind them and
+  gives way to a machine or the lockers on its cell, so it doesn't stop them making room. An emptied
+  one offers nothing. E sends `pick_up`.
 - At a buyer (`player_state`'s `buyer`), what it pays for everything they carry that it buys:
   "Press E to sell at the scrap trader's stall: 6 for your copper wire.", or "your salvage" for
   three things or more. E opens the trading panel below, to choose what to sell. With nothing it
@@ -203,7 +211,8 @@ what it would take from them:
   infection. Enter sends `treat` with its `effect`, or `null` to be patched up;
 - each part it sells back, once at its cheapest, with how many there are, bought with `buy`;
 - each fitting in each part it can go in place of, drawn as its bionic, fitted with `fit`. One the
-  clinic won't fit yet (`blocked`) is dimmed, with the reason in place of its price.
+  clinic won't fit yet (`blocked`) is dimmed, with the reason in place of its price. One they carry,
+  salvaged, is "Your datajack", and shows no parts, as refitting it uses none.
 
 What they can't afford, carry or lack a part for is dimmed. Under the columns, the chosen row shows
 what Enter does ("Sell one: Copper wire"), what it pays or costs against their credits, what a
@@ -270,7 +279,7 @@ the page has focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, but
 its own Enter, Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it: a
-terminal, a pile, the clinic, a buyer they can sell to, a clue, or their bed to rest in, but not on a door's cell, where E
+terminal, a pile, a corpse, the clinic, a buyer they can sell to, a clue, or their bed to rest in, but not on a door's cell, where E
 takes the door (`eUse` in [`world/reach.ts`](../world/reach.ts)), so one press never does two things. E never talks
 to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
 counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to

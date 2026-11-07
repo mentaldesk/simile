@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Buyer, Item, Pile, Player } from '../net';
-import { counted, fitting, listed, pickUpPrompt, sellPrompt } from './salvage';
+import type { Buyer, Corpse, Item, Pile, Player } from '../net';
+import { counted, fitting, listed, pickUpPrompt, salvagePrompt, sellPrompt } from './salvage';
 
 const salvage = (id: string, name: string, weight: number): Item => ({ id, kind: 'salvage', name, weight, charge: null, on: null });
 const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 1, on: false };
@@ -114,5 +114,22 @@ describe('sellPrompt', () => {
     const plug: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
     const stall: Buyer = { ...TRADER, stock: [{ item: plug, price: 24 }] };
     expect(sellPrompt(stall, player([WIRE]))).toBe("Press E to see what the scrap trader's stall buys and sells.");
+  });
+});
+
+describe('salvagePrompt', () => {
+  const corpse: Corpse = { id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 38, y: 12 }, money: 5, items: [], bionics: [] };
+
+  it('offers what they can carry', () => {
+    expect(salvagePrompt({ corpse, others: 0, takes: true })).toBe('Press E to salvage what you can carry from your body.');
+  });
+
+  it('says so when nothing on it can fit', () => {
+    expect(salvagePrompt({ corpse, others: 0, takes: false })).toBe("You can't carry any more of what's on your body.");
+    expect(salvagePrompt({ corpse, others: 1, takes: false })).toBe("You can't carry any more of what's on the 2 bodies here.");
+  });
+
+  it('says which of two on one tile, since they draw as one', () => {
+    expect(salvagePrompt({ corpse, others: 1, takes: true })).toBe('Press E to salvage what you can carry from the oldest of the 2 bodies here.');
   });
 });
