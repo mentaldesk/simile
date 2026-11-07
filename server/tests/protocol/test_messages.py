@@ -404,7 +404,12 @@ JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 IN_THE_SEWERS = SNAPSHOT.model_copy(update={"creatures": CREATURES})
 WITH_MACHINES = SNAPSHOT.model_copy(update={"machines": [MACHINES[0], MACHINES[2]]})
-AFTER_DYING = PlayerStateMessage(player=Player(corpses=CORPSES[:1], repaired=["printer_3d"]))
+SALVAGED_JACK = Item(
+    id="datajack", kind=ItemKind.BIONIC, name="Datajack", weight=0.5, bionic=Bionic.DATAJACK
+)
+AFTER_DYING = PlayerStateMessage(
+    player=Player(corpses=CORPSES[:1], repaired=["printer_3d"]), bionics=[SALVAGED_JACK]
+)
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
@@ -498,10 +503,12 @@ CLIENT = [
     MakeMessage(machine="recycler", item="plastic"),
     StashMessage(item="plastic", action="store"),
     StashMessage(item="plastic", action="take"),
-    TakeMessage(corpse="corpse_1", pile=None, item=None, bionic=None),
-    TakeMessage(corpse="corpse_1", pile=None, item="copper_wire", bionic=None),
-    TakeMessage(corpse="corpse_1", pile=None, item=None, bionic=Bionic.POWER_CELL_2),
-    TakeMessage(corpse=None, pile=MapTile(map="metro", x=3, y=15), item="plastic", bionic=None),
+    TakeMessage(corpse="corpse_1", pile=None, item=None, index=None, bionic=None),
+    TakeMessage(corpse="corpse_1", pile=None, item="copper_wire", index=1, bionic=None),
+    TakeMessage(corpse="corpse_1", pile=None, item=None, index=None, bionic=Bionic.POWER_CELL_2),
+    TakeMessage(
+        corpse=None, pile=MapTile(map="metro", x=3, y=15), item="plastic", index=0, bionic=None
+    ),
 ]
 
 
@@ -1451,14 +1458,16 @@ def test_rejects_invalid_shooting_and_maker_space_messages(data: dict[str, Any])
 
 
 def take(**fields: Any) -> dict[str, Any]:
-    return {"type": "take", "corpse": "c", "pile": None, "item": None, "bionic": None} | fields
+    fields = {"corpse": "c", "pile": None, "item": None, "index": None, "bionic": None} | fields
+    return {"type": "take"} | fields
 
 
 def test_take_goes_from_client_to_server_naming_a_corpse_or_a_pile() -> None:
-    message = client_messages.validate_python(take(corpse=None, pile=TILE, item="plastic"))
+    data = take(corpse=None, pile=TILE, item="plastic", index=2)
+    message = client_messages.validate_python(data)
 
     assert isinstance(message, TakeMessage)
-    assert json.loads(message.model_dump_json()) == take(corpse=None, pile=TILE, item="plastic")
+    assert json.loads(message.model_dump_json()) == data
     with pytest.raises(ValidationError):
         server_messages.validate_python(take())
 
@@ -1468,12 +1477,29 @@ def test_take_goes_from_client_to_server_naming_a_corpse_or_a_pile() -> None:
     [
         take(corpse=None),
         take(pile=TILE),
-        take(item="plastic", bionic="datajack"),
+        take(item="plastic", index=0, bionic="datajack"),
         take(corpse=None, pile=TILE, bionic="datajack"),
         take(bionic="wings"),
+        take(item="plastic"),
+        take(index=0),
+        take(index=0, bionic="datajack"),
+        take(item="plastic", index=-1),
+        take(item="plastic", index=0.5),
         {"type": "take", "corpse": "c"},
     ],
-    ids=["nowhere", "two_places", "two_things", "bionic_in_pile", "no_such_bionic", "missing"],
+    ids=[
+        "nowhere",
+        "two_places",
+        "two_things",
+        "bionic_in_pile",
+        "no_such_bionic",
+        "item_without_index",
+        "index_without_item",
+        "index_with_bionic",
+        "negative_index",
+        "fractional_index",
+        "missing",
+    ],
 )
 def test_rejects_a_take_that_doesnt_name_one_thing_in_one_place(data: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
@@ -1482,11 +1508,9 @@ def test_rejects_a_take_that_doesnt_name_one_thing_in_one_place(data: dict[str, 
 
 def test_player_state_says_what_a_bionic_on_a_corpse_comes_out_as() -> None:
     assert "bionics" not in json.loads(PlayerStateMessage(player=Player()).model_dump_json())
-    part = Item(
-        id="datajack", kind=ItemKind.BIONIC, name="Datajack", weight=0.5, bionic=Bionic.DATAJACK
-    )
-    sent = PlayerStateMessage(player=Player(), bionics=[part]).model_dump_json()
-    assert json.loads(sent)["bionics"][0]["weight"] == 0.5
+    sent = json.loads(AFTER_DYING.model_dump_json())
+    assert sent["bionics"][0]["weight"] == 0.5
+    assert AFTER_DYING in SERVER
 
 
 def test_a_flushed_line_says_so() -> None:

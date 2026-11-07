@@ -642,10 +642,14 @@ It takes nothing from their `corpses`: that's [`take`](#take).
 Takes one thing from one of their `corpses` or a `Pile` in their `left`, within a tile and a half of
 where they stand, on the map they're on.
 
-- `corpse` names a corpse by its `id`, or `pile` a pile by its `MapTile`. Exactly one is `null`. Of
-  several piles on a tile, it takes from the oldest that holds the thing.
-- `item` is the first item of that `id`, `bionic` a `Bionic` in the corpse, and with both `null` it
-  takes all the money. At most one is set, and a pile has no `bionic`.
+- `corpse` names a corpse by its `id`, or `pile` a pile by its `MapTile`, the oldest pile in `left`
+  on that tile. Exactly one is `null`.
+- `item` and `index` name an item: `index` is where it is in the corpse's or pile's `items`, from 0,
+  and the item there must have that `id`, so a stale `take` changes nothing rather than taking
+  another. Two items can share an `id`, such as two printed pistols, which don't stack. Both are
+  `null` for anything else.
+- `bionic` is a `Bionic` in the corpse, and with neither it nor `item` it takes all the money. A
+  pile has no `bionic`.
 
 Of a stack, as much moves as fits under their carry limit, joining any of that `id` they carry, and
 the rest stays: rounds move whole and material in any amount, as with [`stash`](#stash). Anything
@@ -656,6 +660,11 @@ ignores a `take` out of reach, for something that isn't there, and when none of 
 
 Salvage and secrets in `player_state`'s `piles` aren't named by this: E takes those with
 [`pick_up`](#pick_up).
+
+Until Q19 (#636), the server ignores `take` and sends no `bionics`, and `pick_up` still salvages
+the nearest corpse it can take from, as it did since Q11. A death with nothing on them still leaves
+a corpse, and an emptied corpse stays until the save is next loaded. Corpse ids already number from
+`bodies`.
 
 ### `sell`
 

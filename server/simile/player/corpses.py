@@ -80,7 +80,7 @@ class Death:
         home = self._waking()
         fell = here(self.movement) or Point(home.x, home.y, home.map)
         corpse = Corpse(
-            id=next_corpse(player.corpses),
+            id=next_corpse(player),
             owner=PLAYER_ID,
             at=ground(self.movement, fell),
             money=player.money,
@@ -193,10 +193,11 @@ def _fitting(items: Iterable[Item], room: float) -> tuple[list[Item], list[Item]
     return taken, kept, room
 
 
-def next_corpse(corpses: list[Corpse]) -> Id:
-    """An id none of `corpses` has, which a reload can't reuse since they're saved with it."""
-    taken = {corpse.id for corpse in corpses}
-    return next(id for n in count(len(corpses) + 1) if (id := f"corpse_{n}") not in taken)
+def next_corpse(player: Player) -> Id:
+    """Counts a new body and gives its id, which no corpse has had, even one that's gone."""
+    lying = {corpse.id for corpse in player.corpses}
+    player.bodies = next(n for n in count(player.bodies + 1) if f"corpse_{n}" not in lying)
+    return f"corpse_{player.bodies}"
 
 
 def ground(movement: Movement, here: Point) -> MapTile:

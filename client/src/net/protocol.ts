@@ -1162,13 +1162,17 @@ export interface TakeMessage {
    */
   corpse: string | null;
   /**
-   * The tile of the pile in `player.left` it's in, the oldest there that holds it, or null for a corpse.
+   * The tile of the pile in `player.left` it's in, the oldest on that tile, or null for a corpse.
    */
   pile: MapTile | null;
   /**
-   * An item, by its `id`: the first of that id.
+   * An item, by its `id`, or null for a bionic or the money.
    */
   item: string | null;
+  /**
+   * Where that item is in the corpse's or pile's `items`, from 0, which must hold an item of that `id`. Null without `item`.
+   */
+  index: number | null;
   /**
    * A bionic in the corpse. With neither this nor `item`, the money.
    */

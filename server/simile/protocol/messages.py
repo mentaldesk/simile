@@ -686,10 +686,14 @@ class TakeMessage(Model):
     type: Literal["take"] = "take"
     corpse: Id | None = Field(description="The corpse it's on, by its `id`, or null for a pile.")
     pile: MapTile | None = Field(
-        description="The tile of the pile in `player.left` it's in, the oldest there that holds "
-        "it, or null for a corpse."
+        description="The tile of the pile in `player.left` it's in, the oldest on that tile, or "
+        "null for a corpse."
     )
-    item: Id | None = Field(description="An item, by its `id`: the first of that id.")
+    item: Id | None = Field(description="An item, by its `id`, or null for a bionic or the money.")
+    index: Annotated[int, Field(ge=0)] | None = Field(
+        description="Where that item is in the corpse's or pile's `items`, from 0, which must hold "
+        "an item of that `id`. Null without `item`."
+    )
     bionic: Bionic | None = Field(
         description="A bionic in the corpse. With neither this nor `item`, the money."
     )
@@ -700,6 +704,8 @@ class TakeMessage(Model):
             raise ValueError("take names a corpse or a pile")
         if self.item is not None and self.bionic is not None:
             raise ValueError("take names one thing")
+        if (self.item is None) != (self.index is None):
+            raise ValueError("take names an item with its index, and only an item")
         if self.pile is not None and self.bionic is not None:
             raise ValueError("a pile holds no fitted bionics")
         return self

@@ -303,11 +303,28 @@ def test_a_saved_worlds_emptied_corpses_clear_on_load(tmp_path: Path) -> None:
     assert (loaded.player.bodies, loaded.player.lift_open) == (1, True)
 
 
+def test_an_id_that_cleared_on_load_is_not_used_again() -> None:
+    at = MapTile(map="kapok_walk", x=3, y=15)
+    empty = Corpse(id="corpse_1", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
+    loaded = Player.model_validate_json(Player(corpses=[empty]).model_dump_json())
+    assert loaded.corpses == []
+    loaded.items = [lamp(), WIRE]
+    fall = Fall(loaded)
+    fall.stand(12, 15, "kapok_walk")
+
+    fall.death.die(Vital.HEALTH)
+
+    assert [corpse.id for corpse in loaded.corpses] == ["corpse_2"]
+    assert loaded.bodies == 2
+
+
 def test_the_id_skips_any_already_taken() -> None:
     at = MapTile(map="metro", x=3, y=15)
     corpse = Corpse(id="corpse_2", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
 
-    assert next_corpse([corpse]) == "corpse_3"
+    assert next_corpse(Player(corpses=[corpse])) == "corpse_3"
+    assert next_corpse(Player(corpses=[corpse], bodies=1)) == "corpse_3"
+    assert next_corpse(Player(corpses=[corpse], bodies=5)) == "corpse_6"
     with pytest.raises(ValidationError, match="own id"):
         Player(corpses=[corpse, corpse])
 
