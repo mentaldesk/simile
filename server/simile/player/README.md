@@ -50,7 +50,7 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   reuse one. It holds their money, through the ledger as `dropped`, everything they carried but the
   lamp, and every bionic fitted. It lies on the tile they fell on or the ground below it, or where
   they wake if the server doesn't yet know where they are, as a new body can't keep the old one's
-  bionics. It stays whatever it holds, and a second death leaves a second. Taking from it is Q11's.
+  bionics. It stays whatever it holds, and a second death leaves a second.
 - **The lamp** stays with them, switched off, as stage 2's collapse had it, so they can see to go
   back. Everything else they carried is on the corpse.
 - **The new body.** `Body()`, whole and organic, so every part can be sold again: the clinic reads
@@ -63,6 +63,23 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   stash, what buyers keep for them to buy back (`sales`), what they've searched, taken and
   `repaired`, and everything in `left`: a destroyed bot's haul, what of a pickup didn't fit, and what
   they left when they collapsed in a save from before death.
+
+## Salvaging your own body
+
+`Salvage` (`corpses.py`, Q11) is one more claim on `pick_up` (`claimers_of(app)`), made by
+`simile.clinic`'s `running` hook, since the clinic's recipes name each bionic.
+
+- **Which corpse.** The nearest within `reach` (1.5 tiles) that they can take something from, the
+  oldest of those on a tie, so of two on one tile, which draw as one, the older goes first and the
+  next E takes the newer.
+- **What comes out.** Its money, through the ledger as `recovered`, then each of its items and then
+  each of its bionics, in order, that fits under their carry limit, a stack whole and joining any
+  of its `id` they carry. A bionic comes out as a `bionic` item with its grade, named by its recipe,
+  weighing what `BIONIC_WEIGHTS` says: half a kilo for the datajack or the eye, up to 8 kg for the
+  third legs. A full set is more than a new body carries, so it can take two trips.
+- **What doesn't fit** stays on the corpse.
+- **An emptied corpse stays,** as every corpse does whatever it holds, picture and all, but E no
+  longer offers anything there. The doctor refits what they took (`simile.clinic`'s *Refitting*).
 
 ## Power
 
