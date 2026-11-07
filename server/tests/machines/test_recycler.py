@@ -11,9 +11,9 @@ from simile.machines.materials import plastic
 from simile.machines.recycler import offers
 from simile.machines.workshop import MACHINES, Broken, Workshop, register_offers
 from simile.persistence import player_of
+from simile.player.config import SALVAGE
 from simile.protocol import MachineChangedMessage
 from simile.protocol.messages import server_messages
-from simile.player.config import SALVAGE
 from simile.schema import (
     PLAYER_ID,
     Bionic,
