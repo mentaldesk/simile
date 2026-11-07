@@ -15,7 +15,7 @@ const KEY = NEWS_KEY.toUpperCase();
 const REACH_TILES = 1.5;
 const MONEY_ICON = 'credits';
 
-/** What the screen is open on: a corpse, or the oldest pile they left on a tile. */
+/** What the screen is open on: a corpse, or the oldest pile in `left` on a tile. */
 export type Source = { corpse: string } | { pile: MapTile };
 
 /** A thing on the body or in the pile that a row takes: an item by where the first like it is, or a bionic by its id. */
@@ -81,7 +81,7 @@ export function takeOf(source: Source, thing: Thing): TakeMessage | undefined {
 
 const noteOf = (thing: Thing | undefined, room: number) => (thing?.kind === 'money' ? 'Enter to take it.' : note(thing, 'take', room));
 
-/** E at a body or a pile they left: what they carry beside what's on it, and Enter takes the chosen thing. */
+/** E at a body or a pile in `left`: what they carry beside what's on it, and Enter takes the chosen thing. */
 export class SalvagePanel {
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
@@ -130,14 +130,14 @@ export class SalvagePanel {
     return !this.panel.hidden;
   }
 
-  /** E at a pile or a corpse: whether it's one this screen opens on, a corpse or a pile they left. */
+  /** E at a pile or a corpse: whether it's one this screen opens on, a corpse or a pile in `left`, such as a bot's haul. */
   open(used: Extract<Reachable, { kind: 'pile' }>): boolean {
     const state = playerState.latest;
     if (!state) return false;
     if (!used.salvage && !state.player.left?.includes(used.pile)) return false;
     this.source = used.salvage ? { corpse: used.salvage.corpse.id } : { pile: used.pile.at };
     this.panel.hidden = false;
-    this.title.textContent = used.salvage ? 'Your body' : 'Left here';
+    this.title.textContent = used.salvage ? 'Your body' : 'Lying here';
     this.at = 0;
     this.drawn = '';
     this.show(state.player, state.bionics ?? []);
@@ -176,7 +176,7 @@ export class SalvagePanel {
     this.room = room;
     this.drawn = content;
     this.carried.title.textContent = `You carry ${many(load)} of ${kg(player.carry_limit)}`;
-    this.lying.title.textContent = 'corpse' in this.source! ? 'On your body' : 'Lying here';
+    this.lying.title.textContent = 'corpse' in this.source! ? 'On your body' : 'On the ground';
     this.carried.list.replaceChildren(...this.lines(player.money, mine));
     this.render();
   }

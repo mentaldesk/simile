@@ -84,7 +84,7 @@ def race(maps: dict[str, TownMap], level: int, map_id: str, arrival: Cell) -> di
         salvage=lambda here: lying if here.id == map_id else {},
         collect=collect,
     )
-    placed = populate(creatures, spawns(level=level))
+    placed = populate(creatures, spawns(level=level), 0, {})
     bots = [c for c in placed if c.kind is BOT and c.map == map_id]
     reachable = {cell for c in bots for cell in lying if cost(c, cell) <= REACH}
     for _ in range(3000):
@@ -156,7 +156,7 @@ def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
 def test_every_level_places_its_creatures_where_they_keep_to(level: int) -> None:
     maps = load_maps(level=level)
     spawned = Creatures(maps)
-    populate(spawned, spawns(level=level))
+    populate(spawned, spawns(level=level), 0, {})
     zone_0 = set(routes(maps[SEWERS], (LANDING.x, LANDING.y), JUMP))
     check(spawned, zone_0)
     assert any(c.kind is BOT for c in spawned.all.values())
@@ -168,7 +168,7 @@ def test_more_seeds_place_them_too(seed: int, tmp_path: Path) -> None:
     (tmp_path / f"{SEWERS}.tmj").write_text(dumps(tmj(plan, "markers.png")))
     town = load_map(tmp_path / f"{SEWERS}.tmj")
     spawned = Creatures({SEWERS: town})
-    populate(spawned, spawns(tmp_path))
+    populate(spawned, spawns(tmp_path), 0, {})
     check(spawned, set(routes(Cells(plan), (LANDING.x, LANDING.y), JUMP)))
 
 

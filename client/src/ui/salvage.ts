@@ -52,9 +52,9 @@ export function fitting(pile: Pile, player: Player): { taken: Item[]; kept: Item
   return { taken, kept };
 }
 
-/** What E does at a pile in reach: opens one they left, or picks up salvage or a secret lying about. */
+/** What E does at a pile in reach: opens one in `left`, which can be a bot's haul, or picks up salvage or a secret lying about. */
 export function pickUpPrompt(pile: Pile, player: Player): string {
-  if (player.left?.includes(pile)) return `Press ${E} to go through what you left here.`;
+  if (player.left?.includes(pile)) return `Press ${E} to go through what's lying here.`;
   const { taken, kept } = fitting(pile, player);
   const money = pile.money ?? 0;
   const names = (items: Item[]) => counted(items).map((name) => `the ${name}`);

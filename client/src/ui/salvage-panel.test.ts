@@ -277,12 +277,12 @@ describe('SalvagePanel', () => {
     expect(panel.isOpen).toBe(false);
   });
 
-  it('opens on a pile they left, follows it down the tile, and closes when none is left', () => {
+  it('opens on a pile in `left`, follows it down the tile, and closes when none is left', () => {
     const pile: Pile = { at: AT, items: [WIRE], money: 3 };
     const next: Pile = { at: AT, items: [LAMP] };
     opened(player({ items: [], left: [pile, next] }), atPile(pile));
-    expect(parent.querySelector('header')?.textContent).toBe('Left here');
-    expect(side(1).querySelector('h3')?.textContent).toBe('Lying here');
+    expect(parent.querySelector('header')?.textContent).toBe('Lying here');
+    expect(side(1).querySelector('h3')?.textContent).toBe('On the ground');
     expect(side(0).querySelector('ol')?.dataset.empty).toBe('You carry nothing.');
 
     press('ArrowDown');

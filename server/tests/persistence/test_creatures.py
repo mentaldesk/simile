@@ -1,4 +1,7 @@
+import json
+import sqlite3
 from datetime import timedelta
+from itertools import count
 from pathlib import Path
 
 import pytest
@@ -8,6 +11,7 @@ from simile.combat.shooting import Shooting
 from simile.creatures.engine import Creature, Creatures, Sight, creatures_of
 from simile.creatures.grid import Grid
 from simile.creatures.kinds import BOT
+from simile.creatures.placing import spawns, starting_haul
 from simile.creatures.saved import SavedCreature
 from simile.economy.economy import economy_of
 from simile.persistence import player_of
@@ -15,6 +19,7 @@ from simile.persistence.lifespan import FRESH_ENV
 from simile.player.pickups import Pickups
 from simile.schema import (
     PLAYER_ID,
+    CreatureKind,
     Item,
     ItemKind,
     MapTile,
@@ -26,6 +31,7 @@ from simile.schema import (
 )
 from simile.sim import world_of
 from simile.world import Point, movement_of
+from simile.world.map import level_count, level_of, world_level
 
 from .test_lifespan import run_village, saved
 from .test_player import save_from_before_the_player
@@ -68,8 +74,16 @@ def shoot(app: Starlette, bot: Creature) -> None:
     movement.track(PLAYER_ID, Point(float(x), FLOOR, METRO))
 
 
+def pickups(app: Starlette) -> Pickups:
+    return Pickups(player_of(app), movement_of(app), economy_of(app), world_of(app).clock)
+
+
 def pick_up(app: Starlette) -> bool:
-    return Pickups(player_of(app), movement_of(app), economy_of(app), world_of(app).clock).pick_up()
+    return pickups(app).pick_up()
+
+
+def bots(app: Starlette) -> list[Creature]:
+    return [c for c in creatures_of(app).all.values() if c.kind.id is CreatureKind.BOT]
 
 
 @pytest.mark.anyio
@@ -77,15 +91,18 @@ async def test_a_destroyed_bots_haul_can_be_picked_up_and_it_doesnt_come_back(
     database: Path,
 ) -> None:
     placed: set[str] = set()
+    started: list[Item] = []
 
     async def hunt(app: Starlette) -> None:
+        started.extend(creatures_of(app).all["metro_bot_1"].haul)
+        assert started
         beside_the_salvage(app)
         placed.update(creatures_of(app).all)
 
     async def destroy(app: Starlette) -> None:
         creatures, player = creatures_of(app), player_of(app)
         bot = creatures.all["metro_bot_1"]
-        assert bot.haul == [SCRAP, BOARD]
+        assert bot.haul == [*started, SCRAP, BOARD]
         assert {"metro_salvage_2", "metro_salvage_3"} <= player.taken.keys()
         assert creatures.collect("metro_salvage_2") == [], "it's already been taken"
         assert creatures.collect("no_such_pickup") == []
@@ -94,9 +111,10 @@ async def test_a_destroyed_bots_haul_can_be_picked_up_and_it_doesnt_come_back(
 
         assert "metro_bot_1" not in creatures.all
         at = MapTile(map=METRO, x=bot.cell[0], y=FLOOR)
-        assert player.left == [Pile(at=at, items=[SCRAP, BOARD])]
+        assert player.left == [Pile(at=at, items=[*started, SCRAP, BOARD])]
         assert pick_up(app)
-        assert player.left == [] and player.items == [lamp(), player.items[1], SCRAP, BOARD]
+        assert player.left == []
+        assert player.items == [lamp(), player.items[1], *started, SCRAP, BOARD]
 
     await run_village(timedelta(seconds=45), before=hunt, after=destroy)
     assert saved(database).creatures == {"metro_bot_1": SavedCreature(gone=True)}
@@ -134,7 +152,10 @@ async def test_a_haul_joins_what_the_player_already_left_after_it(database: Path
 
 @pytest.mark.anyio
 async def test_a_haul_nobody_has_picked_up_is_still_lying_after_a_restart(database: Path) -> None:
+    started: list[Item] = []
+
     async def hunt(app: Starlette) -> None:
+        started.extend(creatures_of(app).all["metro_bot_1"].haul)
         beside_the_salvage(app)
 
     async def destroy(app: Starlette) -> None:
@@ -144,10 +165,10 @@ async def test_a_haul_nobody_has_picked_up_is_still_lying_after_a_restart(databa
     await run_village(timedelta(seconds=45), before=hunt, after=destroy)
 
     async def collect_it(app: Starlette) -> None:
-        assert [pile.items for pile in player_of(app).left] == [[SCRAP, BOARD]]
+        assert [pile.items for pile in player_of(app).left] == [[*started, SCRAP, BOARD]]
         movement_of(app).track(PLAYER_ID, _at(player_of(app).left[0]))
         assert pick_up(app)
-        assert player_of(app).items == [lamp(), SCRAP, BOARD]
+        assert player_of(app).items == [lamp(), *started, SCRAP, BOARD]
 
     await run_village(BRIEFLY, after=collect_it)
 
@@ -160,11 +181,14 @@ def _at(pile: Pile) -> Point:
 async def test_wounds_and_a_haul_outlast_two_restarts_and_the_haul_still_drops(
     database: Path,
 ) -> None:
+    held: list[Item] = []
+
     async def wound(app: Starlette) -> None:
         creatures = creatures_of(app)
         bot = creatures.all["metro_bot_2"]
         creatures.hurt(bot, 4)
-        bot.haul = [SCRAP]
+        bot.haul = [*bot.haul, SCRAP]
+        held.extend(bot.haul)
         creatures.hurt(creatures.all["sewers_dog_1"], 2)
 
     await run_village(BRIEFLY, after=wound)
@@ -172,7 +196,7 @@ async def test_wounds_and_a_haul_outlast_two_restarts_and_the_haul_still_drops(
     async def unchanged(app: Starlette) -> None:
         creatures = creatures_of(app)
         bot = creatures.all["metro_bot_2"]
-        assert (bot.wounds, bot.haul) == (4, [SCRAP])
+        assert (bot.wounds, bot.haul) == (4, held)
         assert bot.shown().health == 2 / 6
         assert creatures.all["sewers_dog_1"].wounds == 2
         assert creatures.all["metro_bot_1"].wounds == 0
@@ -183,7 +207,7 @@ async def test_wounds_and_a_haul_outlast_two_restarts_and_the_haul_still_drops(
     async def finish(app: Starlette) -> None:
         creatures = creatures_of(app)
         creatures.hurt(creatures.all["metro_bot_2"], 2)
-        assert [pile.items for pile in player_of(app).left] == [[SCRAP]]
+        assert [pile.items for pile in player_of(app).left] == [held]
 
     await run_village(BRIEFLY, after=finish)
     assert saved(database).creatures == {
@@ -229,10 +253,135 @@ async def test_a_save_with_no_creatures_loads_with_every_creature_whole(database
     async def check(app: Starlette) -> None:
         creatures: Creatures = creatures_of(app)
         assert creatures.all.keys() == whole
-        assert not any(creature.wounds or creature.haul for creature in creatures.all.values())
+        assert not any(creature.wounds for creature in creatures.all.values())
+        assert all(bool(c.haul) is (c in bots(app)) for c in creatures.all.values())
         assert player_of(app) == Player()
 
     await run_village(BRIEFLY, after=check)
+
+
+def old_save(database: Path, creatures: dict[str, object]) -> None:
+    """The saved world, with `creatures` as a save from before starting hauls wrote them."""
+    with sqlite3.connect(database) as db:
+        [data] = db.execute("SELECT data FROM saved_world WHERE id = 0").fetchone()
+        world = json.loads(data)
+        world["creatures"] = creatures
+        db.execute("UPDATE saved_world SET data = ? WHERE id = 0", (json.dumps(world),))
+
+
+@pytest.mark.anyio
+async def test_an_old_save_keeps_its_destroyed_bots_and_gives_each_living_one_its_haul_once(
+    database: Path,
+) -> None:
+    await run_village(BRIEFLY)
+    old_save(
+        database,
+        {
+            "metro_bot_1": {"gone": True},
+            "metro_bot_2": {"wounds": 4, "haul": [SCRAP.model_dump(mode="json")]},
+        },
+    )
+    held: list[Item] = []
+
+    async def first(app: Starlette) -> None:
+        assert "metro_bot_1" not in creatures_of(app).all
+        bot = creatures_of(app).all["metro_bot_2"]
+        assert bot.wounds == 4 and len(bot.haul) in (2, 3) and bot.haul[-1] == SCRAP
+        held.extend(bot.haul)
+        assert creatures_of(app).all["sewers_bot_1"].haul
+        held.extend(creatures_of(app).all["sewers_bot_1"].haul)
+
+    await run_village(BRIEFLY, after=first)
+    assert saved(database).creatures["metro_bot_1"] == SavedCreature(gone=True)
+
+    async def again(app: Starlette) -> None:
+        assert "metro_bot_1" not in creatures_of(app).all
+        creatures = creatures_of(app).all
+        assert [*creatures["metro_bot_2"].haul, *creatures["sewers_bot_1"].haul] == held
+
+    await run_village(BRIEFLY, after=again)
+    await run_village(BRIEFLY, after=again)
+    entry = saved(database).creatures["metro_bot_2"]
+    assert entry.stocked and entry.haul == held[: len(entry.haul)]
+
+
+@pytest.mark.anyio
+async def test_a_bots_untouched_start_is_the_same_after_a_restart_and_what_changes_is_saved(
+    database: Path,
+) -> None:
+    held: dict[str, list[Item]] = {}
+
+    async def first(app: Starlette) -> None:
+        held.update({bot.id: bot.haul for bot in bots(app)})
+        assert all(held.values())
+
+    await run_village(BRIEFLY, after=first)
+    assert saved(database).creatures == {}
+
+    async def collects(app: Starlette) -> None:
+        assert {bot.id: bot.haul for bot in bots(app)} == held
+        bot = creatures_of(app).all["metro_bot_1"]
+        bot.haul = [*bot.haul, SCRAP]
+
+    await run_village(BRIEFLY, after=collects)
+    both = [*held["metro_bot_1"], SCRAP]
+    assert saved(database).creatures == {"metro_bot_1": SavedCreature(haul=both, stocked=True)}
+
+    async def kept(app: Starlette) -> None:
+        assert {bot.id: bot.haul for bot in bots(app)} == held | {"metro_bot_1": both}
+
+    await run_village(BRIEFLY, after=kept)
+
+
+@pytest.mark.anyio
+async def test_a_bots_untouched_start_is_the_same_after_every_pickup_is_taken(
+    database: Path,
+) -> None:
+    held: dict[str, list[Item]] = {}
+
+    async def take_everything(app: Starlette) -> None:
+        held.update({bot.id: bot.haul for bot in bots(app)})
+        player_of(app).taken = dict.fromkeys(pickups(app).lying, world_of(app).clock.now)
+
+    await run_village(BRIEFLY, after=take_everything)
+    assert saved(database).creatures == {}
+
+    async def same(app: Starlette) -> None:
+        assert pickups(app).piles() == []
+        assert {bot.id: bot.haul for bot in bots(app)} == held
+
+    await run_village(BRIEFLY, after=same)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("level", range(level_count()))
+async def test_every_bot_drops_what_it_started_with_and_none_of_it_lies_on_its_map(
+    database: Path, monkeypatch: pytest.MonkeyPatch, level: int
+) -> None:
+    seed = next(seed for seed in count() if level_of(seed, level_count()) == level)
+    monkeypatch.setattr("simile.story.town.world_seed", lambda: seed)
+
+    async def destroy(app: Starlette) -> None:
+        assert world_level() == level
+        creatures, player = creatures_of(app), player_of(app)
+        assert player == Player(), "no pickup was given up to stock them"
+        placed = {spawn.id for _, spawn in spawns(level=level) if spawn.kind is CreatureKind.BOT}
+        assert {bot.id for bot in bots(app)} == placed
+        assert len(placed) >= 3 and {"metro_bot_1", "metro_bot_2"} < placed
+        lying = pickups(app).lying.values()
+        for bot in bots(app):
+            start = bot.haul
+            on_its_map = {i.id for pile in lying if pile.at.map == bot.map for i in pile.items}
+            assert start == starting_haul(bot.id, seed, on_its_map), bot.id
+            assert len(start) in (1, 2), bot.id
+            assert not {item.id for item in start} & on_its_map, bot.id
+            assert all(economy_of(app).config.salvage[item.id] > 0 for item in start), bot.id
+
+            creatures.hurt(bot, BOT.health)
+
+            assert player.left[-1].items == start, bot.id
+
+    await run_village(BRIEFLY, after=destroy)
 
 
 @pytest.mark.anyio

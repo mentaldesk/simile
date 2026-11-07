@@ -241,7 +241,7 @@ export class DialogueScene extends Phaser.Scene {
     else if (used?.kind === 'bed') server.send({ type: 'rest', on: true });
   }
 
-  /** A corpse or a pile they left opens the screen; salvage or a secret lying about is picked up. */
+  /** A corpse or a pile in `left` opens the screen; salvage or a secret lying about is picked up. */
   private takeFrom(used: Extract<Reachable, { kind: 'pile' }>): void {
     if (!this.salvage.open(used)) {
       server.send({ type: 'pick_up' });

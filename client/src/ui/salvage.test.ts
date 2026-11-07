@@ -74,10 +74,10 @@ describe('pickUpPrompt', () => {
     expect(pickUpPrompt(pile([SERVO], 40), laden)).toBe("Press E to pick up 40 in cash. The servo motor won't fit.");
   });
 
-  it('says it is what they left, if it is', () => {
+  it('says only that it is lying here of a pile in left, as that can be a bot\'s haul', () => {
     const left = pile([WIRE, SERVO]);
-    expect(pickUpPrompt(left, player([LAMP], { left: [left] }))).toBe('Press E to go through what you left here.');
-    expect(pickUpPrompt(left, player([LAMP, SERVO, SERVO, WIRE, WIRE], { left: [left] }))).toBe('Press E to go through what you left here.');
+    expect(pickUpPrompt(left, player([LAMP], { left: [left] }))).toBe("Press E to go through what's lying here.");
+    expect(pickUpPrompt(left, player([LAMP, SERVO, SERVO, WIRE, WIRE], { left: [left] }))).toBe("Press E to go through what's lying here.");
   });
 });
 

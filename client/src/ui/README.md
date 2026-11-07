@@ -165,12 +165,12 @@ last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` 
 The same corner says what E picks up or sells where the player stands, in
 [`salvage.ts`](salvage.ts):
 
-- Within a tile of a pile (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), one they left
-  or one in `player_state`'s `piles`, what of it fits under their carry limit, as the server takes
-  it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash." What won't fit is
-  named: "The servo motor won't fit.", or "The servo motor is too heavy to carry with what you
-  have." E sends `pick_up`. One they left says "Press E to go through what you left here.", and E
-  opens the salvage screen below.
+- Within a tile of a pile in `player_state`'s `piles` (`pileInReach` in
+  [`world/reach.ts`](../world/reach.ts)), what of it fits under their carry limit, as the server
+  takes it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash." What won't fit
+  is named: "The servo motor won't fit.", or "The servo motor is too heavy to carry with what you
+  have." E sends `pick_up`. A pile in `left`, which they left or a bot dropped, says "Press E to go
+  through what's lying here.", and E opens the salvage screen below.
 - Within a tile of one of their `corpses` (`corpseInReach`), "Press E to go through your body.", and
   E opens the salvage screen. It says "the oldest of the 2 bodies here" where two lie on one tile,
   since they draw as one, and "You can't carry anything on it." when nothing fits. An older one
@@ -189,7 +189,7 @@ The same corner says what E picks up or sells where the player stands, in
 
 ## The salvage screen
 
-[`salvage-panel.ts`](salvage-panel.ts) is E at a body or a pile they left, on the trade screen's
+[`salvage-panel.ts`](salvage-panel.ts) is E at a body or a pile in `left`, on the trade screen's
 styles: what they carry on the left, for show, and what lies there on the right, its money, then
 its items, then its bionics, each with its icon and weight. ↑ ↓ choose, Enter or a click sends
 `take` for that row, and Esc or E closes. A row that won't fit is dimmed and says "Too heavy", the

@@ -1239,7 +1239,7 @@ async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promis
 const salvageSide = (page: Page, index: number) =>
   page.evaluate((index) => document.querySelectorAll('.salvage-panel .clinic-side')[index]?.textContent ?? '', index);
 
-/** E at a body opens the screen, Enter takes one thing at a time and it moves across, a row that won't fit says why, and the body goes with the last thing. Then the same for a pile they left. */
+/** E at a body opens the screen, Enter takes one thing at a time and it moves across, a row that won't fit says why, and the body goes with the last thing. Then the same for a pile in `left`. */
 async function salvageLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'E at a body';
   const at = { map: 'metro', x: 65, y: 15 };
@@ -1306,10 +1306,10 @@ async function salvageLeg(page: Page, api: Api, index: number): Promise<void> {
   const pile = { at, items: [WIRE], money: 3 };
   await holding(page, [LAMP], [], [], { player: { left: [pile] } });
   await run(page, 300);
-  if (!(await cornerLines(page)).includes('Press E to go through what you left here.')) throw new Error(`${name}: at a pile, the corner says ${await cornerLines(page)}`);
+  if (!(await cornerLines(page)).includes("Press E to go through what's lying here.")) throw new Error(`${name}: at a pile, the corner says ${await cornerLines(page)}`);
   await page.keyboard.press('e');
   await run(page, 300);
-  if (!(await shown(page, '.salvage-panel'))?.includes('Left here')) throw new Error(`${name}: E didn't open the pile`);
+  if (!(await shown(page, '.salvage-panel'))?.includes('Lying here')) throw new Error(`${name}: E didn't open the pile`);
   await enter([{ type: 'take', corpse: null, pile: at, item: null, index: null, bionic: null }], 'on the money in a pile');
   await holding(page, [LAMP], [], [], { player: { money: 3, left: [{ at, items: [WIRE] }] } });
   await run(page, 100);
@@ -1408,7 +1408,7 @@ try {
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ['E at the lockers', (i) => stashLeg(page, api, i)],
     ['E at the lockers beside a corpse', (i) => stashBesideCorpseLeg(page, api, i)],
-    ['E at a body, and at a pile they left', (i) => salvageLeg(page, api, i)],
+    ['E at a body, and at a pile lying there', (i) => salvageLeg(page, api, i)],
     ['a body and a pile outside the doll house', (i) => dollHouseLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
