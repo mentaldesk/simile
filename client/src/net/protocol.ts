@@ -710,6 +710,10 @@ export interface Player {
    * The machines they've repaired, by interactable id, in the order they repaired them, saved here and shown by the snapshot and `machine_changed`. Left out while there's none.
    */
   repaired?: string[];
+  /**
+   * Whether the maintenance lift works for them without a datajack. It's true for good once any body of theirs has had a datajack or they've left a trace in the sewers, as a save from before this field shows. Left out while it's false.
+   */
+  lift_open?: boolean;
 }
 /**
  * What they keep at home. Left out while it's empty and at its starting limit.

@@ -742,7 +742,7 @@ def test_a_stage_2_save_loads_as_it_was() -> None:
     assert player.sales[0].item.amount == 1
     assert player.corpses == []
     assert player.repaired == []
-    assert json.loads(player.model_dump_json()) == json.loads(STAGE_2_SAVE)
+    assert json.loads(player.model_dump_json()) == json.loads(STAGE_2_SAVE) | {"lift_open": True}
 
 
 @pytest.mark.parametrize("data", BEFORE_THE_STASH)
@@ -1006,3 +1006,94 @@ def test_rejects_invalid_corpses_and_repairs_on_a_player(
     update: dict[str, Any], match: str
 ) -> None:
     rejects(Player, STARTING | update, match)
+
+
+def test_a_new_player_has_not_opened_the_lift_and_leaves_it_out_of_a_save() -> None:
+    player = Player()
+
+    assert player.lift_open is False
+    assert "lift_open" not in json.loads(player.model_dump_json())
+    assert Player.model_validate_json(player.model_dump_json()).lift_open is False
+
+
+def test_fitting_a_datajack_opens_the_lift_and_a_new_body_keeps_it_across_a_save() -> None:
+    player = Player()
+
+    player.body = Body(vertebra=Bionic.DATAJACK)
+    assert player.lift_open is True
+
+    player.body = Body()
+    saved = player.model_dump_json()
+
+    assert player.lift_open is True
+    assert json.loads(saved)["lift_open"] is True
+    assert Player.model_validate_json(saved).lift_open is True
+
+
+def corpse(**held: Any) -> dict[str, Any]:
+    at = {"map": "metro", "x": 3, "y": 15}
+    return {
+        "id": "corpse_1",
+        "owner": "player",
+        "at": at,
+        "money": 0.0,
+        "items": [],
+        "bionics": [],
+    } | held
+
+
+SALVAGED_JACK = {
+    "id": "datajack",
+    "kind": "bionic",
+    "name": "Datajack",
+    "weight": 0.5,
+    "bionic": "datajack",
+}
+DOWN = {"map": "sewers", "x": 3, "y": 15}
+COIL = {"id": "copper_coil", "kind": "salvage", "name": "Copper coil", "weight": 1.0}
+
+
+@pytest.mark.parametrize(
+    "traces",
+    [
+        {"body": {"vertebra": "datajack"}},
+        {"corpses": [corpse(bionics=["datajack"])]},
+        {"corpses": [corpse(items=[SALVAGED_JACK])]},
+        {"items": [SALVAGED_JACK]},
+        {"stash": {"items": [SALVAGED_JACK]}},
+        {"corpses": [corpse(at=DOWN)]},
+        {"left": [{"at": DOWN, "items": [COIL]}]},
+        {"searched": ["sewers_crates_legs"]},
+        {"taken": {"sewers_salvage_1": "2026-10-19T08:00:00Z"}},
+    ],
+    ids=[
+        "datajack fitted",
+        "datajack in a corpse",
+        "datajack salvaged onto a corpse",
+        "datajack carried",
+        "datajack stashed",
+        "a corpse down there",
+        "a pile down there",
+        "something searched down there",
+        "something taken down there",
+    ],
+)
+def test_a_save_from_before_the_field_has_opened_the_lift_on_any_trace(
+    traces: dict[str, Any],
+) -> None:
+    assert Player.model_validate_json(json.dumps(traces)).lift_open is True
+
+
+@pytest.mark.parametrize(
+    "elsewhere",
+    [
+        {},
+        {"body": {"legs": "bionic_legs"}},
+        {"corpses": [corpse()]},
+        {"searched": ["metro_fridge"]},
+        {"taken": {"metro_salvage_1": "2026-10-19T08:00:00Z"}},
+    ],
+    ids=["nothing", "other bionics", "a corpse elsewhere", "a find elsewhere", "salvage elsewhere"],
+)
+def test_a_save_with_no_trace_of_the_lift_leaves_it_shut(elsewhere: dict[str, Any]) -> None:
+    assert Player.model_validate_json(json.dumps(elsewhere)).lift_open is False
