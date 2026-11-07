@@ -435,7 +435,15 @@
    "piece": "furniture/laser_cutter"
   },
   "printer_3d": {
-   "piece": "furniture/printer_3d"
+   "piece": "furniture/printer_3d",
+   "broken": "furniture/printer_3d-broken"
+  },
+  "recycler": {
+   "piece": "furniture/recycler",
+   "broken": "furniture/recycler-broken"
+  },
+  "clean_lockers": {
+   "piece": "furniture/clean_lockers"
   },
   "loom": {
    "piece": "furniture/loom"
@@ -576,6 +584,9 @@
   },
   "bulkhead": {
    "piece": "furniture/bulkhead"
+  },
+  "muzzle_flash": {
+   "piece": "furniture/muzzle_flash"
   },
   "armchair": {
    "piece": "furniture/armchair",
@@ -1274,6 +1285,20 @@
    ],
    "hash": "1615d0d567a5ecfa2d8f"
   },
+  "furniture/clean_lockers": {
+   "file": "furniture/clean_lockers.webp",
+   "size": [
+    120,
+    228
+   ],
+   "height": 1.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "593c2feeba78b4f8738c"
+  },
   "furniture/counter": {
    "file": "furniture/counter.webp",
    "size": [
@@ -1568,6 +1593,20 @@
    ],
    "hash": "0f04a6431f174e124e29"
   },
+  "furniture/muzzle_flash": {
+   "file": "furniture/muzzle_flash.webp",
+   "size": [
+    52,
+    50
+   ],
+   "height": 0.42,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "f39ca9d11eb5de14456b"
+  },
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
@@ -1697,7 +1736,7 @@
   "furniture/printer_3d": {
    "file": "furniture/printer_3d.webp",
    "size": [
-    119,
+    125,
     180
    ],
    "height": 1.5,
@@ -1706,7 +1745,49 @@
     0.5,
     1.0
    ],
-   "hash": "6d2f01ba4e58ff8b16a9"
+   "hash": "767f9030d9057d601926"
+  },
+  "furniture/printer_3d-broken": {
+   "file": "furniture/printer_3d-broken.webp",
+   "size": [
+    125,
+    180
+   ],
+   "height": 1.5,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "88251329f9d47d0135e3"
+  },
+  "furniture/recycler": {
+   "file": "furniture/recycler.webp",
+   "size": [
+    81,
+    204
+   ],
+   "height": 1.7,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "78058c48bfc9ad70ec7e"
+  },
+  "furniture/recycler-broken": {
+   "file": "furniture/recycler-broken.webp",
+   "size": [
+    81,
+    204
+   ],
+   "height": 1.7,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "cd4f1320b4a73648ce8c"
   },
   "furniture/rubble": {
    "file": "furniture/rubble.webp",

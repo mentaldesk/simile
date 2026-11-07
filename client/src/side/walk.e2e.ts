@@ -48,6 +48,9 @@ type Paged = { sideWalk: SideWalk };
 type Shooting = {
   weapon(): { rounds: number | null; condition: number | null };
   shot(): { gun: boolean; flash: boolean; line: string | null };
+  flashFromFeet(): { ahead: number; up: number } | null;
+  playerFrame(): string | null;
+  shownPieces(name: string): string[];
   creatureImages(): { key: string; x: number; flashing: boolean }[];
 };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -91,6 +94,9 @@ const walkApi = (page: Page) => ({
   hurt: (health: number) => page.evaluate((health) => (window as unknown as Paged).sideWalk.hurt(health), health),
   weapon: () => page.evaluate(() => (window as unknown as Paged).sideWalk.weapon()),
   shot: () => page.evaluate(() => (window as unknown as Paged).sideWalk.shot()),
+  flashFromFeet: () => page.evaluate(() => (window as unknown as Paged).sideWalk.flashFromFeet()),
+  playerFrame: () => page.evaluate(() => (window as unknown as Paged).sideWalk.playerFrame()),
+  shownPieces: (name: string) => page.evaluate((name) => (window as unknown as Paged).sideWalk.shownPieces(name), name),
   creatureImages: () => page.evaluate(() => (window as unknown as Paged).sideWalk.creatureImages()),
 });
 type Api = ReturnType<typeof walkApi>;
@@ -605,9 +611,14 @@ async function shootingLeg(open: (query: string) => Promise<[Page, Api]>): Promi
     await frames();
     const fired = await api.shot();
     if ((await rounds()) !== 5 || !fired.gun || !fired.flash) throw new Error(`${name}: X didn't fire: ${await rounds()}, ${JSON.stringify(fired)}`);
+    const flash = await api.flashFromFeet();
+    if (!flash || flash.ahead < 1 || flash.ahead > 1.3 || flash.up < 1.5 || flash.up > 1.9) throw new Error(`${name}: the flash isn't at the pistol's muzzle: ${JSON.stringify(flash)}`);
+    if ((await api.playerFrame()) !== 'aim') throw new Error(`${name}: they fired without aiming: ${await api.playerFrame()}`);
     await run(page, 150);
     if ((await api.shot()).flash) throw new Error(`${name}: the flash stayed`);
+    if ((await api.shownPieces('muzzle_flash')).length) throw new Error(`${name}: the flash stayed drawn`);
     await run(page, 800);
+    if ((await api.playerFrame()) === 'aim') throw new Error(`${name}: they stayed aiming`);
     if ((await api.creatureImages()).some(({ key }) => key === 'creature-rat')) throw new Error(`${name}: the rat wasn't killed`);
 
     await page.keyboard.press('x');
@@ -973,8 +984,15 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
     const { server } = await import(/* @vite-ignore */ net);
     const machine = { id: 'printer_3d', kind: 'printer', state: 'broken', parts: { metal_sheet: 1, copper_wire: 2 }, makes: [] };
     server.dispatch(JSON.stringify({ type: 'machine_changed', machine }));
+    const recycler = { id: 'recycler', kind: 'recycler', state: 'broken', parts: { apex_board: 1 }, makes: [] };
+    server.dispatch(JSON.stringify({ type: 'machine_changed', machine: recycler }));
   });
   await run(page, 300);
+  const drawn = async (id: string) => (await api.shownPieces(id)).filter((key) => !key.includes('#'));
+  for (const id of ['printer_3d', 'recycler']) {
+    const pictures = await drawn(id);
+    if (!pictures.length || !pictures.every((key) => key.endsWith(`${id}-broken`))) throw new Error(`${name}: ${id} isn't drawn broken: ${pictures}`);
+  }
   const hint = await shown(page, '.counter-hint');
   if (hint !== 'Press E to use the 3D printer.') throw new Error(`${name}: the hint is ${hint}`);
   await page.keyboard.press('e');
@@ -990,6 +1008,18 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 200);
   if ((await shown(page, '.machine-panel')) !== null) throw new Error(`${name}: Esc didn't close it`);
   if ((await shown(page, '.pause')) !== null) throw new Error(`${name}: Esc opened the pause menu too`);
+  await page.evaluate(async () => {
+    const net = '/src/net/index.ts';
+    const { server } = await import(/* @vite-ignore */ net);
+    for (const [id, kind] of [['printer_3d', 'printer'], ['recycler', 'recycler']]) {
+      server.dispatch(JSON.stringify({ type: 'machine_changed', machine: { id, kind, state: 'working', parts: {}, makes: [] } }));
+    }
+  });
+  await run(page, 100);
+  for (const id of ['printer_3d', 'recycler']) {
+    const pictures = await drawn(id);
+    if (!pictures.length || pictures.some((key) => key.includes('broken'))) throw new Error(`${name}: repaired, ${id} is drawn ${pictures}`);
+  }
 }
 
 const root = new URL('../..', import.meta.url).pathname;

@@ -38,10 +38,14 @@ export type SpriteFrame = {
   seat?: Point;
   /** Where a lying figure lies on the mattress: the middle of its underside. */
   bed?: Point;
+  /** The player's aim: the end of the pistol, from the frame's top-left. */
+  muzzle?: Point;
+  /** Its own atlas's URL, for a frame added after the figure's was saved. `frame` is in that. */
+  atlas?: string;
 };
 
 /** What a figure is painted doing; every `DollPose` is drawn as one of them. */
-export type SpritePose = PaintedPose | 'jump' | 'land' | 'lie';
+export type SpritePose = PaintedPose | 'jump' | 'land' | 'lie' | 'aim';
 /** What every figure has painted; any other pose falls back on these (`sprite.ts`). */
 export type PaintedPose = 'stand' | 'walk' | 'run' | 'sit' | 'climb';
 

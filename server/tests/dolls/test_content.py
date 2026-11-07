@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from simile.dolls import bionics
+from simile.dolls import aim, bionics
 from simile.dolls.bionics import COMBINATIONS, SHORTS, figure_id, missing, spared
 from simile.dolls.build import (
     CONTENT,
@@ -63,15 +63,21 @@ def manifest(who: str) -> dict:
     return json.loads((CONTENT / f"{who}.json").read_text())
 
 
+def painted_poses(found: dict) -> dict:
+    return {pose: frames for pose, frames in found["poses"].items() if pose != aim.FRAME}
+
+
 @cache
-def atlas(who: str) -> Image.Image:
-    return Image.open(CONTENT / manifest(who)["painted"]).convert("RGBA")
+def atlas(who: str, name: str = "") -> Image.Image:
+    found = manifest(who)
+    file = found["frames"].get(name, {}).get("atlas", found["painted"])
+    return Image.open(CONTENT / file).convert("RGBA")
 
 
 def frame(who: str, name: str, laid: bool = False) -> Image.Image:
     """A frame as measured: lying ones turned head up, unless `laid`."""
     x, y, w, h = manifest(who)["frames"][name]["frame"]
-    found = atlas(who).crop((x, y, x + w, y + h))
+    found = atlas(who, name).crop((x, y, x + w, y + h))
     return upright(found) if name in LYING and not laid else found
 
 
@@ -86,8 +92,8 @@ def test_every_resident_and_the_player_has_a_current_figure(who: str) -> None:
     said = personas().get(who, "")
     assert found["hash"] == fingerprint(who, EVERYONE[who], said), "run `uv run simile dolls paint`"
     assert found["appearance"] == EVERYONE[who].model_dump(mode="json")
-    assert found["poses"] == POSES
-    assert set(found["frames"]) == set(FRAMES)
+    assert painted_poses(found) == POSES
+    assert set(found["frames"]) - {aim.FRAME} == set(FRAMES)
     assert found["ppm"] == PPM and found["height"] == pytest.approx(HEIGHT_M * PPM, abs=0.1)
 
 
@@ -99,7 +105,7 @@ def test_each_frame_stands_under_the_middle_of_its_head(who: str) -> None:
     for name, entry in manifest(who)["frames"].items():
         picture = frame(who, name)
         x, y, w, h = entry["frame"]
-        assert x + w <= atlas(who).width and y + h <= atlas(who).height, name
+        assert x + w <= atlas(who, name).width and y + h <= atlas(who, name).height, name
         if name in LYING:
             continue
         solid = np.asarray(picture.getchannel("A")) >= 128
@@ -162,9 +168,38 @@ def test_the_player_has_a_current_figure_for_each_combination_of_bionics(who: st
     assert found["hash"] == fitted_fingerprint(FITTED[who], player, EVERYONE[PLAYER_ID])
     assert found["fitted"] == [b.value for b in FITTED[who]]
     assert found["appearance"] == EVERYONE[PLAYER_ID].model_dump(mode="json")
-    assert found["poses"] == POSES
-    assert set(found["frames"]) == set(FRAMES)
+    assert painted_poses(found) == POSES
+    assert set(found["frames"]) - {aim.FRAME} == set(FRAMES)
     assert found["ppm"] == PPM and found["height"] == pytest.approx(HEIGHT_M * PPM, abs=0.1)
+
+
+AIMERS = [PLAYER_ID, *FITTED]
+
+
+@pytest.mark.parametrize("who", AIMERS)
+def test_every_figure_of_the_player_aims_the_pistol_from_the_current_painting(who: str) -> None:
+    found = manifest(who)
+
+    assert found["aimed"] == aim.fingerprint(), "run `uv run simile dolls aim`"
+    assert found["poses"][aim.FRAME] == [aim.FRAME]
+    picture = frame(who, aim.FRAME)
+    assert aim.pistol(picture).any()
+    x, y = found["frames"][aim.FRAME]["muzzle"]
+    assert x > found["frames"][aim.FRAME]["feet"][0]
+    assert x <= picture.width and 0 <= y < picture.height
+
+
+def test_only_the_player_aims() -> None:
+    for who in set(EVERYONE) - {PLAYER_ID}:
+        assert aim.FRAME not in manifest(who)["frames"]
+
+
+@pytest.mark.parametrize("who", FITTED)
+def test_aiming_shows_the_bionics_fitted(who: str) -> None:
+    feet = manifest(who)["frames"][aim.FRAME]["feet"]
+    body = aim.unarmed(frame(who, aim.FRAME), feet)
+
+    assert missing(body, FITTED[who], "stand", SHOWN) == []
 
 
 @pytest.mark.parametrize("who", FITTED)

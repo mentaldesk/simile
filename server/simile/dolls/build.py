@@ -522,11 +522,18 @@ def current(directory: Path, who: str, hash: str) -> bool:
     return found.get("hash") == hash and (directory / found.get("painted", "")).is_file()
 
 
+def aim_atlas(who: str) -> str:
+    """The file of a figure of the player's aim, which `aim.py` adds."""
+    return f"{who}_aim.webp"
+
+
 def stale(directory: Path, keep: Iterable[str]) -> list[Path]:
     """Files in `directory` that belong to no one in `keep` nor the player with bionics: #310's
     atlases, or a resident's who's gone."""
-    keep = [*keep, *(figure_id(c) for c in COMBINATIONS)]
+    players = [figure_id(c) for c in ((), *COMBINATIONS)]
+    keep = [*keep, *players]
     wanted = {name for who in keep for name in (f"{who}.json", f"{who}.webp")}
+    wanted |= {aim_atlas(who) for who in players}
     return [
         p for p in directory.glob("*") if p.suffix in (".json", ".webp") and p.name not in wanted
     ]

@@ -1,27 +1,46 @@
 import Phaser from 'phaser';
 import type { Facing } from '../net/protocol';
-import type { FigureManifest } from './manifest';
+import type { FigureManifest, SpriteFrame } from './manifest';
 import type { DollPose, PoseOptions } from './rig';
 import { placed, shown, type Shown } from './sprite';
 
-/** Adds a figure's atlas to the scene's textures as `key`, with a frame for each painting. */
-export function addFigureAtlas(scene: Phaser.Scene, key: string, figure: FigureManifest): Promise<void> {
-  if (scene.textures.exists(key)) return Promise.resolve();
-  const url = figure.painted;
-  if (!url) return Promise.reject(new Error(`${figure.id ?? 'A figure'} has no atlas`));
+/** The texture a frame is in: the figure's `key`, or its own for a frame with its own atlas. */
+const textureOf = (key: string, name: string, { atlas }: SpriteFrame) => (atlas ? `${key}:${name}` : key);
+
+function addAtlas(scene: Phaser.Scene, key: string, url: string, frames: [string, SpriteFrame][]): Promise<void> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => {
       const texture = scene.textures.exists(key) ? null : scene.textures.addImage(key, image);
       if (texture) {
         texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-        for (const [name, { frame }] of Object.entries(figure.frames)) texture.add(name, 0, ...frame);
+        for (const [name, { frame }] of frames) texture.add(name, 0, ...frame);
       }
       resolve();
     };
     image.onerror = () => reject(new Error(`Couldn't load the figure atlas ${url.slice(0, 80)}`));
     image.src = url;
   });
+}
+
+/** Frames with atlases of their own come in behind the figure's: until then, `draw` stands in for them. */
+function addOwnAtlases(scene: Phaser.Scene, key: string, figure: FigureManifest): void {
+  for (const [name, frame] of Object.entries(figure.frames)) {
+    const own = textureOf(key, name, frame);
+    if (frame.atlas && !scene.textures.exists(own)) addAtlas(scene, own, frame.atlas, [[name, frame]]).catch((error: unknown) => console.warn(error));
+  }
+}
+
+/** Adds a figure's atlas to the scene's textures as `key`, with a frame for each painting. */
+export function addFigureAtlas(scene: Phaser.Scene, key: string, figure: FigureManifest): Promise<void> {
+  if (scene.textures.exists(key)) {
+    addOwnAtlases(scene, key, figure);
+    return Promise.resolve();
+  }
+  const url = figure.painted;
+  if (!url) return Promise.reject(new Error(`${figure.id ?? 'A figure'} has no atlas`));
+  const frames = Object.entries(figure.frames).filter(([, { atlas }]) => !atlas);
+  return addAtlas(scene, key, url, frames).then(() => addOwnAtlases(scene, key, figure));
 }
 
 /** A resident painted whole, its origin on the ground under the middle of its head. `setPose`
@@ -88,7 +107,8 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
   }
 
   /** Does nothing unless the frame, its flip, bob, sway, seat, squash or shift changed. */
-  draw(next: Shown): this {
+  draw(asked: Shown): this {
+    const next = this.loaded(asked);
     const last = this.drawn;
     if (
       last &&
@@ -106,13 +126,19 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     const { originX, originY, x, y, angle } = placed(this.figure, next);
     const squash = next.squash ?? 0;
     this.image
-      .setTexture(this.key, next.frame)
+      .setTexture(textureOf(this.key, next.frame, this.figure.frames[next.frame]), next.frame)
       .setOrigin(originX, originY)
       .setFlipX(next.flip)
       .setPosition(x, y)
       .setAngle(angle)
       .setScale(1 + squash / 2, 1 - squash);
     return this;
+  }
+
+  /** Standing, for a frame whose own atlas is still on its way. */
+  private loaded(shown: Shown): Shown {
+    const texture = textureOf(this.key, shown.frame, this.figure.frames[shown.frame]);
+    return texture === this.key || this.scene.textures.exists(texture) ? shown : { ...shown, frame: this.figure.poses.stand[0] };
   }
 
   setTint(tint: number): this {

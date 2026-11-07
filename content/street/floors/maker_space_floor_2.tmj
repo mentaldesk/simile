@@ -97,10 +97,10 @@
         {
           "height": 32,
           "id": 3,
-          "name": "wardrobe",
+          "name": "clean_lockers",
           "properties": [],
           "rotation": 0,
-          "type": "wardrobe",
+          "type": "clean_lockers",
           "visible": true,
           "width": 16,
           "x": 112,

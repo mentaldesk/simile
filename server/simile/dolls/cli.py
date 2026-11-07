@@ -60,6 +60,24 @@ def register(app: typer.Typer) -> None:
                 painted = add_frames(name, people()[name], model, personas().get(name, ""))
                 typer.echo(f"{name}: added in {painted.seconds:.0f} s of FLUX")
 
+    @dolls.command("aim")
+    def aim(
+        painting: Annotated[Path | None, typer.Option(help="Also save the painting here.")] = None,
+    ) -> None:
+        """Paint the player aiming the pistol from their standing frame, and add it to each of
+        their figures, keeping every other frame."""
+        from functools import partial
+
+        from simile.dolls.aim import aim as add_aim
+        from simile.dolls.build import PAINTINGS, Cached
+        from simile.dolls.flux import Flux, wait_for_gpu
+
+        model = Cached(partial(Flux, wait_for_gpu), PAINTINGS)
+        with model.stack:
+            painted = add_aim(model, log=typer.echo)
+        if painting is not None:
+            painted.save(painting)
+
     @dolls.command("seats")
     def seats() -> None:
         """Measure each figure's seat in content/dolls/ again from its atlas, without painting."""

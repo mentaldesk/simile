@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 
+from simile.machines.workshop import MACHINES
 from simile.papercraft import catalogue
 from simile.papercraft.build import CONTENT, MANIFEST
 from simile.papercraft.catalogue import (
@@ -98,6 +99,24 @@ def test_the_maps_under_the_village_use_some_furniture_of_their_own() -> None:
 @pytest.mark.parametrize("key", sorted(underground_pieces()))
 def test_every_underground_piece_is_cartoon_or_grimy(key: str) -> None:
     assert style_of(key) in ("cartoon", "grimy")
+
+
+def test_the_machines_you_repair_have_a_broken_picture_and_nothing_else_does() -> None:
+    furniture = index(LAYOUT)["furniture"]
+
+    assert {name: f["broken"] for name, f in furniture.items() if "broken" in f} == {
+        "printer_3d": "furniture/printer_3d-broken",
+        "recycler": "furniture/recycler-broken",
+    }
+    assert set(MACHINES) <= set(LAYOUT.furniture)
+    for machine in MACHINES:
+        broken = PIECES[f"furniture/{machine}-broken"]
+        assert broken.base == f"furniture/{machine}" and broken.height == FURNITURE[machine].height
+
+
+def test_the_lockers_picture_is_in_the_comic_style_and_the_maps_use_it() -> None:
+    assert FURNITURE["clean_lockers"].style == "clean"
+    assert "clean_lockers" in LAYOUT.furniture
 
 
 def test_every_village_front_is_clean_with_todays_details() -> None:

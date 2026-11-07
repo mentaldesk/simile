@@ -3,7 +3,7 @@ import type { FlatDoll, PieceName, PieceSpec } from './manifest';
 
 export type View = 'side' | 'front' | 'back';
 /** The sim's poses, and the player's jump and landing. */
-export type DollPose = Pose | 'jumping' | 'landing';
+export type DollPose = Pose | 'jumping' | 'landing' | 'aiming';
 
 export type PoseOptions = {
   /** At a desk: `working` and `reading` sit instead of standing. */

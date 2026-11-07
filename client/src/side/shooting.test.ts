@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Item } from '../net';
 import { onPress } from './input';
 import { MoveReport } from './report';
-import { canFire, firesNext, firing, reloading, ShotView, shotAt, sideOf, weaponLine } from './shooting';
+import type { FigureManifest } from '../dolls/manifest';
+import { feetOf, PPM, xOf } from './layout';
+import { canFire, firesNext, firing, muzzleOf, reloading, ShotView, shotAt, sideOf, weaponLine } from './shooting';
 
 const pistol = (rounds = 6, condition = 1): Item => ({
   id: 'pistol',
@@ -19,6 +21,7 @@ const pistol = (rounds = 6, condition = 1): Item => ({
   condition,
 });
 const stack = (amount: number): Item => ({ id: 'rounds', kind: 'rounds', name: 'Plastic rounds', weight: 0.02, charge: null, on: null, amount, material: 'plastic' });
+const aimer = { ppm: 80, frames: { aim: { frame: [0, 0, 200, 170], feet: [40, 160], muzzle: [120, 120] } } } as unknown as FigureManifest;
 const lamp: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 1, on: false };
 
 describe('firing', () => {
@@ -140,59 +143,72 @@ describe('the keys', () => {
 describe('the shot’s view', () => {
   const view = { x: 0, bottom: 100 } as Phaser.Geom.Rectangle;
   const at = { x: 10, y: 15 };
+  const standing = { pose: 'standing', facing: 'east' } as const;
 
   function shots() {
-    const graphics = { setDepth: () => graphics, clear: vi.fn(), fillStyle: () => graphics, fillRect: vi.fn(() => graphics), fillCircle: vi.fn(() => graphics), destroy: vi.fn() };
+    const flash = { setDepth: () => flash, setVisible: vi.fn(() => flash), setPosition: vi.fn(() => flash), setOrigin: vi.fn(() => flash), setFlipX: vi.fn(() => flash), destroy: vi.fn() };
     const line = { setOrigin: () => line, setDepth: () => line, setVisible: vi.fn(() => line), setText: vi.fn(() => line), setScale: () => line, setPosition: () => line, destroy: vi.fn(), text: '', visible: false };
-    const scene = { add: { graphics: () => graphics, text: () => line } } as unknown as Phaser.Scene;
-    return { shots: new ShotView(scene), graphics, line };
+    const scene = { add: { image: () => flash, text: () => line } } as unknown as Phaser.Scene;
+    const shots = new ShotView(scene);
+    shots.setFlash('flash');
+    return { shots, flash, line };
   }
 
-  it('draws nothing before a shot', () => {
-    const { shots: view_, graphics } = shots();
-    view_.update(1 / 60, at, 'east', undefined, view, 1);
-    expect(graphics.fillRect).not.toHaveBeenCalled();
-    expect(graphics.fillCircle).not.toHaveBeenCalled();
+  it('shows no flash before a shot, and draws them as they were', () => {
+    const { shots: view_, flash } = shots();
+    view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
+    expect(flash.setVisible).toHaveBeenLastCalledWith(false);
+    expect(view_.pose(standing, 'west')).toBe(standing);
   });
 
-  it('draws the pistol and a flash past its muzzle the way they face, then only the pistol, then neither', () => {
-    const { shots: view_, graphics } = shots();
+  it('flashes at the muzzle the way they face, then only aims, then neither', () => {
+    const { shots: view_, flash } = shots();
     view_.fired();
-    view_.update(1 / 60, at, 'east', undefined, view, 1);
-    expect(graphics.fillRect).toHaveBeenCalledTimes(1);
-    expect(graphics.fillCircle).toHaveBeenCalledTimes(2);
-    const [[x]] = graphics.fillCircle.mock.calls as unknown as [[number]];
-    expect(x).toBeGreaterThan(shotAt(at, 'east').x);
+    view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
+    expect(flash.setVisible).toHaveBeenLastCalledWith(true);
+    expect(flash.setPosition).toHaveBeenLastCalledWith(xOf(at.x) + 1 * PPM, feetOf(at.y) - 0.5 * PPM);
+    expect(flash.setOrigin).toHaveBeenLastCalledWith(0, 0.5);
+    expect(view_.pose(standing, 'east').pose).toBe('aiming');
 
-    view_.update(0.1, at, 'east', undefined, view, 1);
-    expect(graphics.fillRect).toHaveBeenCalledTimes(2);
-    expect(graphics.fillCircle).toHaveBeenCalledTimes(2);
+    view_.update(0.1, at, 'east', undefined, view, 1, aimer);
+    expect(flash.setVisible).toHaveBeenLastCalledWith(false);
+    expect(view_.pose(standing, 'east').pose).toBe('aiming');
 
-    view_.update(0.3, at, 'east', undefined, view, 1);
-    expect(graphics.fillRect).toHaveBeenCalledTimes(2);
+    view_.update(0.3, at, 'east', undefined, view, 1, aimer);
+    expect(view_.pose(standing, 'east')).toBe(standing);
   });
 
-  it('flashes west of them facing west', () => {
-    const { shots: view_, graphics } = shots();
+  it('flashes west of them, mirrored, facing west, and aims that way whichever way they walk', () => {
+    const { shots: view_, flash } = shots();
     view_.fired();
-    view_.update(1 / 60, at, 'west', undefined, view, 1);
-    const [[x]] = graphics.fillCircle.mock.calls as unknown as [[number]];
-    expect(x).toBeLessThan(shotAt(at, 'west').x);
+    view_.update(1 / 60, at, 'west', undefined, view, 1, aimer);
+    expect(flash.setOrigin).toHaveBeenLastCalledWith(1, 0.5);
+    expect(flash.setFlipX).toHaveBeenLastCalledWith(true);
+    expect(view_.pose(standing, 'west')).toEqual({ pose: 'aiming', facing: 'west' });
   });
 
-  it('draws no shot while they aren’t shown', () => {
-    const { shots: view_, graphics } = shots();
+  it('aims only from what they can fire in', () => {
+    const { shots: view_ } = shots();
     view_.fired();
-    view_.update(1 / 60, undefined, 'east', undefined, view, 1);
-    expect(graphics.fillRect).not.toHaveBeenCalled();
+    for (const pose of ['walking', 'jumping', 'landing'] as const) expect(view_.pose({ pose, facing: 'east' }, 'east').pose).toBe('aiming');
+    const climbing = { pose: 'climbing', facing: 'north' } as const;
+    expect(view_.pose(climbing, 'east')).toBe(climbing);
+  });
+
+  it('shows no flash while they aren’t shown', () => {
+    const { shots: view_, flash } = shots();
+    view_.fired();
+    view_.update(1 / 60, undefined, 'east', undefined, view, 1, aimer);
+    expect(flash.setVisible).toHaveBeenLastCalledWith(false);
+    expect(flash.setPosition).not.toHaveBeenCalled();
   });
 
   it('shows the weapon’s line only while there is one', () => {
     const { shots: view_, line } = shots();
-    view_.update(1 / 60, at, 'east', 'X  Plastic pistol', view, 1);
+    view_.update(1 / 60, at, 'east', 'X  Plastic pistol', view, 1, aimer);
     expect(line.setVisible).toHaveBeenLastCalledWith(true);
     expect(line.setText).toHaveBeenCalledWith('X  Plastic pistol');
-    view_.update(1 / 60, at, 'east', undefined, view, 1);
+    view_.update(1 / 60, at, 'east', undefined, view, 1, aimer);
     expect(line.setVisible).toHaveBeenLastCalledWith(false);
   });
 });
@@ -203,5 +219,16 @@ describe('where a shot is drawn', () => {
     expect(shotAt(at, 'east').x).toBeGreaterThan(shotAt(at, 'west').x);
     expect(sideOf('north', 'west')).toBe('west');
     expect(sideOf('east', 'west')).toBe('east');
+  });
+
+  it('starts at the frame’s muzzle, in metres from its feet', () => {
+    expect(muzzleOf(aimer)).toEqual({ ahead: 1, up: 0.5 });
+    const at = { x: 10, y: 15 };
+    expect(shotAt(at, 'east', aimer).x - shotAt(at, 'west', aimer).x).toBeCloseTo(2 * PPM);
+  });
+
+  it('has somewhere to start for a figure with no aim painted', () => {
+    expect(muzzleOf(undefined).ahead).toBeGreaterThan(0);
+    expect(muzzleOf({ ppm: 80, frames: {} } as FigureManifest)).toEqual(muzzleOf(undefined));
   });
 });

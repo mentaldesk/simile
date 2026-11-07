@@ -13,12 +13,18 @@ const atlases = import.meta.glob<string>('../../../content/dolls/*.webp', {
 const folder = (path: string) => path.slice(0, path.lastIndexOf('/') + 1);
 const stem = (path: string) => path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
 
+/** A figure with its atlases' URLs. */
+const located = (path: string, figure: FigureManifest): FigureManifest => ({
+  ...figure,
+  painted: figure.painted && atlases[folder(path) + figure.painted],
+  frames: Object.fromEntries(
+    Object.entries(figure.frames).map(([name, frame]) => [name, frame.atlas ? { ...frame, atlas: atlases[folder(path) + frame.atlas] } : frame]),
+  ),
+});
+
 /** The residents', the doctor's and the player's figures in `content/dolls/`, by id, with their atlases' URLs. */
 export const dolls: Record<string, FigureManifest> = Object.fromEntries(
-  Object.entries(manifests).map(([path, figure]) => [
-    figure.id ?? stem(path),
-    { ...figure, painted: figure.painted && atlases[folder(path) + figure.painted] },
-  ]),
+  Object.entries(manifests).map(([path, figure]) => [figure.id ?? stem(path), located(path, figure)]),
 );
 
 /** A flat doll for any look, at once, from the server. The creator previews with it. */

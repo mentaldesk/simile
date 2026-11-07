@@ -3,7 +3,7 @@ import type { Frame, Wall } from '../net';
 import { LAYER_PLACES, landmarkX, layerCopies, parallaxY, streetCentreY, type Copies, type Point } from './camera';
 import { DEPTH } from './depths';
 import { dropShadow, furnitureKey, placeDerived, placeFurniture, placeParts, tileAlong, Tints, type TintGroup } from './draw';
-import { House } from './house';
+import { House, type MachineStates } from './house';
 import {
   coverCrop,
   feetOf,
@@ -166,6 +166,11 @@ export class StreetView {
     return Object.values(manifest.landmarks ?? {}).flatMap(({ piece, glow, at }) =>
       at[map.id] === undefined || !manifest.pieces[piece] ? [] : [{ piece, glow, at: at[map.id] }],
     );
+  }
+
+  /** Each house's machines as they stand. */
+  showMachines(machines: MachineStates): void {
+    for (const { house } of this.fronts) house?.showMachines(machines);
   }
 
   house(name: string): House | undefined {

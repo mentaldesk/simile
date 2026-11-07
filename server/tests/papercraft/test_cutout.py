@@ -93,3 +93,17 @@ def test_the_hybrid_cut_keeps_a_pale_object_on_white() -> None:
     alpha = np.asarray(cutout.hybrid(image))
 
     assert alpha[100, 120] > 200 and alpha[50, 70] > 200 and alpha[5, 5] < 30
+
+
+def test_solid_inside_fills_what_is_enclosed_and_leaves_the_outside_and_its_edge() -> None:
+    pytest.importorskip("cv2")
+    m = np.zeros((20, 20), dtype=np.uint8)
+    m[4:16, 4:16] = 255
+    m[3, 4:16] = 120
+    m[8:10, 8:10] = 0
+    m[11, 11] = 150
+
+    out = np.asarray(cutout.solid_inside(Image.fromarray(m)))
+
+    assert out[8, 8] == 255 and out[11, 11] == 255
+    assert out[0, 0] == 0 and out[3, 8] == 120

@@ -12,6 +12,7 @@ uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, sav
 uv run simile dolls paint player     # the player, and with each combination of bionics
 uv run simile dolls seats            # measure every seat again from the atlases, painting nothing
 uv run simile dolls add kofi         # paint only the frames kofi's atlas lacks, keeping the rest
+uv run simile dolls aim              # paint the player aiming and add it to each of their figures
 ```
 
 Don't edit them by hand. CI never paints; the tests check what's committed. Painting waits
@@ -186,6 +187,20 @@ show in three-quarter view, and the client mirrors a figure to face west, so the
 as the player turns, as every figure's hair parting and leading leg do. Painting the far socket
 too would take another painting of the eye on every frame, and would show it as a red speck by the
 nose whenever the player faced away from it.
+
+## The player aiming
+
+Every figure of the player's has one more frame, **`aim`**, the pistol held out in front, with a
+pose of the same name and a **`muzzle`** point, the end of the pistol from the frame's top-left, where
+the client draws the flash. `simile dolls aim` paints it once, as an edit of the whole player's
+committed `stand` frame (`server/simile/dolls/aim.py`), and matches its colours as any other pose's.
+A figure with bionics takes everything below the hands from its own `stand` if it has legs or feet,
+and its eye and datajack from there too. The aim is in a lossless atlas of its own, `<id>_aim.webp`,
+named by the frame's **`atlas`**: saving a figure's lossy atlas again would wash out the small bright
+parts, and all of them lossless wouldn't fit the budget. Its manifest's **`aimed`** is what it was
+painted from. `simile dolls paint player`, `simile dolls add player` and painting only a bionic's
+layer all write manifests without it, so run `simile dolls aim` after any of them. The tests fail
+until you do, and the client just stands. Painting the player also means painting the `corpse` icon.
 
 ## The flat-doll route
 

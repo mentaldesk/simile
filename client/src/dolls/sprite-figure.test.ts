@@ -38,6 +38,24 @@ describe('wearing another figure', () => {
     expect(drawnImage(figure).key).toBe('figure-player_eye');
   });
 
+  it('stands in for a frame until its own atlas has loaded, and comes in behind the figure', async () => {
+    const loads = loadingImages();
+    const figure = new SpriteFigure(fakeScene(['figure-player']), 0, 0, dolls.player, 'figure-player');
+
+    const worn = figure.wear(dolls.player_feet);
+    expect(loads).toHaveLength(1);
+    loads[0].onload();
+    await worn;
+    figure.setPose('aiming', 'east');
+    expect(drawnImage(figure).frame).toBe('stand');
+
+    expect(loads).toHaveLength(2);
+    loads[1].onload();
+    figure.setPose('aiming', 'east');
+    expect(drawnImage(figure).key).toBe('figure-player_feet:aim');
+    expect(drawnImage(figure).frame).toBe('aim');
+  });
+
   it('keeps its figure if it was destroyed while the atlas loaded', async () => {
     const loads = loadingImages();
     const scene = fakeScene(['figure-player']);
