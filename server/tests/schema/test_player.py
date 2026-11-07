@@ -36,6 +36,8 @@ from simile.schema import (
     export,
     lamp,
 )
+from simile.schema.player import SEWERS
+from simile.street.sewers import SEWERS as STREET_SEWERS
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
@@ -1061,6 +1063,7 @@ COIL = {"id": "copper_coil", "kind": "salvage", "name": "Copper coil", "weight":
         {"corpses": [corpse(items=[SALVAGED_JACK])]},
         {"items": [SALVAGED_JACK]},
         {"stash": {"items": [SALVAGED_JACK]}},
+        {"left": [{"at": {"map": "metro", "x": 3, "y": 15}, "items": [SALVAGED_JACK]}]},
         {"corpses": [corpse(at=DOWN)]},
         {"left": [{"at": DOWN, "items": [COIL]}]},
         {"searched": ["sewers_crates_legs"]},
@@ -1072,6 +1075,7 @@ COIL = {"id": "copper_coil", "kind": "salvage", "name": "Copper coil", "weight":
         "datajack salvaged onto a corpse",
         "datajack carried",
         "datajack stashed",
+        "datajack in a pile",
         "a corpse down there",
         "a pile down there",
         "something searched down there",
@@ -1090,10 +1094,22 @@ def test_a_save_from_before_the_field_has_opened_the_lift_on_any_trace(
         {},
         {"body": {"legs": "bionic_legs"}},
         {"corpses": [corpse()]},
+        {"corpses": [corpse(bionics=["bionic_legs"])]},
         {"searched": ["metro_fridge"]},
         {"taken": {"metro_salvage_1": "2026-10-19T08:00:00Z"}},
     ],
-    ids=["nothing", "other bionics", "a corpse elsewhere", "a find elsewhere", "salvage elsewhere"],
+    ids=[
+        "nothing",
+        "other bionics",
+        "a corpse elsewhere",
+        "a corpse with other bionics",
+        "a find elsewhere",
+        "salvage elsewhere",
+    ],
 )
 def test_a_save_with_no_trace_of_the_lift_leaves_it_shut(elsewhere: dict[str, Any]) -> None:
     assert Player.model_validate_json(json.dumps(elsewhere)).lift_open is False
+
+
+def test_the_schema_names_the_sewers_as_the_street_builder_does() -> None:
+    assert SEWERS == STREET_SEWERS
