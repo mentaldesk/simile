@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playerState, type Bionic, type Corpse, type Item, type Pile, type Player, type PlayerStateMessage, type Position, type TakeMessage } from '../net';
 import type { Reachable } from '../world/reach';
 import cases from './salvage-panel.cases.json';
-import { holderOf, itemRows, SalvagePanel, takeOf, thingsOf, type Thing } from './salvage-panel';
+import { holderOf, itemRows, REFUSED_MS, SalvagePanel, takeOf, thingsOf, type Thing } from './salvage-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'copper_wire' ? '/icons/copper_wire.webp' : undefined) }));
 vi.mock('../world/interactables', () => ({ interactableAt: () => undefined }));
@@ -220,6 +220,62 @@ describe('SalvagePanel', () => {
 
     expect(selected()).toBe('Copper wire1.5 kg');
     expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'copper_wire', index: 0, bionic: null }]);
+  });
+
+  describe('with two pistols that share an id', () => {
+    const pistol = (rounds: number, condition: number): Item => ({ id: 'plastic_pistol', kind: 'weapon', name: 'Plastic pistol', weight: 0.5, material: 'plastic', rounds, capacity: 6, condition, charge: null, on: null });
+    const [worn, loaded] = [pistol(0, 0.1), pistol(6, 1)];
+    const taking = (index: number, item = 'plastic_pistol') => ({ type: 'take', corpse: 'corpse_1', pile: null, item, index, bionic: null });
+
+    afterEach(() => vi.useRealTimers());
+
+    it('sends one take at a time, and the next for the row under the cursor in the state that follows', () => {
+      vi.useFakeTimers();
+      opened(player({ corpses: [body({ items: [WIRE, worn, loaded] })] }));
+
+      press('Enter');
+      press('ArrowDown');
+      press('Enter');
+      press('Enter');
+      expect(sent).toEqual([taking(0, 'copper_wire')]);
+
+      after(player({ items: [LAMP, WIRE], corpses: [body({ items: [worn, loaded] })] }));
+      expect(selected()).toContain('0 of 6 rounds');
+      press('ArrowDown');
+      press('Enter');
+      press('Enter');
+      expect(sent).toEqual([taking(0, 'copper_wire'), taking(1)]);
+
+      after(player({ items: [LAMP, WIRE, loaded], corpses: [body({ items: [worn] })] }));
+      press('Enter');
+      expect(sent.at(-1)).toEqual(taking(0));
+    });
+
+    it('takes the row under the cursor in a state that came between frames', () => {
+      vi.useFakeTimers();
+      opened(player({ corpses: [body({ items: [WIRE, worn, loaded] })] }));
+      press('ArrowDown');
+      press('ArrowDown');
+      expect(selected()).toContain('6 of 6 rounds');
+
+      playerState.latest = state(player({ items: [LAMP, WIRE], corpses: [body({ items: [worn, loaded] })] }));
+      press('Enter');
+
+      expect(sent).toEqual([taking(1)]);
+    });
+
+    it('tries again a moment after a take the server refused, which brings no state', () => {
+      vi.useFakeTimers();
+      opened(player({ corpses: [body({ items: [worn] })] }));
+
+      press('Enter');
+      press('Enter');
+      expect(sent).toHaveLength(1);
+      vi.advanceTimersByTime(REFUSED_MS);
+      press('Enter');
+
+      expect(sent).toEqual([taking(0), taking(0)]);
+    });
   });
 
   it('does not take twice for a held Enter', () => {

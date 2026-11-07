@@ -1,4 +1,4 @@
-import { playerState, server, type Bionic, type Corpse, type Item, type MapTile, type Pile, type Player, type Position, type TakeMessage } from '../net';
+import { playerState, server, type Bionic, type Corpse, type Item, type MapTile, type Pile, type Player, type PlayerStateMessage, type Position, type TakeMessage } from '../net';
 import { mapOf } from '../world/map';
 import type { Reachable } from '../world/reach';
 import { callCue } from './call-cue';
@@ -14,6 +14,8 @@ const KEY = NEWS_KEY.toUpperCase();
 /** The server's reach: while they're in it, a take still lands. */
 const REACH_TILES = 1.5;
 const MONEY_ICON = 'credits';
+/** How long a `take` the server refused, which brings no `player_state`, holds up the next. */
+export const REFUSED_MS = 1000;
 
 /** What the screen is open on: a corpse, or the oldest pile in `left` on a tile. */
 export type Source = { corpse: string } | { pile: MapTile };
@@ -37,7 +39,8 @@ export function itemRows(items: readonly Item[], room: number): (Row & { kind: '
   return rows;
 }
 
-const keyOf = (thing: Thing) => `${thing.kind}:${thing.id}:${thing.kind === 'item' ? thing.index : ''}`;
+/** The same row in the next state, though taking another item shifts its index. */
+const keyOf = (thing: Thing) => `${thing.kind}:${thing.id}:${thing.kind === 'item' ? JSON.stringify(thing.first) : ''}`;
 
 const onTile = (a: MapTile, b: MapTile) => a.map === b.map && a.x === b.x && a.y === b.y;
 
@@ -94,6 +97,8 @@ export class SalvagePanel {
   private room = 0;
   private at = 0;
   private drawn = '';
+  /** The last `take`, until the `player_state` that follows it: an index means nothing before then. */
+  private waiting?: { state: PlayerStateMessage | undefined; until: number };
 
   constructor(parent: HTMLElement, send: (message: TakeMessage) => void = (message) => server.send(message)) {
     this.send = send;
@@ -140,6 +145,7 @@ export class SalvagePanel {
     this.title.textContent = used.salvage ? 'Your body' : 'Lying here';
     this.at = 0;
     this.drawn = '';
+    this.waiting = undefined;
     this.show(state.player, state.bionics ?? []);
     this.panel.focus();
     return true;
@@ -225,10 +231,16 @@ export class SalvagePanel {
     }
   }
 
+  /** Takes the row under the cursor in the latest state, once the last `take` has been answered. */
   private act(): void {
+    const state = playerState.latest;
+    if (this.waiting && this.waiting.state === state && Date.now() < this.waiting.until) return;
+    if (state) this.show(state.player, state.bionics ?? []);
     const thing = this.things[this.at];
     const message = thing && this.source && takeOf(this.source, thing);
-    if (message) this.send(message);
+    if (!message) return;
+    this.send(message);
+    this.waiting = { state, until: Date.now() + REFUSED_MS };
   }
 
   private render(): void {
