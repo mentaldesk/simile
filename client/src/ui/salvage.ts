@@ -39,18 +39,18 @@ export function fitting(pile: Pile, player: Player): { taken: Item[]; kept: Item
   return { taken, kept };
 }
 
-/** What E picks up from a pile in reach: one they left, or salvage or a secret lying about. */
+/** What E picks up from a pile in reach: one in `left`, which can be a bot's haul, or salvage or a secret lying about. */
 export function pickUpPrompt(pile: Pile, player: Player): string {
-  const theirs = player.left?.includes(pile) ?? false;
+  const loose = player.left?.includes(pile) ?? false;
   const { taken, kept } = fitting(pile, player);
   const money = pile.money ?? 0;
   const names = (items: Item[]) => counted(items).map((name) => `the ${name}`);
   if (!taken.length && !money) {
-    if (theirs) return "You can't carry any more of what you left here.";
+    if (loose) return "You can't carry any more of what's lying here.";
     const are = kept.length > 1 ? 'are' : 'is';
     return `${upperFirst(listed(names(kept)))} ${are} too heavy to carry with what you have.`;
   }
-  if (theirs) return `Press ${E} to pick up ${kept.length ? 'what you can carry of ' : ''}what you left here.`;
+  if (loose) return `Press ${E} to pick up ${kept.length ? 'what you can carry of ' : ''}what's lying here.`;
   const what = listed([...names(taken), ...(money ? [`${amount(money)} in cash`] : [])]);
   const left = kept.length ? ` ${upperFirst(listed(names(kept)))} won't fit.` : '';
   return `Press ${E} to pick up ${what}.${left}`;

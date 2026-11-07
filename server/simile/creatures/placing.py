@@ -1,13 +1,16 @@
 """The creatures the maps place, from each one's `creatures` layer: README.md's *Placing them*."""
 
 import json
+import random
+from collections.abc import Collection, Mapping
 from pathlib import Path
 from typing import Any
 
 from simile.creatures.engine import Creature, Creatures
 from simile.creatures.kinds import KINDS
-from simile.schema import CreatureKind, MapTile, TileArea
+from simile.schema import CreatureKind, Id, Item, MapTile, TileArea
 from simile.street.plan import CREATURES_LAYER, Spawn
+from simile.street.sewers import SALVAGE_ITEMS
 from simile.world.map import FLOORS, LEVELS, MAP_DIR
 
 
@@ -25,7 +28,19 @@ def spawns(directory: Path = MAP_DIR, level: int = 0) -> list[tuple[str, Spawn]]
     return found
 
 
-def populate(creatures: Creatures, placed: list[tuple[str, Spawn]]) -> list[Creature]:
+def starting_haul(creature_id: str, seed: int, lying: Collection[Id]) -> list[Item]:
+    """1 or 2 of the tunnels' salvage that doesn't lie on its map: README.md's *A haul*."""
+    offered = [item for item in SALVAGE_ITEMS if item.id not in lying]
+    rng = random.Random(f"haul/{seed}/{creature_id}")
+    return rng.choices(offered, k=rng.randint(1, 2)) if offered else []
+
+
+def populate(
+    creatures: Creatures,
+    placed: list[tuple[str, Spawn]],
+    seed: int,
+    lying_by_map: Mapping[str, Collection[Id]],
+) -> list[Creature]:
     """Spawns each on a map the creatures have, but for those gone for good."""
     made = []
     for map_id, spawn in placed:
@@ -36,6 +51,8 @@ def populate(creatures: Creatures, placed: list[tuple[str, Spawn]]) -> list[Crea
         options: dict[str, Any] = {"area": spawn.area, "respawn": placing.respawn}
         if spawn.span is not None:
             options["span"] = spawn.span
+        if placing.stocked:
+            options["haul"] = starting_haul(spawn.id, seed, lying_by_map.get(map_id, ()))
         made.append(creatures.spawn(placing.kind, at, id=spawn.id, **options))
     return made
 
