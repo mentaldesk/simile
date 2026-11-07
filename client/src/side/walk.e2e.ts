@@ -1079,42 +1079,49 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
   }
 }
 
+const AT_THE_LOCKERS = { map: 'maker_space_floor_2', x: 7, y: 2 };
+const LAMP = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.8, on: false };
+const WIRE = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
+
+/** The `player_state` the server would send, since the harness has no stash. */
+const holding = (page: Page, items: object[], stored: object[], corpses: object[] = []) =>
+  page.evaluate(
+    async ([items, stored, corpses]) => {
+      const net = '/src/net/index.ts';
+      const { server } = await import(/* @vite-ignore */ net);
+      const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
+      const player = { money: 0, items, carry_limit: 10, stash: { items: stored, limit: 20 }, corpses, body, hunger: 0, health: 1 };
+      server.dispatch(JSON.stringify({ type: 'player_state', player }));
+    },
+    [items, stored, corpses] as const,
+  );
+
+/** The `stash` and `pick_up` messages sent since it was last called. */
+const usesSent = (page: Page) =>
+  page.evaluate(async () => {
+    const net = '/src/net/index.ts';
+    const { server } = await import(/* @vite-ignore */ net);
+    const seen = window as unknown as { usesSent?: object[] };
+    if (!seen.usesSent) {
+      seen.usesSent = [];
+      const send = server.send;
+      server.send = (message: { type: string }) => {
+        if (message.type === 'stash' || message.type === 'pick_up') seen.usesSent!.push(message);
+        return send(message);
+      };
+    }
+    return seen.usesSent.splice(0);
+  });
+
 /** E at the lockers lists both sides, Enter sends the move, the state that follows shows on both sides and on the character screen, and Esc closes without the pause menu. */
 async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the lockers';
-  const at = { map: 'maker_space_floor_2', x: 7, y: 2 };
-  const LAMP = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.8, on: false };
-  const WIRE = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
+  const at = AT_THE_LOCKERS;
   const PISTOL = { id: 'plastic_pistol', kind: 'weapon', name: 'Plastic pistol', weight: 0.5, charge: null, on: null, material: 'plastic', rounds: 2, capacity: 6, condition: 0.4 };
-  const holding = (items: object[], stored: object[]) =>
-    page.evaluate(
-      async ([items, stored]) => {
-        const net = '/src/net/index.ts';
-        const { server } = await import(/* @vite-ignore */ net);
-        const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
-        const player = { money: 0, items, carry_limit: 10, stash: { items: stored, limit: 20 }, body, hunger: 0, health: 1 };
-        server.dispatch(JSON.stringify({ type: 'player_state', player }));
-      },
-      [items, stored] as const,
-    );
-  const sends = () =>
-    page.evaluate(async () => {
-      const net = '/src/net/index.ts';
-      const { server } = await import(/* @vite-ignore */ net);
-      const seen = window as unknown as { stashSent?: object[] };
-      if (!seen.stashSent) {
-        seen.stashSent = [];
-        const send = server.send;
-        server.send = (message: { type: string }) => {
-          if (message.type === 'stash') seen.stashSent!.push(message);
-          return send(message);
-        };
-      }
-      return seen.stashSent.splice(0);
-    });
+  const sends = () => usesSent(page);
   await teleport(page, api, at, name);
   await sends();
-  await holding([LAMP, WIRE], [PISTOL]);
+  await holding(page, [LAMP, WIRE], [PISTOL]);
   await run(page, 300);
   const hint = await shown(page, '.counter-hint');
   if (hint !== 'Press E to use the lockers.') throw new Error(`${name}: the hint is ${hint}`);
@@ -1130,7 +1137,7 @@ async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 100);
   const stored = JSON.stringify(await sends());
   if (stored !== JSON.stringify([{ type: 'stash', item: 'copper_wire', action: 'store' }])) throw new Error(`${name}: Enter sent ${stored}`);
-  await holding([LAMP], [PISTOL, WIRE]);
+  await holding(page, [LAMP], [PISTOL, WIRE]);
   await run(page, 100);
   const after = await page.evaluate(() => [...document.querySelectorAll('.stash-panel .clinic-side')].map((side) => side.textContent));
   if (after[0]?.includes('Copper wire') || !after[1]?.includes('Copper wire')) throw new Error(`${name}: storing didn't show: ${after}`);
@@ -1164,6 +1171,52 @@ async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
   await teleport(page, api, { map: 'maker_space_floor_2', x: 6, y: 2 }, `${name}, stepping away`);
   await run(page, 200);
   if ((await shown(page, '.counter-hint')) !== null) throw new Error(`${name}: the hint stayed off the stand tile`);
+  await api.hurt(1);
+}
+
+/** A corpse beside the lockers takes E while it holds what they can carry, and gives way to them while it doesn't, so they can make room. */
+async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the lockers beside a corpse';
+  const HEAVY = { id: 'servo_motor', kind: 'salvage', name: 'Servo motor', weight: 9.5, charge: null, on: null };
+  const body = (item: object) => ({ id: 'corpse_1', owner: 'player', at: { map: AT_THE_LOCKERS.map, x: 8, y: 2 }, money: 0, items: [item], bionics: [] });
+  const salvage = 'Press E to salvage what you can carry from your body.';
+  const expects = async (where: string, hint: string | null, offered: boolean) => {
+    const [shownHint, lines] = [await shown(page, '.counter-hint'), await cornerLines(page)];
+    if (shownHint !== hint) throw new Error(`${name}: ${where}, the hint is ${shownHint}`);
+    if (lines.includes(salvage) !== offered) throw new Error(`${name}: ${where}, the corner says ${lines}`);
+  };
+  const pressE = async (where: string, sent: object[], panel: boolean) => {
+    await page.keyboard.press('e');
+    await run(page, 300);
+    const uses = JSON.stringify(await usesSent(page));
+    if (uses !== JSON.stringify(sent)) throw new Error(`${name}: ${where}, E sent ${uses}`);
+    if (((await shown(page, '.stash-panel')) !== null) !== panel) throw new Error(`${name}: ${where}, the panel is ${panel ? 'shut' : 'open'}`);
+  };
+  await teleport(page, api, AT_THE_LOCKERS, name);
+  await usesSent(page);
+
+  await holding(page, [LAMP], [], [body(WIRE)]);
+  await run(page, 300);
+  await expects('with what fits on it', null, true);
+  await pressE('with what fits on it', [{ type: 'pick_up' }], false);
+
+  await holding(page, [LAMP], [], [body(HEAVY)]);
+  await run(page, 300);
+  await expects("with what doesn't fit on it", 'Press E to use the lockers.', false);
+  await pressE("with what doesn't fit on it", [], true);
+  await shot(page, index, name);
+
+  await page.keyboard.press('Enter');
+  await run(page, 100);
+  const stored = JSON.stringify(await usesSent(page));
+  if (stored !== JSON.stringify([{ type: 'stash', item: 'lamp', action: 'store' }])) throw new Error(`${name}: Enter sent ${stored}`);
+  await holding(page, [], [LAMP], [body(HEAVY)]);
+  await run(page, 300);
+  if ((await shown(page, '.stash-panel')) === null) throw new Error(`${name}: making room closed the panel`);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  await expects('with room made for it', null, true);
+  await pressE('with room made for it', [{ type: 'pick_up' }], false);
   await api.hurt(1);
 }
 
@@ -1224,6 +1277,7 @@ try {
     ['firing and reloading', () => shootingLeg(open)],
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ['E at the lockers', (i) => stashLeg(page, api, i)],
+    ['E at the lockers beside a corpse', (i) => stashBesideCorpseLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();

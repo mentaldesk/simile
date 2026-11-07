@@ -412,6 +412,15 @@ describe('a corpse E takes from', () => {
     const LOFT = 'maker_space_floor_2';
     const HEAVY = { id: 'servo_motor', kind: 'salvage', name: 'Servo motor', weight: 4, charge: null, on: null } as const;
 
+    it('leaves the lockers to a corpse beside them that E can take nothing from, and not to one it can', () => {
+      const lockers = { map: LOFT, x: 7, y: 2 };
+      for (const x of [6, 8]) {
+        const heavy = lying(LOFT, x, 2, { items: [HEAVY] });
+        expect(usedByE(lockers, everywhere([heavy], { room: () => 1 }))).toBeUndefined();
+        expect(usedByE(lockers, everywhere([heavy], { room: () => 4 }))).toMatchObject({ salvage: { corpse: heavy } });
+      }
+    });
+
     it('leaves the lockers and the bed to a corpse on their one cell that E can take nothing from', () => {
       const lockers = { map: LOFT, x: 7, y: 2 };
       expect(interactableAt(LOFT, lockers)).toMatchObject({ id: 'lockers', kind: 'machine' });

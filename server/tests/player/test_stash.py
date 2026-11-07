@@ -15,10 +15,20 @@ from simile.behaviour import Behaviour
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.persistence import WorldStore, capture
-from simile.player.corpses import Death
+from simile.player.corpses import Death, Salvage
 from simile.player.stash import Lockers, fitting
 from simile.protocol import Vital
-from simile.schema import PLAYER_ID, Item, ItemKind, Material, Player, Stash, lamp
+from simile.schema import (
+    PLAYER_ID,
+    Corpse,
+    Item,
+    ItemKind,
+    MapTile,
+    Material,
+    Player,
+    Stash,
+    lamp,
+)
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point, movement_of
 from simile.world.map import load_maps
@@ -365,6 +375,45 @@ def test_the_stash_survives_a_death_and_can_be_taken_from_after() -> None:
     movement.track(PLAYER_ID, AT_THE_LOCKERS)
     assert lockers.move("plastic_pistol", "take")
     assert player.items[-1] == worn
+
+
+def corpse_beside_the_lockers(*items: Item) -> Corpse:
+    at = MapTile(map=AT_THE_LOCKERS.map, x=8, y=2)
+    return Corpse(id="corpse_1", owner=PLAYER_ID, at=at, money=0, items=list(items), bionics=[])
+
+
+def salvage_of(player: Player) -> Salvage:
+    return Salvage(player, None, None, {})  # type: ignore[arg-type]
+
+
+def test_a_corpse_beside_the_lockers_gives_what_fits_and_leaves_the_stash_alone() -> None:
+    stored = Stash(items=[plastic(2)])
+    player = Player(items=[lamp()], stash=stored, corpses=[corpse_beside_the_lockers(WIRE)])
+
+    claim = salvage_of(player).claim(AT_THE_LOCKERS)
+    assert claim is not None
+    claim.take()
+
+    assert player.items == [lamp(), WIRE]
+    assert player.corpses[0].items == []
+    assert player.stash == stored
+
+
+def test_storing_makes_room_for_a_corpse_beside_the_lockers_that_did_not_fit() -> None:
+    crate = Item(id="crate", kind=ItemKind.PART, name="Crate", weight=8)
+    bolts = Item(id="bolts", kind=ItemKind.PART, name="Bolts", weight=10)
+    player = Player(items=[crate], corpses=[corpse_beside_the_lockers(bolts)])
+    salvage = salvage_of(player)
+
+    assert salvage.claim(AT_THE_LOCKERS) is None
+    assert lockers_for(player).move("crate", "store")
+    claim = salvage.claim(AT_THE_LOCKERS)
+    assert claim is not None
+    claim.take()
+
+    assert player.items == [bolts]
+    assert player.stash.items == [crate]
+    assert player.corpses[0].items == []
 
 
 def states_from(ws: Any) -> "queue.SimpleQueue[dict[str, Any]]":
