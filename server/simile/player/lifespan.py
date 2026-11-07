@@ -19,6 +19,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.pickups import Pickups, claimers_of
     from simile.player.power import Power
     from simile.player.sleep import Sleep
+    from simile.player.stash import Lockers
     from simile.player.sync import PlayerSync, recipes_of
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
@@ -32,6 +33,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         Position,
         RestMessage,
         SellMessage,
+        StashMessage,
         Vital,
         hub_of,
     )
@@ -140,6 +142,12 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         if trade.buy(message.item):
             sync.update()
 
+    lockers = Lockers(player, movement)
+
+    def on_stash(message: StashMessage) -> None:
+        if lockers.move(message.item, message.action):
+            sync.update()
+
     stops = [
         world.loop.register(hunger),
         world.loop.register(lamp),
@@ -153,6 +161,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(PickUpMessage, on_pick_up),
         hub.subscribe(SellMessage, on_sell),
         hub.subscribe(BuyMessage, on_buy),
+        hub.subscribe(StashMessage, on_stash),
         hub.subscribe(LampMessage, on_lamp),
         hub.subscribe(RestMessage, on_rest),
         hub.greet(sync.message),
