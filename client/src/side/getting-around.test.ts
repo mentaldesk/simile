@@ -144,7 +144,7 @@ describe('every lift', () => {
 
 describe('every door', () => {
   const doors = links.filter(({ kind }) => kind === 'door');
-  const jacked = (start: MapPosition) => Object.assign(new SidePlayer(village, start), { datajack: true });
+  const jacked = (start: MapPosition) => Object.assign(new SidePlayer(village, start), { liftOpen: true });
 
   it('is taken on E from its cell, and never on up or down', () => {
     for (const door of doors) {
@@ -155,7 +155,7 @@ describe('every door', () => {
     }
   });
 
-  it("takes the lift down to the sewers only with the datajack, and back up without", () => {
+  it("takes the lift down to the sewers only once it's open, and back up without", () => {
     const [down] = doors.filter(({ id, map }) => id === 'metro_to_sewers' && map === 'metro');
     const [up] = doors.filter(({ id, map }) => id === 'metro_to_sewers' && map === 'sewers');
     const at = (door: typeof down) => ({ x: door.x, y: door.y, map: door.map });

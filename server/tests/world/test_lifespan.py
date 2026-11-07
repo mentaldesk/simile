@@ -10,7 +10,7 @@ from simile.memory import memory_of
 from simile.npc import load_npcs
 from simile.persistence import player_of
 from simile.protocol import hub_of
-from simile.schema import PLAYER_ID, Bionic, Body, MapTile
+from simile.schema import PLAYER_ID, Bionic, Body, MapTile, Player
 from simile.sim import world_of
 from simile.social import meet
 from simile.world import Point, movement_of
@@ -69,6 +69,13 @@ def send_moves(app: Starlette, *positions: tuple[float, float, str]) -> None:
         hub_of(app).receive(f'{{"type": "player_move", "position": {position}}}')
 
 
+def restore_player(app: Starlette, player: Player) -> None:
+    """Their state back in place, through JSON as a reload has it."""
+    loaded = Player.model_validate_json(player.model_dump_json())
+    for field in Player.model_fields:
+        setattr(player_of(app), field, getattr(loaded, field))
+
+
 def test_keeps_a_jump_and_a_fall_where_they_are(make_package: MakePackage) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
 
@@ -112,6 +119,59 @@ def test_keeps_a_move_into_the_sewers_only_with_the_datajack(
 
         assert entered is datajack
         assert movement_of(app).position(PLAYER_ID) == Point(100, 15, "metro")
+
+
+def test_a_new_body_rides_the_lift_once_a_body_has_had_the_datajack_across_a_save(
+    make_package: MakePackage,
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        player = player_of(app)
+        player.body = Body(vertebra=Bionic.DATAJACK)
+        player.body = Body()
+        restore_player(app, player)
+        send_moves(app, (100, 15, "metro"), (3, 15, "sewers"))
+
+        assert Bionic.DATAJACK not in player_of(app).body.bionics
+        assert movement_of(app).position(PLAYER_ID) == Point(3, 15, "sewers")
+
+
+def test_a_body_that_never_opened_the_lift_stays_out_across_a_save(
+    make_package: MakePackage,
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        player = player_of(app)
+        player.body = Body(legs=Bionic.BIONIC_LEGS)
+        player.searched = ["metro_fridge"]
+        restore_player(app, player)
+        send_moves(app, (100, 15, "metro"), (3, 15, "sewers"))
+
+        assert movement_of(app).position(PLAYER_ID) == Point(100, 15, "metro")
+
+
+def test_a_save_from_before_the_lift_stayed_open_opens_it_for_a_body_with_no_datajack(
+    make_package: MakePackage,
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+    down = {"map": "sewers", "x": 3, "y": 15}
+    corpse = {
+        "id": "corpse_1",
+        "owner": "player",
+        "at": down,
+        "money": 0,
+        "items": [],
+        "bionics": [],
+    }
+
+    with TestClient(app):
+        saved = Player.model_validate_json(json.dumps({"corpses": [corpse]}))
+        restore_player(app, saved)
+        send_moves(app, (100, 15, "metro"), (3, 15, "sewers"))
+
+        assert movement_of(app).position(PLAYER_ID) == Point(3, 15, "sewers")
 
 
 @pytest.mark.parametrize(

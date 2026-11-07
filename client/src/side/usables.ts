@@ -3,7 +3,7 @@ import type { Corpse, Pile, Position } from '../net';
 import type { Clue } from '../world/clues';
 import { interactablesOn } from '../world/interactables';
 import { mapOf } from '../world/map';
-import { eUse, reachables, type Reachable, type Reachables, type WayPrompt } from '../world/reach';
+import { eUse, opens, reachables, type Reachable, type Reachables, type WayPrompt } from '../world/reach';
 import { holds, searches } from '../world/searchables';
 import { DEPTH } from './depths';
 import { furnitureKey } from './draw';
@@ -206,12 +206,12 @@ function reachedId(reached: Reachable): string | undefined {
   }
 }
 
-/** What E uses where the player stands, unless it needs the datajack they lack; with it, the lift E rides. */
+/** What E uses where the player stands, unless it needs the datajack they lack; once it's open, the lift E rides. */
 export function glowing(position: Position | undefined, ways: readonly WayPrompt[], from: Reachables = reachables): string | undefined {
   if (!position) return undefined;
   const jacked = !!from.jacked?.();
   const used = eUse(position, ways, from);
   if (used) return used.kind === 'jack' && !jacked ? undefined : reachedId(used);
   const jack = from.interactableAt(mapOf(position), position);
-  return jack?.kind === 'jack' && jacked && from.leadsAway?.(jack) ? thingId(jack.map, jack.id) : undefined;
+  return jack?.kind === 'jack' && opens(from, jack) ? thingId(jack.map, jack.id) : undefined;
 }

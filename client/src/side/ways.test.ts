@@ -66,7 +66,7 @@ describe('prompts', () => {
   it('give every door and every way onto another street to E, and none to up or down', () => {
     for (const map of village.maps.values()) {
       for (const door of map.links.filter(({ kind }) => kind === 'door')) {
-        const player = Object.assign(new SidePlayer(village, { x: door.x, y: door.y, map: map.id }), { datajack: true });
+        const player = Object.assign(new SidePlayer(village, { x: door.x, y: door.y, map: map.id }), { liftOpen: true });
         const here = prompts(village, map, player.ways());
         const keys = here.filter(({ way }) => way.kind === 'door').map(({ keys }) => keys);
         expect(keys, `${map.id} ${door.id}`).toEqual([['E']]);

@@ -4,7 +4,7 @@ import { trades } from './buyers';
 import { sideClock } from '../side/clock';
 import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
-import { jacked, leadsAway } from './jacks';
+import { jacked, leadsAway, liftOpen } from './jacks';
 import { mapOf } from './map';
 import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { searches } from './searchables';
@@ -36,6 +36,8 @@ export type Reachables = {
   clues: readonly Clue[];
   /** Whether the datajack is fitted. */
   jacked?: () => boolean;
+  /** Whether the lift goes down without it. */
+  liftOpen?: () => boolean;
   /** Whether a link leaves from the jack's stand tile, for E to take once it works. */
   leadsAway?: (jack: Interactable) => boolean;
   /** The interactables the player has searched, by id. */
@@ -73,6 +75,7 @@ export const reachables: Reachables = {
   buyer: () => playerState.latest?.buyer ?? undefined,
   clues,
   jacked: () => jacked(playerState.latest?.player.body),
+  liftOpen: () => liftOpen(playerState.latest?.player),
   leadsAway,
   searched: () => playerState.latest?.player.searched ?? [],
   bed: () => restsAt(playerState.latest),
@@ -120,7 +123,7 @@ const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
   kind === 'counter' || kind === 'painting' || kind === 'jack';
 
 /** A jack is used with E, unless it works and a link leaves from it, which E takes instead. */
-const opens = (from: Reachables, jack: Interactable) => !!from.jacked?.() && !!from.leadsAway?.(jack);
+export const opens = (from: Reachables, jack: Interactable) => (!!from.jacked?.() || !!from.liftOpen?.()) && !!from.leadsAway?.(jack);
 
 /** What E can use, V look at or T order at where the player stands, nearest first. */
 export function inReach(position: Position | undefined, from: Reachables = reachables): Reachable[] {

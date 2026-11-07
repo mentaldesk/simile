@@ -1,6 +1,7 @@
 import asyncio
 import math
 from collections.abc import Callable
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
@@ -134,6 +135,19 @@ def test_taking_nothing_is_refused() -> None:
 
     with pytest.raises(Refused):
         asyncio.run(player.take(PILE))
+
+
+def test_taking_what_a_bot_got_to_first_is_not_refused() -> None:
+    player, notes = playing(lambda carrying: None)
+
+    async def beaten_to_it(spot: Spot) -> None:
+        player.player.taken = {PILE.id: datetime(2026, 1, 1, tzinfo=UTC)}
+
+    player.to = beaten_to_it  # type: ignore[method-assign]
+
+    asyncio.run(player.take(PILE))
+
+    assert notes == [f"Something had taken what lay at {PILE.id} before they got there"]
 
 
 def test_searching_notes_a_stack_that_grew() -> None:

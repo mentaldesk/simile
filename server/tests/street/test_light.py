@@ -48,6 +48,10 @@ WEST = [
 ]
 EAST = [
     "metro_salvage_5",
+    "metro_salvage_13",
+    "metro_salvage_12",
+    "metro_salvage_14",
+    "metro_salvage_15",
     FREIGHT_CRATES,
     CONTAINER,
     "metro_secret_container",

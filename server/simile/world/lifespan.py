@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.persistence import player_of
     from simile.protocol import PlayerMoveMessage, hub_of
-    from simile.schema import PLAYER_ID, Bionic, Id
+    from simile.schema import PLAYER_ID, Id
     from simile.sim import world_of
     from simile.street.jump import jump_of
     from simile.street.moves import possible
@@ -32,12 +32,12 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             return
         last = movement.entities().get(PLAYER_ID)
         kept = (last.x, last.y) if last is not None and last.map == position.map else None
-        body = player_of(app).body
+        player = player_of(app)
         entering = last is None or last.map != position.map
-        if entering and position.map == SEWERS and Bionic.DATAJACK not in body.bionics:
-            logger.warning("Ignored a player_move into the sewers without the datajack")
+        if entering and position.map == SEWERS and not player.lift_open:
+            logger.warning("Ignored a player_move into the sewers with the lift shut")
             return
-        jump = jump_of(body)
+        jump = jump_of(player.body)
         if town.kind is not None and not possible(town, position.x, position.y, kept, jump):
             logger.warning("Ignored a player_move to where nobody could be: %s", position)
             return
