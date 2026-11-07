@@ -1,5 +1,6 @@
 import type { Buyer, Item, Pile, Player } from '../net';
 import { fits, trades } from '../world/buyers';
+import type { Salvage } from '../world/reach';
 import { NEWS_KEY } from './tuning';
 
 const E = NEWS_KEY.toUpperCase();
@@ -53,6 +54,12 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
   const what = listed([...names(taken), ...(money ? [`${amount(money)} in cash`] : [])]);
   const left = kept.length ? ` ${upperFirst(listed(names(kept)))} won't fit.` : '';
   return `Press ${E} to pick up ${what}.${left}`;
+}
+
+/** What E takes from a corpse in reach. A bionic's weight is the server's, so one might not fit. */
+export function salvagePrompt({ others, takes }: Salvage): string {
+  if (!takes) return `You can't carry any more of what's on ${others ? `the ${others + 1} bodies here` : 'your body'}.`;
+  return `Press ${E} to salvage what you can carry from ${others ? `the oldest of the ${others + 1} bodies here` : 'your body'}.`;
 }
 
 /** What the buyer where they stand would pay for what they carry, for E's panel, or that it buys. */

@@ -11,6 +11,7 @@ from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
+from simile.player.corpses import BIONIC_WEIGHTS
 from simile.player.trade import Trade
 from simile.protocol import Buyer, Fitting, Treatment
 from simile.schema import (
@@ -480,3 +481,174 @@ def test_she_gives_no_treatment_they_cant_pay_for_dont_need_or_outside() -> None
 
     assert depot.player.money == 10
     assert depot.economy.ledger.entries == []
+
+
+def salvaged(bionic: Bionic) -> Item:
+    weight = BIONIC_WEIGHTS[bionic]
+    return Item(
+        id=bionic.value,
+        kind=ItemKind.BIONIC,
+        name=RECIPES[bionic].name,
+        weight=weight,
+        bionic=bionic,
+    )
+
+
+def carrying(*bionics: Bionic, money: float = 0, body: Body | None = None) -> Player:
+    """A player who knows each recipe and carries each bionic, salvaged, and none of its parts."""
+    items = [lamp(), *map(salvaged, bionics)]
+    return Player(money=money, body=body or Body(), items=items, mind=Mind(recipes=list(bionics)))
+
+
+@pytest.mark.parametrize(
+    ("bionic", "fee"),
+    [
+        (Bionic.DATAJACK, 25),
+        (Bionic.INFRARED_EYE, 50),
+        (Bionic.BIONIC_LEGS, 38),
+        (Bionic.BIONIC_LEGS_2, 75),
+        (Bionic.BIONIC_LEGS_3, 175),
+        (Bionic.SPRING_FEET, 38),
+        (Bionic.SPRING_FEET_2, 75),
+    ],
+)
+def test_a_salvaged_bionic_goes_back_at_its_grade_for_the_fee_and_no_parts(
+    bionic: Bionic, fee: float
+) -> None:
+    player = carrying(bionic, money=200, body=Body(stomach=Bionic.POWER_CELL_3))
+    player.items = [*player.items, *parts(bionic)]
+    depot = Depot(player)
+    [fitting] = depot.clinic.fittings()
+    part = fitting.parts[0]
+    assert (fitting.price, fitting.blocked) == (fee, None)
+
+    assert depot.clinic.fit(bionic, part)
+
+    assert getattr(player.body, part) == bionic
+    assert player.money == 200 - fee
+    assert [item.id for item in player.items] == ["lamp", *(i.id for i in parts(bionic))]
+    entries = [(e.kind, e.payer, e.payee, e.amount, e.place) for e in depot.economy.ledger.entries]
+    assert entries == [(Kind.PURCHASE, PLAYER, OUTSIDE, fee, "clinic")]
+    assert depot.balanced()
+    assert depot.clinic.fittings() == []
+
+
+@pytest.mark.parametrize(
+    ("bionic", "fee"),
+    [(Bionic.POWER_CELL, 25), (Bionic.POWER_CELL_2, 63), (Bionic.POWER_CELL_3, 150)],
+)
+def test_a_salvaged_cell_goes_in_first_in_a_new_body(bionic: Bionic, fee: float) -> None:
+    depot = Depot(carrying(bionic, money=fee))
+    assert depot.clinic.fit(bionic, "stomach")
+    assert depot.player.body.stomach == bionic
+    assert depot.player.money == 0
+
+
+def test_the_order_rules_hold_for_a_refit() -> None:
+    legs, cell = Bionic.BIONIC_LEGS, Bionic.POWER_CELL
+    depot = Depot(carrying(legs, cell, money=500))
+
+    assert blocked(depot) == {legs: "Needs a power cell first."}
+    assert not depot.clinic.fit(legs, "legs")
+    assert depot.player.body.legs == "present"
+    assert depot.player.money == 500
+
+    assert depot.clinic.fit(cell, "stomach")
+    assert depot.clinic.fit(legs, "legs")
+    assert depot.player.money == 500 - 25 - 38
+
+
+def test_a_refit_runs_up_against_what_their_cell_runs() -> None:
+    body = Body(
+        stomach=Bionic.POWER_CELL,
+        legs=Bionic.BIONIC_LEGS,
+        vertebra=Bionic.DATAJACK,
+        feet=Bionic.SPRING_FEET,
+    )
+    depot = Depot(carrying(Bionic.INFRARED_EYE, money=500, body=body))
+
+    assert blocked(depot) == {Bionic.INFRARED_EYE: "Needs a bigger power cell first."}
+    assert not depot.clinic.fit(Bionic.INFRARED_EYE, "left_eye")
+
+
+def test_a_higher_grade_fitted_leaves_no_slot_for_a_lower_one_and_a_lower_gives_way() -> None:
+    low, high = Bionic.BIONIC_LEGS, Bionic.BIONIC_LEGS_3
+    fitted_high = Depot(carrying(low, money=500, body=Body(stomach=Bionic.POWER_CELL, legs=high)))
+    assert fitted_high.clinic.fittings() == []
+    assert not fitted_high.clinic.fit(low, "legs")
+    assert [item.id for item in fitted_high.player.items] == ["lamp", low]
+
+    fitted_low = Depot(carrying(high, money=500, body=Body(stomach=Bionic.POWER_CELL, legs=low)))
+    assert fitted_low.clinic.fit(high, "legs")
+    assert fitted_low.player.body.legs == high
+
+
+def test_an_eye_refits_in_whichever_eye_is_free() -> None:
+    depot = Depot(carrying(EYE, money=50, body=Body(stomach=CELL)))
+    assert depot.clinic.fittings()[0].parts == ["left_eye", "right_eye"]
+    assert depot.clinic.fit(EYE, "right_eye")
+    assert depot.player.body.right_eye == EYE
+
+
+def test_short_of_the_fee_or_outside_the_clinic_nothing_is_refitted() -> None:
+    depot = Depot(carrying(CELL, money=24.5))
+    assert not depot.clinic.fit(CELL, "stomach")
+    assert [item.id for item in depot.player.items] == ["lamp", CELL]
+
+    depot.player.money = 25
+    depot.stand(STALL)
+    assert not depot.clinic.fit(CELL, "stomach")
+    assert depot.player.money == 25
+    assert depot.economy.ledger.entries == []
+
+
+def test_she_refits_only_what_they_know_the_recipe_for() -> None:
+    player = carrying(CELL, money=100)
+    player.mind = Mind()
+    depot = Depot(player)
+    assert depot.clinic.fittings() == []
+    assert not depot.clinic.fit(CELL, "stomach")
+
+
+def test_a_refit_needs_none_of_her_stock_and_building_another_still_does() -> None:
+    stock = {bionic: 0 for bionic in Bionic}
+    config = DEFAULT_CONFIG.model_copy(update={"stock": stock})
+    refit = Depot(carrying(CELL, money=25), config)
+    assert refit.clinic.fit(CELL, "stomach")
+
+    built = Depot(knowing(CELL, money=100, body=Body()), config)
+    assert blocked(built) == {CELL: "Out of stock."}
+
+
+def test_once_refitted_a_second_is_built_from_its_recipe_at_full_price() -> None:
+    depot = Depot(carrying(CELL, money=25))
+    depot.player.items = [*depot.player.items, *parts(CELL)]
+    fee = depot.clinic.fittings()[0].price
+    assert fee == 25
+    assert depot.clinic.missing(CELL) == {}
+
+    depot.player.items = [item for item in depot.player.items if item.bionic is None]
+    assert depot.clinic.fittings()[0].price == 100
+
+
+def test_carrying_one_salvaged_bionic_builds_another_at_full_price_from_its_parts() -> None:
+    player = carrying(JACK, money=100, body=POWERED)
+    player.mind = Mind(recipes=[JACK, Bionic.SPRING_FEET])
+    player.items = [*player.items, *parts(Bionic.SPRING_FEET)]
+    depot = Depot(player)
+    prices = {fitting.bionic: fitting.price for fitting in depot.clinic.fittings()}
+    assert prices == {JACK: 25, Bionic.SPRING_FEET: 150}
+
+    player.money = 150
+    assert depot.clinic.fit(Bionic.SPRING_FEET, "feet")
+
+    assert player.money == 0
+    assert [item.id for item in player.items] == ["lamp", JACK]
+
+
+def test_a_salvaged_bionic_doesnt_sell_at_the_clinic_or_the_stall() -> None:
+    depot = Depot(carrying(CELL))
+    assert CELL not in depot.trade.buyer().prices
+    assert not depot.trade.sell(CELL)
+    depot.stand(STALL)
+    assert CELL not in depot.trade.buyer().prices

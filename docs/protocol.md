@@ -628,6 +628,14 @@ carry limit is left where they stand, a new `Pile` at the end of their `left`. I
 `searched` from then on, even if it held nothing, and the server sends the
 [`player_state`](#player_state) that follows. The client knows what it held from the maps.
 
+And it salvages (Q11): one of their own `corpses` within a tile and a half on the map they're on, the
+nearer of it and a pile, the pile if they're as near. It's the nearest they can take something from,
+and the oldest of those on a tie, so of two on one tile the older goes first. It takes the corpse's
+`money` and each of its `items`, then each of its `bionics`, in order, that fits under their carry
+limit, as from a pile. A bionic comes out as an item of `kind` `bionic`, with its `id` and `bionic`
+the `Bionic`, grade and all. What doesn't fit stays on the corpse. An emptied corpse stays where it
+lies, holding nothing, and a `pick_up` ignores it, as it does a corpse with nothing that fits.
+
 ### `sell`
 
 `item`: one thing the player carries, by its `id`, or `null` for everything they carry that the
@@ -662,9 +670,11 @@ and one for a part the buyer won't buy.
 `bionic` and `part`: one of the bionics the buyer where they stand fits, by `player_state`'s
 [`buyer`](#player_state)'s `fittings`, and the part of their body it goes in place of, one of that
 fitting's `parts`. They pay its `price` from their `money`, and the bionic is in that part of their
-`body` from then on. The server sends the [`player_state`](#player_state) that follows. It ignores
-a `fit` where there's no buyer, for a bionic it doesn't fit, for a fitting that's `blocked`, for a
-part the bionic can't go in place of, and one they can't pay for.
+`body` from then on. With the bionic in their `items`, of `kind` `bionic`, the fitting's `price` is
+a refit's fee and that item is all it uses up, not its recipe's parts. The server sends the
+[`player_state`](#player_state) that follows. It ignores a `fit` where there's no buyer, for a bionic
+it doesn't fit, for a fitting that's `blocked`, for a part the bionic can't go in place of, and one
+they can't pay for.
 
 ### `sell_recipe`
 

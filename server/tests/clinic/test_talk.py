@@ -245,6 +245,25 @@ async def test_what_she_says_follows_the_recipes_they_know() -> None:
     assert "the spring feet" in hint and "datajack" not in hint and "grade 2" not in hint
 
 
+async def test_she_offers_a_refit_for_its_fee_and_no_parts() -> None:
+    cell = Item(
+        id="power_cell",
+        kind=ItemKind.BIONIC,
+        name="Power cell",
+        weight=2.0,
+        bionic=Bionic.POWER_CELL,
+    )
+    depot = Depot(player=Player(items=[lamp(), cell], mind=Mind(recipes=[Bionic.POWER_CELL])))
+    depot.stand(INSIDE)
+    await depot.run()
+
+    [request] = depot.provider.requests
+    assert "cut out of a customer's own old body for 25% of your fee" in request.system
+    prompt = request.messages[-1].content
+    assert "refit their own power cell, salvaged, for 25 and no parts" in prompt
+    assert "build the power cell" not in prompt
+
+
 async def test_she_never_offers_what_she_cant_fit_yet() -> None:
     three = Body(
         stomach=Bionic.POWER_CELL,

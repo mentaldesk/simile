@@ -520,3 +520,62 @@ describe('ClinicPanel', () => {
   });
 });
 
+describe('a salvaged bionic at the clinic', () => {
+  const SALVAGED: Item = { id: 'datajack', kind: 'bionic', name: 'Datajack', weight: 0.5, charge: null, on: null, bionic: 'datajack' };
+  const REFIT: Fitting = { ...JACK, price: 25 };
+  const buyer: Buyer = { ...CLINIC, prices: {}, parts: undefined, fittings: [REFIT] };
+
+  it('is refitted for its fee and none of its recipe parts', () => {
+    const [refit] = deals(buyer, player(25, [SALVAGED]), undefined, [JACK_RECIPE]);
+    expect(refit).toEqual({
+      kind: 'fit',
+      name: 'Your datajack',
+      label: 'Refit: Your datajack, in place of a vertebra',
+      price: 25,
+      bionic: 'datajack',
+      part: 'vertebra',
+      needs: [],
+      short: false,
+      refit: true,
+    });
+    expect(details(refit!, 25)).toEqual(['Costs 25 of your 25', 'Salvaged from your body, so it uses no parts']);
+    expect(note(refit, true, 25)).toBe("Enter again to have this refitted in place of a vertebra for 25. It can't be undone.");
+  });
+
+  it('is short only of the fee, and blocked as any fitting is', () => {
+    const [short] = deals(buyer, player(24, [SALVAGED]), undefined, [JACK_RECIPE]);
+    expect(short).toMatchObject({ short: true, needs: [] });
+    expect(note(short, false, 24)).toBe('It costs 25, and you have 24.');
+    const [waiting] = deals({ ...buyer, fittings: [{ ...REFIT, blocked: FIRST }] }, player(25, [SALVAGED]), undefined, [JACK_RECIPE]);
+    expect(waiting).toMatchObject({ blocked: FIRST, refit: true });
+    expect(note(waiting, false, 25)).toBe(FIRST);
+  });
+
+  it('names the eye it goes in, and leaves a fitting they carry nothing for as it was', () => {
+    const eye: Item = { ...SALVAGED, id: 'infrared_eye', name: 'Infrared eye', bionic: 'infrared_eye' };
+    const rows = deals({ ...buyer, fittings: [EYE] }, player(200, [eye]));
+    expect(rows.map(({ name }) => name)).toEqual(['Your infrared eye, left eye', 'Your infrared eye, right eye']);
+    expect(deals(buyer, player(100, [WIRE]), undefined, [JACK_RECIPE])[0]).not.toHaveProperty('refit');
+  });
+
+  it("doesn't make a refit of a fitting for a different bionic they aren't carrying", () => {
+    const [built] = deals(buyer, player(100, [{ ...SALVAGED, id: 'power_cell', name: 'Power cell', bionic: 'power_cell' }]), undefined, [JACK_RECIPE]);
+    expect(built).toMatchObject({ name: 'Datajack', needs: [{ count: 3 }, { count: 1 }], short: true });
+    expect(built).not.toHaveProperty('refit');
+  });
+
+  it('sends `fit` on the second Enter and has an icon for every grade', () => {
+    const sent: ClientMessage[] = [];
+    const parent = document.body.appendChild(document.createElement('div'));
+    const panel = new ClinicPanel(parent, (message) => sent.push(message) > 0, () => {});
+    panel.open(buyer, player(25, [SALVAGED]), undefined, [JACK_RECIPE]);
+    const enter = () => parent.querySelector('section')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    enter();
+    expect(sent).toEqual([]);
+    enter();
+    expect(sent).toEqual([{ type: 'fit', bionic: 'datajack', part: 'vertebra' }]);
+    parent.remove();
+    const grades = ['datajack', 'infrared_eye', 'power_cell', 'power_cell_2', 'power_cell_3', 'bionic_legs', 'bionic_legs_2', 'bionic_legs_3', 'spring_feet', 'spring_feet_2'];
+    expect(grades.filter((id) => !iconUrl(id))).toEqual([]);
+  });
+});

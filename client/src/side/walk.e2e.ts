@@ -603,12 +603,29 @@ async function deathLeg(open: (query: string) => Promise<[Page, Api]>): Promise<
   const name = 'dying, and the corpses left';
   const [page, api] = await open('at=metro:65:15');
   const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
-  const corpse = (id: string, x: number) => ({ id, owner: 'player', at: { map: 'metro', x, y: 15 }, money: 0, items: [], bionics: [] });
+  const corpse = (id: string, x: number, bionics: string[] = []) => ({ id, owner: 'player', at: { map: 'metro', x, y: 15 }, money: 0, items: [], bionics });
+  const pickUps: string[] = [];
+  page.on('console', (message) => {
+    if (message.text().includes('pick_up')) pickUps.push(message.text());
+  });
   const drawn = async () => (await api.usables()).filter(({ id, shown }) => id.startsWith('corpse:') && shown).map(({ id }) => id);
   try {
     await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65)]);
     await until(page, async () => (await drawn()).length === 2, 10, `${name}: two corpses on one tile drawn`);
-    if ((await usable(api, 'corpse:corpse_1', name)).glowing) throw new Error(`${name}: E glows at a corpse before Q11`);
+    await run(page, 100);
+    if ((await usable(api, 'corpse:corpse_1', name)).glowing) throw new Error(`${name}: E glows at an emptied corpse`);
+    await page.keyboard.press('e');
+    await run(page, 100);
+    if (pickUps.length) throw new Error(`${name}: E at an emptied corpse sent ${pickUps}`);
+    await api.corpses([corpse('corpse_1', 65, ['datajack']), corpse('corpse_2', 65, ['power_cell_2'])]);
+    await until(page, async () => (await usable(api, 'corpse:corpse_1', name)).glowing, 10, `${name}: the older of two on one tile glowing`);
+    if ((await usable(api, 'corpse:corpse_2', name)).glowing) throw new Error(`${name}: the newer glows too`);
+    const offer = 'Press E to salvage what you can carry from the oldest of the 2 bodies here.';
+    await until(page, async () => (await cornerLines(page)).includes(offer), 10, `${name}: saying which body E takes`);
+    await page.keyboard.press('e');
+    await until(page, async () => pickUps.length === 1, 10, `${name}: E sending pick_up`);
+    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65, ['power_cell_2'])]);
+    await until(page, async () => (await usable(api, 'corpse:corpse_2', name)).glowing, 10, `${name}: the glow moving to the newer once the older's emptied`);
     await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65), corpse('corpse_3', 69)]);
     await until(page, async () => (await drawn()).length === 3, 10, `${name}: a new corpse drawn`);
     await page.keyboard.down('ArrowRight');

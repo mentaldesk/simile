@@ -166,6 +166,14 @@ class ClinicConfig(BaseModel):
         description="How many of each bionic the doctor had, counting any fitted in the player. "
         "With 0 they don't fit it.",
     )
+    refit: float = Field(
+        default=0.25,
+        ge=0,
+        le=1,
+        allow_inf_nan=False,
+        description="What refitting a bionic they carry costs, as a share of its recipe's credits, "
+        "rounded up to a whole credit. It uses up no parts and none of the stock.",
+    )
     patch_up: float = Field(
         default=30.0,
         ge=0,

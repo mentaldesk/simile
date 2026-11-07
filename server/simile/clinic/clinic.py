@@ -18,6 +18,7 @@ from simile.schema import (
     EffectKind,
     Mind,
     Player,
+    Recipe,
 )
 from simile.sim import Clock
 from simile.world.movement import Movement, inside
@@ -30,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 class Clinic:
     """The doctor's trade, through the ledger: a kidney, recipes, each bionic for money, a part of
-    their body and, from a recipe, the parts it uses up, and treating them."""
+    their body and, from a recipe, the parts it uses up or the salvaged one they carry, and treating
+    them."""
 
     def __init__(
         self,
@@ -59,7 +61,8 @@ class Clinic:
 
     def fittings(self) -> list[Fitting]:
         """Each bionic they know the recipe for and haven't fitted, whether or not they can pay or
-        have the parts, `blocked` with why the doctor can't fit it now."""
+        have the parts, `blocked` with why the doctor can't fit it now. One they carry, salvaged,
+        costs the refit's fee."""
         body, known = self.player.body, self.player.mind.recipes
         fittings = []
         for bionic, recipe in self.config.recipes.items():
@@ -69,7 +72,8 @@ class Clinic:
             free = [part for part in recipe.replaces if getattr(body, part) in (PRESENT, *lower)]
             if free:
                 blocked = self._blocked(bionic)
-                fitting = Fitting(bionic=bionic, name=recipe.name, price=recipe.credits, parts=free)
+                price = self._refit_fee(recipe) if self.salvaged(bionic) else recipe.credits
+                fitting = Fitting(bionic=bionic, name=recipe.name, price=price, parts=free)
                 fittings.append(fitting.model_copy(update={"blocked": blocked}))
         return fittings
 
@@ -82,15 +86,25 @@ class Clinic:
             return f"Needs a {' and a '.join(names)} first."
         if not runs(body, bionic):
             return "Needs a bigger power cell first."
-        if not self._stocked(bionic):
+        if not self.salvaged(bionic) and not self._stocked(bionic):
             return "Out of stock."
         return None
 
     def _stocked(self, bionic: Bionic) -> bool:
         return self.config.stock.get(bionic, 0) >= 1
 
+    def salvaged(self, bionic: Bionic) -> bool:
+        """Whether they carry `bionic`, out of a corpse, for the doctor to refit."""
+        return any(item.bionic is bionic for item in self.player.items)
+
+    def _refit_fee(self, recipe: Recipe) -> float:
+        return math.ceil(recipe.credits * self.config.refit - 1e-9)
+
     def _uses(self, bionic: Bionic) -> dict[str, int]:
-        """The items fitting `bionic` uses up, how many of each by id."""
+        """The items fitting `bionic` uses up, how many of each by id: the one they carry, salvaged,
+        or else what its recipe lists."""
+        if self.salvaged(bionic):
+            return {bionic.value: 1}
         recipe = self.config.recipes.get(bionic)
         return recipe.parts if recipe else {}
 
@@ -155,8 +169,8 @@ class Clinic:
         return True
 
     def fit(self, bionic: Bionic, part: BodyPart) -> bool:
-        """The doctor fits `bionic` in place of `part`, for its price and any parts it uses up, if
-        they can pay and have them."""
+        """The doctor fits `bionic` in place of `part`, for its price and what it uses up, if they
+        can pay and have it."""
         fitting = next((f for f in self.fittings() if f.bionic is bionic), None)
         if fitting is None or part not in fitting.parts or not self.inside():
             return False
