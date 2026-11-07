@@ -69,8 +69,9 @@ interiors' ids; this document says where.
   - A jack is a machine only the datajack works, such as the metro's dead terminal and its
     maintenance lift. With the datajack fitted (`player_state`'s `body`), E at one sends
     [`pick_up`](#pick_up), which finds the clue it holds, if any. A link ending on one of its
-    `stand` tiles, like the lift's down to the sewers, is taken only with the datajack. Without
-    one the jack is dead: the client says so, and offers no link from it.
+    `stand` tiles, like the lift's down to the sewers, is taken only with the player's `lift_open`,
+    which having had the datajack sets for good. Without the datajack any other jack is dead, and
+    so is the lift while it's shut: the client says so, and offers no link from it.
   - A searchable thing is a piece of furniture or a dead appliance, such as the maker space's
     drawers or a dead fridge in the metro, searched once for what it holds. Its `items` are what
     searching it finds, `money` the cash in it, which weighs nothing, and `teaches` the recipe it

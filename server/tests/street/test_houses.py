@@ -3,6 +3,7 @@ from collections import Counter
 from functools import cache
 
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
+from simile.economy.config import PARTS
 from simile.economy.config import SALVAGE as PRICES
 from simile.player.config import DEFAULT_CONFIG as PLAYER
 from simile.player.config import SALVAGE
@@ -95,7 +96,7 @@ def test_a_days_exploring_on_foot_pays_for_the_cell_and_the_datajack_without_the
     cash = sum(thing.money for thing in found)
     secrets = sum(pickup.money for pickup in pickups if pickup.kind is PickupKind.SECRET)
     lying = [p.item or SALVAGE[p.id].item for p in pickups if p.kind is PickupKind.SALVAGE]
-    salvage = sum(PRICES[item.id] for item in lying)
+    salvage = sum((PRICES | PARTS)[item.id] for item in lying)
     parts = Counter(item.id for thing in found for item in thing.items)
     needed = sum((Counter(recipe.parts) for recipe in RECIPES), Counter())
     kept = needed + Counter(needed.keys())
@@ -108,7 +109,7 @@ def test_a_days_exploring_on_foot_pays_for_the_cell_and_the_datajack_without_the
     fetched += [seconds[Spot(p.map, p.x, p.y)] for p in pickups]
 
     assert sum(stash.money for stash in STASHES.values()) == cash == 62
-    assert (secrets, salvage, stripped, cost) == (95, 44, 36, 200)
+    assert (secrets, salvage, stripped, cost) == (95, 86, 36, 200)
     assert parts >= kept, "a spare of every part"
     assert cash + secrets + salvage + stripped >= 1.15 * cost
     assert 2 * sum(fetched) < 0.5 * 3600 / PLAYER.rise, "in half the time a meal lasts"

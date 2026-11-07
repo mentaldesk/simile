@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { server, type Buyer, type Effect, type Pile, type PlayerStateMessage, type Wall } from '../net';
 import { interactableAt } from './interactables';
-import { deadJack, leadsAway } from './jacks';
+import { deadJack, leadsAway, liftOpen } from './jacks';
 import { muralWalls, setMuralView } from './murals';
 import { sideClock } from '../side/clock';
 import { SidePlayer } from '../side/player';
@@ -115,6 +115,24 @@ describe('the jacks, the machines only the datajack works', () => {
     expect(leadsAway(lift)).toBe(true);
     expect(used(100, false)).toBe('metro_lift');
     expect(used(100, true)).toBeUndefined();
+  });
+
+  it('leaves the lift to the door once it is open, and the terminal stays dead without the datajack', () => {
+    const open: Reachables = { ...reachables, jacked: () => false, liftOpen: () => true };
+    const usedThere = (x: number) => usedByE(at('metro', x), open);
+    expect(usedThere(100)).toBeUndefined();
+    expect(usedThere(104)).toMatchObject({ kind: 'jack', interactable: { id: 'metro_terminal' } });
+  });
+});
+
+describe('the lift, once it is open', () => {
+  const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' } as const;
+  const player = { money: 0, items: [], carry_limit: 15, body, hunger: 0 };
+
+  it('stays open for a body with no datajack, and stays shut for one that never opened it', () => {
+    expect(liftOpen(player)).toBe(false);
+    expect(liftOpen({ ...player, lift_open: true })).toBe(true);
+    expect(liftOpen({ ...player, body: { ...body, vertebra: 'datajack' } })).toBe(true);
   });
 });
 

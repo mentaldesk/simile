@@ -215,5 +215,7 @@ describe('glowing', () => {
     expect(glowing(at('metro', 100, 15), [], from())).toBeUndefined();
     expect(glowing(at('metro', 104, 15), [], from({ jacked: () => true }))).toBe('metro/metro_terminal');
     expect(glowing(at('metro', 100, 15), [LIFT], from({ jacked: () => true }))).toBe('metro/metro_lift');
+    expect(glowing(at('metro', 100, 15), [LIFT], from({ liftOpen: () => true }))).toBe('metro/metro_lift');
+    expect(glowing(at('metro', 104, 15), [], from({ liftOpen: () => true }))).toBeUndefined();
   });
 });

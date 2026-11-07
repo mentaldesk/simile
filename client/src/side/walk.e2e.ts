@@ -35,6 +35,7 @@ type SideWalk = {
   teleport(to: Place): void;
   move(id: string, to: Place): void;
   fit(part: string, bionic: string): void;
+  openLift(): void;
   jacks(): Place[];
   mind(): { recipes: string[]; searched: string[]; items: string[] };
   usables(): Usable[];
@@ -87,6 +88,7 @@ const walkApi = (page: Page) => ({
     page.evaluate(([id, to]) => (window as unknown as Paged).sideWalk.move(id, to), [id, to] as const),
   fit: (part: string, bionic: string) =>
     page.evaluate(([part, bionic]) => (window as unknown as Paged).sideWalk.fit(part, bionic), [part, bionic] as const),
+  openLift: () => page.evaluate(() => (window as unknown as Paged).sideWalk.openLift()),
   jacks: () => page.evaluate(() => (window as unknown as Paged).sideWalk.jacks()),
   mind: () => page.evaluate(() => (window as unknown as Paged).sideWalk.mind()),
   usables: () => page.evaluate(() => (window as unknown as Paged).sideWalk.usables()),
@@ -485,6 +487,18 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   await shot(page, index, 'at the lift with the datajack');
   await take(page, api, 'e', SEWERS, `${name}, down the lift to the sewers`);
   await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
+  await api.fit('vertebra', 'present');
+  await api.openLift();
+  await run(page, 300);
+  await take(page, api, 'e', SEWERS, `${name}, down the open lift in a new body`);
+  await take(page, api, 'e', metro(100, 15), `${name}, up the open lift in a new body`);
+  await teleport(page, api, metro(104, 15), `${name}, at the dead terminal in a new body`);
+  await run(page, 300);
+  await pressingE(page, api, `${name}, E at the dead terminal in a new body`);
+  const dead = await shown(page, '.counter-hint');
+  if (dead !== 'Nothing happens: the dead terminal needs a datajack.') throw new Error(`${name}: E at the terminal in a new body said ${dead}`);
+  await run(page, 2600);
+  await api.fit('vertebra', 'datajack');
 }
 
 async function usable(api: Api, id: string, what: string): Promise<Usable> {

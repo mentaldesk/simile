@@ -183,6 +183,22 @@ The maker space's machines (Q7) need parts from here too, in the order the playe
 | Recycler | Apex control board | `sewers_salvage_sprint`, the hall's ledge | The bionic legs |
 | Recycler | 2 old battery | `sewers_bedroll_den`, on top of the second power cell's four in `sewers_crates_cell` | Any legs or feet past the gate |
 
+Finds are searched once, and a body that dies leaves what it carried and every bionic on its corpse,
+which can lie past the gate. So four places on the depot's floor, lit and on the player's own legs,
+hold what a new body needs for a power cell and legs (`REBUILD_PARTS` in `simile.street.metro`):
+
+| Id | Holds | Cell |
+|---|---|---|
+| `metro_salvage_13` | Charge controller | (98, 15) |
+| `metro_salvage_12` | Lithium cell | (102, 15), between the lift and the dead terminal |
+| `metro_salvage_14` | Pump impeller | (106, 15), under the high ledge |
+| `metro_salvage_15` | Copper coil | (108, 15), under the high ledge |
+
+Each has another lying there 48 sim hours after it's taken (`REBUILD_RESPAWN`), against 24 for other
+salvage. Three lithium cells take four days from the first one, or six if it had just been taken,
+and that sets how long the rebuild takes (`tests/street/test_rebuild.py`). At that rate a lithium
+cell pays 5 a day, the same as scrap steel, the cheapest salvage.
+
 `problems` fails a level that doesn't hold the sewers' parts where whoever needs them gets to (`WANTED`
 in `simile.street.sewers`). The batteries that lie about as salvage aren't in every level, so they
 aren't counted on. The metal sheet and the actuator have no price, so they can't be sold and lost.
@@ -301,11 +317,12 @@ passes through it.
 | S7 | The clinic, and the doctor's stall spot | `clinic`, an `amenity` on `clinic_floor_0` (room `clinic`, 10 wide), its door at (89, 15). The doctor's spot is `clinic_doctor`, `standing` at (6, 2) facing `south`. The room is bare for S7 to furnish. |
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEDGE_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the legs' on any grade, and in reach of the spring feet's, four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the disappearance's `lift_log` in it. |
-| S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
+| S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only once `Player.lift_open`: a body of theirs has had the datajack, or they've left a trace down there. Then it works for every later body. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
 | P13, P34 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 46 under the catwalk and is kept to 44–48, and `metro_bot_2` starts at 38 under the train and is kept to 34–43. Each patrols two cells either side, with no salvage in reach, clear of where the player stops and of the ladders' feet. Neither climbs, so the way past both is overhead (`BOTS`): up the ladder at 32 to the train's roof, a jump to the catwalk and down its ladder at 50, or the same back. On the floor, each is jumped as it comes. |
 | P28, P35 | Dark stretches past the depot, in `light` | `metro_siding` (110–155) and `metro_track` (156–205), one dark way to the shed, `metro_shed`, which is lit. P28's two plugs on the way, on the track and in the shed, are gone (P35): from the maintenance plug to the shed and back is the longest run on a charge (*Light*, below). |
 | P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
+| Q16 | The parts a new body needs, in `pickups` | `metro_salvage_12`, a lithium cell (102, 15), `_13`, a charge controller (98, 15), `_14`, a pump impeller (106, 15), and `_15`, a copper coil (108, 15), on the lit depot's floor and walked to (below). |
 | P28 | The jammed door | The store room's wall, `STORE_WALL` (218–220, rows 9–15), solid: for now the way in is over its top. |
 | P28 | The signal desk, a `jack` | `metro_signal_desk`, stood at from (150, 11). With the datajack, E finds two circuit boards in it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |

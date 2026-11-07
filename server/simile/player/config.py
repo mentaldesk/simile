@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from simile.schema import Id, Item, ItemKind
+from simile.street.finds import CHARGE_CONTROLLER, LITHIUM_CELL
 
 
 class Salvage(BaseModel):
@@ -17,8 +18,14 @@ class Salvage(BaseModel):
     )
 
 
-def salvage(id: Id, name: str, weight: float) -> Salvage:
-    return Salvage(item=Item(id=id, kind=ItemKind.SALVAGE, name=name, weight=weight))
+def salvage(id: Id, name: str, weight: float, respawn: float | None = None) -> Salvage:
+    item = Item(id=id, kind=ItemKind.SALVAGE, name=name, weight=weight)
+    return Salvage(item=item, respawn=respawn)
+
+
+REBUILD_RESPAWN = 48.0
+"""Sim hours before the depot's parts lie there again: twice as slow as other salvage, so that a
+lithium cell, at 10, pays no faster than scrap steel, the cheapest there is."""
 
 
 SALVAGE: dict[Id, Salvage] = {
@@ -28,6 +35,10 @@ SALVAGE: dict[Id, Salvage] = {
     "metro_salvage_4": salvage("brass_valve", "Brass valve", 2.0),
     "metro_salvage_5": salvage("signal_relay", "Signal relay", 1.0),
     "metro_salvage_6": salvage("servo_motor", "Servo motor", 3.0),
+    "metro_salvage_12": Salvage(item=LITHIUM_CELL, respawn=REBUILD_RESPAWN),
+    "metro_salvage_13": Salvage(item=CHARGE_CONTROLLER, respawn=REBUILD_RESPAWN),
+    "metro_salvage_14": salvage("pump_impeller", "Pump impeller", 2.5, REBUILD_RESPAWN),
+    "metro_salvage_15": salvage("copper_coil", "Copper coil", 1.0, REBUILD_RESPAWN),
 }
 
 

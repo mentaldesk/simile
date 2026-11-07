@@ -163,11 +163,13 @@ Its constants are in `HealthConfig`, beside it.
   on the stand tile of a jack that holds a fact (`found_in`) is a claim on `pick_up` that writes it
   to the journal, as a clue does, and sends `journal`. The terminal holds the disappearance's
   `lift_log` and the hatch its `hatch_log`; the lift holds none, so a pile
-  there is still picked up. Without the datajack nothing claims, and the world ignores a
-  `player_move` into the sewers from another map.
+  there is still picked up. Without the datajack nothing claims. The world ignores a
+  `player_move` into the sewers from another map until `Player.lift_open`, which having had the
+  datajack or left a trace down there sets for good, so a new body can ride it.
 - **Salvage comes back; secrets don't.** A salvage pickup has another lying there once
   `PlayerConfig.respawn` (24 sim hours) has passed since it was last taken, or its own `respawn`
-  in `PlayerConfig.salvage`. So the tunnels keep paying, at the economy's prices, for someone who
+  in `PlayerConfig.salvage`, as the depot's parts for a new power cell and legs have
+  (`REBUILD_RESPAWN`, 48). So the tunnels keep paying, at the economy's prices, for someone who
   goes back. A secret stays taken for good.
 
 ## Finds

@@ -96,8 +96,9 @@ such scene, as in the dialogue harness, it never hints or opens.
 
 On a jack's stand tile (`world/jacks.ts`), a hint says "Press E to use the dead terminal." Without
 the datajack, E says "Nothing happens: the dead terminal needs a datajack." With it, E at the
-terminal sends `pick_up` and opens the journal, as at a clue, and at the lift E takes the link down
-to the sewers instead.
+terminal sends `pick_up` and opens the journal, as at a clue. At the lift E takes the link down to
+the sewers instead, once `lift_open` says a body of theirs has had the datajack, in any later body
+too.
 
 ## The flush
 

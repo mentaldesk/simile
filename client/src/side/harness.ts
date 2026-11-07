@@ -306,11 +306,12 @@ let body: Body = {
 };
 
 let corpses: Corpse[] = [];
+let liftOpened = false;
 const movesSent: Position[] = [];
 
 function sendPlayerState(): void {
   const mind = known.length ? { mind: { recipes: known } } : {};
-  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, health, ...(searched.length ? { searched } : {}), ...(corpses.length ? { corpses } : {}), ...mind };
+  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, health, ...(searched.length ? { searched } : {}), ...(corpses.length ? { corpses } : {}), ...(liftOpened ? { lift_open: true } : {}), ...mind };
   const recipes = known.map((bionic) => RECIPES[bionic] ?? { bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] });
   const rest = { ...(bed && { bed }), ...(resting && { resting }) };
   dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}), ...rest });
@@ -632,6 +633,10 @@ function exposeWalk(scene: SideScene, village: Village): void {
       movesSent: () => movesSent.splice(0),
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
+        sendPlayerState();
+      },
+      openLift: () => {
+        liftOpened = true;
         sendPlayerState();
       },
       jacks: () =>

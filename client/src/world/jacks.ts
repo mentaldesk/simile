@@ -1,5 +1,5 @@
 import { fitted } from '../dolls/bionics';
-import type { Body } from '../net';
+import type { Body, Player } from '../net';
 import { maps } from './assets';
 import type { Interactable } from './interactables';
 import { objectsOf, type TiledMap } from './map';
@@ -8,6 +8,9 @@ export const DOORS_LAYER = 'doors';
 
 /** Whether the datajack is fitted, which works the jacks. */
 export const jacked = (body?: Body): boolean => fitted(body).includes('datajack');
+
+/** Whether the lift goes down for them: with the datajack, or once any body of theirs has had one. */
+export const liftOpen = (player?: Player): boolean => jacked(player?.body) || !!player?.lift_open;
 
 /** Whether a link leaves from one of the jack's stand tiles, as the lift's does, so it's taken as a door. */
 export function leadsAway(jack: Interactable, map: TiledMap | undefined = maps[jack.map]): boolean {
