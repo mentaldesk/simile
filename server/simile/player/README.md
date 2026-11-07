@@ -64,6 +64,19 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   `repaired`, and everything in `left`: a destroyed bot's haul, what of a pickup didn't fit, and what
   they left when they collapsed in a save from before death.
 
+## The stash
+
+`Lockers` (`stash.py`, Q12) moves things between what they carry and `Player.stash` on the client's
+`stash`, while they stand on the stand tile of Aris's lockers in the loft.
+
+- **As much as fits** moves of the first of that id: rounds whole, material down to a millionth, and
+  anything else all or none, joining what's already there with `joined`. What doesn't fit stays in
+  its place. `fitting` allows a load over by a billionth of a kilo, so `0.3 / 0.1` is 3, and a stack
+  left with under a millionth goes whole rather than leave dust behind. What weighs nothing always
+  fits.
+- **The lamp** can be stored too, and goes off. A weapon keeps its rounds and condition.
+- **A death leaves it alone**, since `Death` only takes what they carry, and it's saved on `Player`.
+
 ## Salvaging your own body
 
 `Salvage` (`corpses.py`, Q11) is one more claim on `pick_up` (`claimers_of(app)`), made by

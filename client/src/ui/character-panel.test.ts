@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
 import { weaponLine } from '../side/shooting';
-import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
+import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, stashed, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'unpainted' ? undefined : `/icons/${id}.webp`) }));
 
@@ -369,7 +369,7 @@ describe('gear', () => {
     expect(picked(page)).toBeUndefined();
     expect(page.querySelector('.character-item h3')).toBeNull();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Stash']);
   });
 
   it('picks the first tile on Down, moves with the arrows, and lets go Up off the top row so ← → switch tabs', () => {
@@ -425,7 +425,7 @@ describe('gear', () => {
     expect(picked(page)).toBeUndefined();
     expect(page.querySelector('.character-item h3')).toBeNull();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Stash']);
   });
 
   it('opens again with nothing picked, so ← → switch tabs straight away', () => {
@@ -435,7 +435,7 @@ describe('gear', () => {
     panel.open();
     expect(picked(page)).toBeUndefined();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Stash']);
   });
 
   it('says when they carry nothing', () => {
@@ -484,10 +484,66 @@ describe('a weapon in the gear', () => {
   });
 });
 
+describe('the stash tab', () => {
+  const PISTOL = item('plastic_pistol', 'Plastic pistol', 0.5, { kind: 'weapon', material: 'plastic', rounds: 2, capacity: 6, condition: 0.4 });
+  const BUN = item('pork_bun', 'Pork bun', 0.25, { kind: 'food' });
+  const STASHED: Player = { ...STATE.player, stash: { items: [PISTOL, BUN, { ...LAMP, on: false }, item('plastic', 'Plastic', 0.5, { kind: 'material', material: 'plastic', amount: 4 })], limit: 20 } };
+
+  function onStash(player: Player) {
+    const shown = opened({ ...STATE, player });
+    shown.section.querySelectorAll<HTMLElement>('[role="tab"]')[3].click();
+    return shown;
+  }
+
+  it('reads a stash left out of the player as empty at its starting limit', () => {
+    expect(stashed(STATE.player)).toEqual({ tiles: [], load: 0, limit: 20 });
+    expect(onStash(STATE.player).page.textContent).toContain('0 kg of 20 kg');
+    expect(texts(onStash(STATE.player).page, '.character-empty')).toEqual(['Nothing. E at the lockers in the loft stores things.']);
+  });
+
+  it('shows what is in the lockers against its limit, a tile per kind', () => {
+    const { page } = onStash(STASHED);
+
+    expect(page.textContent).toContain('Stored');
+    expect(page.textContent).toContain('3.25 kg of 20 kg');
+    expect([...page.querySelectorAll<HTMLElement>('.character-tile')].map(({ dataset }) => dataset.item)).toEqual(['plastic_pistol', 'pork_bun', 'lamp', 'plastic']);
+    expect(page.querySelector('[data-item="plastic"]')?.ariaLabel).toBe('Plastic ×4');
+    expect(page.querySelector('[data-item="plastic_pistol"]')?.ariaLabel).toBe('Plastic pistol, 40% condition');
+  });
+
+  it("gives a stored weapon's rounds and condition, and no key that would do nothing to it", () => {
+    const { page } = onStash(STASHED);
+    const details = (id: string) => {
+      page.querySelector(`[data-item="${id}"]`)!.dispatchEvent(new MouseEvent('mouseenter'));
+      return texts(page, '.character-item p');
+    };
+
+    expect(details('plastic_pistol')).toEqual(['0.5 kg.', '2 of 6 rounds loaded, 40% condition.']);
+    expect(details('pork_bun')).toEqual(['0.25 kg.']);
+    expect(details('lamp')).toEqual(['0.5 kg.', 'Charged 60%, off.']);
+  });
+
+  it('shows no real amount as 0', () => {
+    const dust = item('plastic', 'Plastic', 0.5, { kind: 'material', material: 'plastic', amount: 0.004 });
+    const holding = { ...STATE.player, stash: { items: [dust], limit: 20 } };
+    const { page } = onStash(holding);
+
+    expect(page.querySelector('[data-item="plastic"]')?.ariaLabel).toBe('Plastic ×<0.01');
+    expect(page.querySelector('.character-count')?.textContent).toBe('×<0.01');
+    expect(page.textContent).toContain('<0.01 kg of 20 kg');
+    expect(itemDetails(stashed(holding).tiles[0], holding).lines[0]).toBe('<0.01 of them, 0.5 kg each, <0.01 kg in all.');
+  });
+
+  it('still says what the keys do on the Gear tab', () => {
+    const tile = gear({ ...STATE.player, items: [PISTOL] }).tiles[0];
+    expect(itemDetails(tile, STATE.player).lines.at(-1)).toBe('X fires it and R reloads it.');
+  });
+});
+
 describe('CharacterPanel', () => {
-  it('has a tab each for vitals, body and gear, and none for recipes', () => {
+  it('has a tab each for vitals, body, gear and the stash, and none for recipes', () => {
     const { section } = opened();
-    expect(texts(section, '[role="tab"]')).toEqual(['Vitals', 'Body', 'Gear']);
+    expect(texts(section, '[role="tab"]')).toEqual(['Vitals', 'Body', 'Gear', 'Stash']);
   });
 
   it('opens on the tab it was left on, keeps its keys from the game, and closes on Esc or C', () => {
