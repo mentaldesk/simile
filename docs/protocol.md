@@ -670,8 +670,9 @@ and one for a part the buyer won't buy.
 fitting's `parts`. They pay its `price` from their `money`, and the bionic is in that part of their
 `body` from then on. With the bionic in their `items`, of `kind` `bionic`, the fitting's `price` is
 a refit's fee and that item is all it uses up, not its recipe's parts. The server sends the
-[`player_state`](#player_state) that follows. It ignores a `fit` where there's no buyer, for a bionic it doesn't fit, for a fitting that's `blocked`, for a
-part the bionic can't go in place of, and one they can't pay for.
+[`player_state`](#player_state) that follows. It ignores a `fit` where there's no buyer, for a bionic
+it doesn't fit, for a fitting that's `blocked`, for a part the bionic can't go in place of, and one
+they can't pay for.
 
 ### `sell_recipe`
 
