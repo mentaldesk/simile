@@ -54,8 +54,9 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.economy.economy import economy_of
     from simile.persistence import player_of
     from simile.player.pickups import Pickups
-    from simile.schema import Item, Pile
+    from simile.schema import Id, Item, Pile
     from simile.sim import world_of
+    from simile.story.town import world_seed
     from simile.world import movement_of
     from simile.world.map import PickupKind, TownMap, world_level
 
@@ -83,7 +84,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
 
     kept = creatures.salvage, creatures.collect, creatures.drop
     creatures.salvage, creatures.collect, creatures.drop = salvage, collect, drop
-    placed = populate(creatures, spawns(level=world_level()))
+    lying: dict[str, set[Id]] = {}
+    for pile in pickups.lying.values():
+        lying.setdefault(pile.at.map, set()).update(item.id for item in pile.items)
+    placed = populate(creatures, spawns(level=world_level()), world_seed(), lying)
     yield
     for creature in placed:
         creatures.remove(creature.id)

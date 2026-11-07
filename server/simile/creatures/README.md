@@ -83,6 +83,7 @@ starts, but for what's *Saved* (below). Options:
   starts, as far as it can walk.
 - `roost`, where a bat hangs, or else under the ceiling straight above where it starts.
 - `respawn`, sim seconds after going down that it's back where it started, or never.
+- `haul`, what it starts with, unless a save says it's had that (*Saved*).
 - `id`, or else `<kind>_<n>`.
 
 A walking creature placed in the air stands on the floor under it. Placing one where its kind can't
@@ -143,21 +144,42 @@ races them for it rather than clearing it while they're away.
 
 ## A haul
 
-What a creature takes goes in its `haul`. When it goes down it drops all of it as one pile, on the
-cell it's in, in `Player.left`. The player picks that up with E as any pile they left, and what
-doesn't fit stays there. A creature holding nothing leaves no pile, and salvage it was still taking
-stays lying.
+A bot starts with a small `haul`, and what a creature collects joins it. When it goes down it drops
+all of it as one pile, on the cell it's in, in `Player.left`. The player picks that up with E as any
+other pile, and what doesn't fit stays there. A creature holding nothing leaves no pile, and salvage
+it was still taking stays lying.
 
-It holds only what it reached. The metro's bots have no salvage in reach (`content/street/README.md`),
-so they drop nothing. A sewers bot drifts to the one salvage on its floor, if it has one in reach,
-and takes another only when that lies there again, a sim day later.
+A bot starts with 1 or 2 items (`starting_haul` in `placing.py`), chosen by the world's seed and its
+id, from `SALVAGE_ITEMS` in `simile.street.sewers`, the kinds that lie on the way through the sewers.
+Any kind one of its map's pickups holds is left out, so what it starts with is never also lying
+there, even when salvage comes back. No pickup changes, so nothing the generator or the money sums
+count on moves. A level scatters at most six of the seven kinds, which leaves its sewers bots one or
+two kinds. Every kind the metro has of its own lies on the metro, so its bots hold the five sewers
+kinds that don't.
+
+Destroying a bot takes a magazine: 6 rounds, 2 plastic. With those rounds' share of the pistol's wear,
+a fifth of its 6 plastic, that's 3.2 plastic, or 3.2 kg of scrap at the recycler, if every round hits.
+That scrap sells for 3.6 as scrap steel or 7.5 as lead pipe. A bot's starting haul sells for 5 to 16,
+about 10 on average, and 7 to 12 for a sewers bot depending on the level. So a haul always beats scrap
+steel, but not always better scrap. Only lead pipe and filter mesh in it can be pressed into plastic:
+the recycler keeps back the rest, which recipes use.
+
+A sewers bot also drifts to the one salvage on its floor, if it has one in reach, and takes another
+only when that lies there again, a sim day later. The metro's bots have none in reach
+(`content/street/README.md`).
 
 ## Saved
 
 `saving()` goes in the world's save, as `SavedWorld.creatures`, by creature id: those gone for good,
-and the wounds and haul of those that aren't whole or empty-handed. A restart spawns the gone no
-more, and the rest back where they started with their wounds and haul. A creature that respawns
+and the wounds and haul of those that are wounded or hold more than their starting haul. A restart
+spawns the gone no more, and the rest back where they started with their wounds and haul. A creature that respawns
 is never gone, so a rat that's down at a restart is simply back.
+
+A whole bot holding only its starting haul has no entry. The seed gives it the same again only while
+`SALVAGE_ITEMS` and its map's pickups stay as they are. If either changes it's chosen afresh, which
+nobody can see until the bot is dead. Once it's wounded or has collected something, its entry holds
+all of its haul, which no such change moves, and `stocked` says that includes the start. In a save from before starting hauls, a living bot's entry has no `stocked`,
+so it gets its start once, ahead of what it collected, and one destroyed stays destroyed.
 
 The save goes by id alone, and ids repeat across levels: `sewers_bot_1` is on all 8, at different
 cells. A world whose level changes, as one can when the number of levels does, applies a saved

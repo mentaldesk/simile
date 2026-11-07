@@ -75,11 +75,13 @@ BAT = Kind(
 class Placing:
     kind: Kind
     respawn: float | None = None
+    stocked: bool = False
+    """It starts with a haul: README.md's *A haul*."""
 
 
 KINDS = {
     CreatureKind.RAT: Placing(RAT, respawn=120.0),
-    CreatureKind.BOT: Placing(BOT),
+    CreatureKind.BOT: Placing(BOT, stocked=True),
     CreatureKind.DOG: Placing(DOG),
     CreatureKind.BAT: Placing(BAT),
 }

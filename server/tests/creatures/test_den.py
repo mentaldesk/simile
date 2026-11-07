@@ -63,7 +63,7 @@ def through(level: int, jump: Jump) -> Player:
 
     creatures = Creatures({SEWERS: town}, sense=lambda: Sight(player, heard), harm=harm)
     dogs = [(m, s) for m, s in spawns(level=level) if s.kind is CreatureKind.DOG]
-    populate(creatures, dogs)
+    populate(creatures, dogs, 0, {})
     now, said = 0.0, 0.0
     for tx, ty, pace, stop in points[1:]:
         while (x, y) != (tx, ty) or stop > 0:

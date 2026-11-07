@@ -102,7 +102,11 @@ class Creature:
     wounds: int = 0
     """Points of its kind's `health` it has lost, so three thirds come to exactly none."""
     haul: list[Item] = field(default_factory=list)
-    """What it has collected, which it drops when it goes down."""
+    """What it started with and has collected, which it drops when it goes down."""
+    stocked: bool = False
+    """It has had its starting haul."""
+    start: list[Item] = field(default_factory=list)
+    """What the seed gave it this run, which a save needn't keep while that's all it holds."""
     sent: Shown | None = None
     sent_at: float = -math.inf
 
@@ -202,6 +206,7 @@ class Creatures:
         span: int = 5,
         roost: tuple[int, int] | None = None,
         respawn: float | None = None,
+        haul: Iterable[Item] = (),
     ) -> Creature:
         """README.md's *Placing them*."""
         town = self.maps[at.map]
@@ -231,6 +236,10 @@ class Creatures:
             del self.saved[creature.id]
             creature.wounds = min(saved.wounds, kind.health - 1)
             creature.haul = list(saved.haul)
+            creature.stocked = saved.stocked
+        if not creature.stocked and (start := list(haul)):
+            creature.haul = [*start, *creature.haul]
+            creature.stocked, creature.start = True, start
         self.all[creature.id] = creature
         self._send(creature)
         return creature
@@ -253,9 +262,11 @@ class Creatures:
     def saving(self) -> dict[str, SavedCreature]:
         """What a save keeps: README.md's *Saved*."""
         held = {
-            creature.id: SavedCreature(wounds=creature.wounds, haul=list(creature.haul))
+            creature.id: SavedCreature(
+                wounds=creature.wounds, haul=list(creature.haul), stocked=creature.stocked
+            )
             for creature in self.all.values()
-            if creature.down is None and (creature.wounds or creature.haul)
+            if creature.down is None and (creature.wounds or creature.haul != creature.start)
         }
         return {**self.saved, **held}
 
