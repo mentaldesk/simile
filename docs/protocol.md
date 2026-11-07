@@ -758,7 +758,10 @@ its `makes`, by the `id` of that `Product`'s `item`. It uses up the product's `c
 that `uses` `"scrap"` takes all the scrap they carry, at that rate: 3.5 kg of scrap at the recycler's
 1 plastic for 1 kg makes 3.5 plastic. Scrap is their items of kind `"salvage"`, except those a
 recipe or a machine's repair uses, such as copper wire, so making plastic never burns a part they
-need. The server sends the [`player_state`](#player_state) that
+need, and copper pipe, which the recycler keeps for wire. Its `copper_wire` also `uses` `"scrap"`,
+but takes only their copper pipes, by weight. Salvage doesn't stack, so that product's `item` is one
+lot with `amount` 1, named for how many and weighing them all, `Copper wire ×6` at 9 kg, and they get
+that many single wires. The server sends the [`player_state`](#player_state) that
 follows. It ignores a `make` if they aren't at it, if it doesn't make that, if they don't have what
 it takes, and if what they'd end up carrying wouldn't fit under their carry limit.
 

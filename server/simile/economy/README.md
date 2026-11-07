@@ -83,6 +83,7 @@ raises `ValueError` and records nothing for more than they hold, so check they c
 | Servo motor | 18 |
 | **The sewers** (S9) | |
 | Lead pipe | 7 |
+| Copper pipe | 8 |
 | Copper coil | 7 |
 | Brass fitting | 6 |
 | Pump impeller | 10 |

@@ -13,10 +13,10 @@ from simile.player.config import DEFAULT_CONFIG, REBUILD_RESPAWN, SALVAGE, Salva
 from simile.player.pickups import Pickups, joined
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Material, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.finds import LITHIUM_CELL
+from simile.street.finds import COPPER_PIPE, LITHIUM_CELL
 from simile.street.metro import DEPOT_END
 from simile.world import Movement, Point
-from simile.world.map import Pickup, PickupKind, TownMap, load_maps
+from simile.world.map import Pickup, PickupKind, TownMap, level_count, load_maps
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
@@ -117,6 +117,32 @@ def test_each_salvage_pickup_comes_back_after_its_own_delay() -> None:
 
     assert at(20, WIRE) not in pickups.piles()
     assert at(30, STEEL) in pickups.piles()
+
+
+@pytest.mark.parametrize("level", range(level_count()))
+def test_a_save_that_has_searched_and_taken_everything_can_still_get_pipes(level: int) -> None:
+    maps = load_maps(level=level)
+    pickups = [pickup for town in maps.values() for pickup in town.pickups]
+    pipes = [p for p in pickups if p.item and p.item.id == COPPER_PIPE.id]
+    assert len(pipes) == 3
+    player = Player(
+        taken={p.id: NOW for p in pickups if p not in pipes},
+        searched=[item.id for town in maps.values() for item in town.interactables],
+    )
+    tunnels = Tunnels(player, maps)
+
+    assert {pile.at.x for pile in tunnels.pickups.piles()} == {pipe.x for pipe in pipes}
+
+    pipe = pipes[0]
+    tunnels.stand(pipe.x, pipe.map, pipe.y)
+    assert tunnels.pickups.pick_up()
+    assert player.items == [lamp(), COPPER_PIPE]
+    assert player.taken[pipe.id] == NOW
+
+    tunnels.clock.now = NOW + DAY - timedelta(seconds=1)
+    assert len(tunnels.pickups.piles()) == 2
+    tunnels.clock.now = NOW + DAY
+    assert {pipe.x for pipe in pipes} <= {pile.at.x for pile in tunnels.pickups.piles()}
 
 
 def test_a_secret_never_comes_back() -> None:
