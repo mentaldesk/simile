@@ -56,7 +56,9 @@ const nameOf = (bionic: Bionic) => {
 };
 
 /** What a `take` changes: what lies there and what they carry, and not hunger or a lamp's charge, which send `player_state` too. */
-const contentsOf = (source: Source, player: Player) => JSON.stringify([holderOf(source, player) ?? null, player.items, player.money, player.carry_limit]);
+const unlit = (key: string, value: unknown) => (key === 'charge' || key === 'on' ? undefined : value);
+const contentsOf = (source: Source, player: Player) =>
+  JSON.stringify([holderOf(source, player) ?? null, player.items, player.money, player.carry_limit], unlit);
 
 const partOf = (bionic: Bionic, parts: readonly Item[]): Item =>
   parts.find(({ id }) => id === bionic) ?? { id: bionic, kind: 'bionic', name: nameOf(bionic), weight: 0, bionic, charge: null, on: null };

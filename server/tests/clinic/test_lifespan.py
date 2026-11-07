@@ -1,3 +1,6 @@
+import contextlib
+import queue
+import threading
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -121,6 +124,29 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_cell(make_package: Mak
     assert Player.model_validate(fitted["player"]).humanity < 1
 
 
+class Inbox:
+    """Every message from `ws`, read on a thread, since `receive_json` has no timeout."""
+
+    def __init__(self, ws: Any) -> None:
+        self.messages: queue.SimpleQueue[dict[str, Any]] = queue.SimpleQueue()
+        threading.Thread(target=self._read, args=(ws,), daemon=True).start()
+
+    def _read(self, ws: Any) -> None:
+        with contextlib.suppress(Exception):
+            while True:
+                self.messages.put(ws.receive_json())
+
+    def next(self, type: str, seconds: float = 5.0) -> dict[str, Any]:
+        deadline = time.monotonic() + seconds
+        while True:
+            try:
+                message = self.messages.get(timeout=max(deadline - time.monotonic(), 0))
+            except queue.Empty:
+                pytest.fail(f"no {type} within {seconds} s")
+            if message["type"] == type:
+                return message
+
+
 def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
     make_package: MakePackage,
 ) -> None:
@@ -142,21 +168,22 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
     }
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        next_of(ws, "player_state")
+        inbox = Inbox(ws)
+        inbox.next("player_state")
         player = player_of(app)
         ws.send_json(move)
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
         client.portal.call(health_of(app).hurt, 1.0, Vital.HEALTH)
         client.portal.call(world_of(app).loop.tick)
-        next_of(ws, "player_died")
-        dead = next_of(ws, "player_state")
+        inbox.next("player_died")
+        dead = inbox.next("player_state")
         ws.send_json(move)
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
         ws.send_json(take | {"item": "copper_wire", "index": 0})
-        partial = next_of(ws, "player_state")
+        partial = inbox.next("player_state")
         ws.send_json(take | {"item": "scrap_steel", "index": 0})
         ws.send_json(take | {"bionic": "datajack"})
-        jack = next_of(ws, "player_state")
+        jack = inbox.next("player_state")
         saved = player.model_dump_json()
 
     assert dead["player"]["bodies"] == 1
@@ -172,7 +199,8 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
     again.state.player.items = [lamp()]
 
     with TestClient(again) as client, client.websocket_connect("/ws") as ws:
-        loaded = next_of(ws, "player_state")
+        inbox = Inbox(ws)
+        loaded = inbox.next("player_state")
         ws.send_json(move)
         until(client, lambda: movement_of(again).entities().get(PLAYER_ID) == CLINIC)
         ws.send_json(take)
@@ -180,14 +208,14 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
         ws.send_json(take | {"corpse": "corpse_9"})
         until(client, lambda: not player_of(again).corpses)
         client.portal.call(world_of(again).loop.tick)
-        gone = next_of(ws, "player_state")
+        gone = inbox.next("player_state")
         while "corpses" in gone["player"]:
             client.portal.call(world_of(again).loop.tick)
-            gone = next_of(ws, "player_state")
+            gone = inbox.next("player_state")
         client.portal.call(health_of(again).hurt, 1.0, Vital.HEALTH)
         client.portal.call(world_of(again).loop.tick)
-        next_of(ws, "player_died")
-        reborn = next_of(ws, "player_state")
+        inbox.next("player_died")
+        reborn = inbox.next("player_state")
 
     assert loaded["player"]["corpses"][0]["money"] == 40
     assert gone["player"]["money"] == 40

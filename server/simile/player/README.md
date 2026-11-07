@@ -80,11 +80,11 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 ## Salvaging your own body
 
 `Salvage` (`corpses.py`, Q19) answers `take`, one thing at a time from one of their corpses by `id`,
-or a pile in `Player.left` by its tile, the oldest there that holds it. `pick_up` doesn't reach corpses.
+or a pile in `Player.left` by its tile, the oldest pile on that tile. `pick_up` doesn't reach corpses.
 
 - **Reach.** Within `reach` (1.5 tiles), on the map they're on.
-- **What comes out.** All the money, through the ledger as `recovered`, or the first item of an `id`,
-  or a bionic. Of a stack, as much as fits, as the lockers move it (`stash.py`'s `fitting`), joining
+- **What comes out.** All the money, through the ledger as `recovered`, or the item at `index`, which
+  must have the `id` named, or a bionic. Of a stack, as much as fits, as the lockers move it (`stash.py`'s `fitting`), joining
   any of its `id` they carry. A bionic comes out as a `bionic` item with its grade, named by its
   recipe, weighing what `BIONIC_WEIGHTS` says: half a kilo for the datajack or the eye, up to 8 kg for
   the third legs. A full set is more than a new body carries, so it can take two trips.
