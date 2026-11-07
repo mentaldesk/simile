@@ -558,6 +558,12 @@ describe('a salvaged bionic at the clinic', () => {
     expect(deals(buyer, player(100, [WIRE]), undefined, [JACK_RECIPE])[0]).not.toHaveProperty('refit');
   });
 
+  it("doesn't make a refit of a fitting for a different bionic they aren't carrying", () => {
+    const [built] = deals(buyer, player(100, [{ ...SALVAGED, id: 'power_cell', name: 'Power cell', bionic: 'power_cell' }]), undefined, [JACK_RECIPE]);
+    expect(built).toMatchObject({ name: 'Datajack', needs: [{ count: 3 }, { count: 1 }], short: true });
+    expect(built).not.toHaveProperty('refit');
+  });
+
   it('sends `fit` on the second Enter and has an icon for every grade', () => {
     const sent: ClientMessage[] = [];
     const parent = document.body.appendChild(document.createElement('div'));

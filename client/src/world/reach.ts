@@ -10,8 +10,8 @@ import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { searches } from './searchables';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
 
-/** The corpse E takes from, as a pile since E is `pick_up` for both, and how many more that hold anything lie on its tile. */
-export type Salvage = { corpse: Corpse; others: number };
+/** The corpse E takes from, as a pile since E is `pick_up` for both, whether it looks like E can take anything, and how many more like it lie on its tile. */
+export type Salvage = { corpse: Corpse; others: number; takes: boolean };
 
 /** Something E uses, V looks at or T orders at, `tiles` along the street from the player. */
 export type Reachable =
@@ -30,6 +30,8 @@ export type Reachables = {
   interactableAt(map: string, position: Position): Interactable | undefined;
   piles(): readonly Pile[];
   corpses?: () => readonly Corpse[];
+  /** What more they can carry, in kg. */
+  room?: () => number;
   buyer(): Buyer | undefined;
   clues: readonly Clue[];
   /** Whether the datajack is fitted. */
@@ -64,6 +66,10 @@ export const reachables: Reachables = {
   interactableAt,
   piles: () => [...(playerState.latest?.player.left ?? []), ...(playerState.latest?.piles ?? [])],
   corpses: () => playerState.latest?.player.corpses ?? [],
+  room: () => {
+    const player = playerState.latest?.player;
+    return player ? player.items.reduce((room, { weight, amount = 1 }) => room - weight * amount, player.carry_limit) : Infinity;
+  },
   buyer: () => playerState.latest?.buyer ?? undefined,
   clues,
   jacked: () => jacked(playerState.latest?.player.body),
@@ -88,19 +94,27 @@ export function pileInReach(position: Position, piles: readonly Pile[]): { pile:
 
 const holds = ({ money, items, bionics }: Corpse) => money > 0 || items.length > 0 || bionics.length > 0;
 
-/** The nearest corpse on this map within reach that holds anything, the oldest on a tie, as the server takes it. */
-export function corpseInReach(position: Position, corpses: readonly Corpse[]): { salvage: Salvage; tiles: number } | undefined {
-  let best: { corpse: Corpse; tiles: number } | undefined;
-  const holding = corpses.filter((corpse) => holds(corpse) && corpse.at.map === mapOf(position));
-  for (const corpse of holding) {
-    const tiles = Math.hypot(corpse.at.x - position.x, corpse.at.y - position.y);
-    if (tiles <= PICK_UP_TILES && (!best || tiles < best.tiles)) best = { corpse, tiles };
-  }
-  if (!best) return undefined;
-  const { at } = best.corpse;
-  const others = holding.filter((corpse) => corpse.at.x === at.x && corpse.at.y === at.y).length - 1;
-  return { salvage: { corpse: best.corpse, others }, tiles: best.tiles };
+/** Whether E looks able to take anything from it. Only the server knows what a bionic weighs, so any bionic counts. */
+const takesFrom = ({ money, items, bionics }: Corpse, room: number) =>
+  money > 0 || bionics.length > 0 || items.some(({ weight, amount = 1 }) => weight * amount <= room + 1e-9);
+
+/** The nearest corpse on this map within reach that E can take something from, the oldest on a tie, as the server takes it, or else the nearest that holds anything. */
+export function corpseInReach(position: Position, corpses: readonly Corpse[], room = Infinity): { salvage: Salvage; tiles: number } | undefined {
+  const near = corpses
+    .filter((corpse) => holds(corpse) && corpse.at.map === mapOf(position))
+    .map((corpse) => ({ corpse, tiles: Math.hypot(corpse.at.x - position.x, corpse.at.y - position.y) }))
+    .filter(({ tiles }) => tiles <= PICK_UP_TILES);
+  if (!near.length) return undefined;
+  const taking = near.filter(({ corpse }) => takesFrom(corpse, room));
+  const pool = taking.length ? taking : near;
+  const best = pool.reduce((nearest, next) => (next.tiles < nearest.tiles ? next : nearest));
+  const { x, y } = best.corpse.at;
+  const others = pool.filter(({ corpse }) => corpse.at.x === x && corpse.at.y === y).length - 1;
+  return { salvage: { corpse: best.corpse, others, takes: taking.length > 0 }, tiles: best.tiles };
 }
+
+/** These are 0 tiles away from anywhere they're offered, and would hide a body E can take from for good. */
+const ALWAYS_NEAR: readonly Reachable['kind'][] = ['terminal', 'clinic', 'buyer', 'bed'];
 
 const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
   kind === 'counter' || kind === 'painting' || kind === 'jack';
@@ -129,18 +143,19 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   if (wall) found.push({ kind: 'mural', tiles: tilesToWall(wall, position), wall });
   const pile = pileInReach(position, from.piles());
   if (pile) found.push({ kind: 'pile', ...pile });
-  const body = corpseInReach(position, from.corpses?.() ?? []);
-  if (body) found.push({ kind: 'pile', pile: body.salvage.corpse, ...body });
-  // A buyer or a bed is always 0 tiles away, and would hide a body lying beside it for good.
-  const behind = body?.tiles ?? 0;
   const buyer = from.buyer();
-  if (buyer && trades(buyer)) found.push({ kind: 'clinic', tiles: behind, buyer });
-  else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: behind, buyer });
+  if (buyer && trades(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
+  else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
   const clue = clueInReach(position, from.clues);
   if (clue) found.push({ kind: 'clue', ...clue });
   const bed = from.bed?.();
-  if (bed) found.push({ kind: 'bed', tiles: behind, bed });
-  return found.sort((a, b) => a.tiles - b.tiles);
+  if (bed) found.push({ kind: 'bed', tiles: 0, bed });
+  const sorted = found.sort((a, b) => a.tiles - b.tiles);
+  const body = corpseInReach(position, from.corpses?.() ?? [], from.room?.());
+  if (!body || (!body.salvage.takes && interactable?.kind === 'machine')) return sorted;
+  const after = sorted.findIndex(({ kind, tiles }) => tiles > body.tiles || (body.salvage.takes && ALWAYS_NEAR.includes(kind)));
+  sorted.splice(after < 0 ? sorted.length : after, 0, { kind: 'pile', pile: body.salvage.corpse, ...body });
+  return sorted;
 }
 
 const keyFor = ({ kind }: Reachable): 'E' | 'T' | 'V' =>

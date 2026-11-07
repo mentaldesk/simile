@@ -631,6 +631,21 @@ def test_once_refitted_a_second_is_built_from_its_recipe_at_full_price() -> None
     assert depot.clinic.fittings()[0].price == 100
 
 
+def test_carrying_one_salvaged_bionic_builds_another_at_full_price_from_its_parts() -> None:
+    player = carrying(JACK, money=100, body=POWERED)
+    player.mind = Mind(recipes=[JACK, Bionic.SPRING_FEET])
+    player.items = [*player.items, *parts(Bionic.SPRING_FEET)]
+    depot = Depot(player)
+    prices = {fitting.bionic: fitting.price for fitting in depot.clinic.fittings()}
+    assert prices == {JACK: 25, Bionic.SPRING_FEET: 150}
+
+    player.money = 150
+    assert depot.clinic.fit(Bionic.SPRING_FEET, "feet")
+
+    assert player.money == 0
+    assert [item.id for item in player.items] == ["lamp", JACK]
+
+
 def test_a_salvaged_bionic_doesnt_sell_at_the_clinic_or_the_stall() -> None:
     depot = Depot(carrying(CELL))
     assert CELL not in depot.trade.buyer().prices

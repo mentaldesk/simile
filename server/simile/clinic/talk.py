@@ -228,7 +228,7 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "so the cell goes in first.",
             f"- You refit a bionic cut out of a customer's own old body for {config.refit:.0%} of "
             "your fee and no parts, since they still know its recipe, in the same order as "
-            "building it.\n"
+            "building it.",
             "- You buy each recipe a customer knows once, at your price, and they still know it.",
             f"- You patch up the hurt, for up to {_money(config.patch_up)} by how hurt they are, "
             f"and you {_cures(config)}: a rat bite left untreated can turn infected.",

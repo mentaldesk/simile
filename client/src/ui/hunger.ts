@@ -149,7 +149,7 @@ export class HungerHint {
     this.show('health', state && healthFeeling(state.player, !!state.resting));
     this.show('rest', used?.kind === 'bed' ? REST_PROMPT : undefined);
     this.show('eat', state && eatPrompt(state));
-    this.show('pile', state && pile && (pile.salvage ? salvagePrompt(pile.salvage, state.player) : pickUpPrompt(pile.pile, state.player)));
+    this.show('pile', state && pile && (pile.salvage ? salvagePrompt(pile.salvage) : pickUpPrompt(pile.pile, state.player)));
     this.show('sell', state?.buyer && !pile?.salvage ? sellPrompt(state.buyer, state.player) : undefined);
   }
 

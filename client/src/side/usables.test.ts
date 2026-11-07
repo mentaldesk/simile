@@ -205,6 +205,8 @@ describe('glowing', () => {
     expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 5), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_1');
     expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0), corpse('corpse_2', 5)] }))).toBe('corpse:corpse_2');
     expect(glowing(at('metro', 30, 15), [], from({ corpses: () => [corpse('corpse_1', 0)] }))).toBeUndefined();
+    const heavy: Corpse = { ...corpse('corpse_1', 0), items: [{ ...WIRE, weight: 4 }] };
+    expect(glowing(at('metro', 30, 15), [], from({ room: () => 1, corpses: () => [heavy, corpse('corpse_2', 40)] }))).toBe('corpse:corpse_2');
   });
 
   it('glows round nothing out of reach, at a door E takes, or at a searchable already searched', () => {

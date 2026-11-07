@@ -57,11 +57,9 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
 }
 
 /** What E takes from a corpse in reach. A bionic's weight is the server's, so one might not fit. */
-export function salvagePrompt({ corpse, others }: Salvage, player: Player): string {
-  const which = others ? `the oldest of the ${others + 1} bodies here` : 'your body';
-  const { taken } = fitting(corpse, player);
-  if (!taken.length && !corpse.money && !corpse.bionics.length) return `You can't carry any more of what's on ${which}.`;
-  return `Press ${E} to salvage what you can carry from ${which}.`;
+export function salvagePrompt({ others, takes }: Salvage): string {
+  if (!takes) return `You can't carry any more of what's on ${others ? `the ${others + 1} bodies here` : 'your body'}.`;
+  return `Press ${E} to salvage what you can carry from ${others ? `the oldest of the ${others + 1} bodies here` : 'your body'}.`;
 }
 
 /** What the buyer where they stand would pay for what they carry, for E's panel, or that it buys. */

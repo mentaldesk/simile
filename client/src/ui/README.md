@@ -172,8 +172,11 @@ The same corner says what E picks up or sells where the player stands, in
 - Within a tile of one of their `corpses` that holds anything (`corpseInReach`), "Press E to salvage
   what you can carry from your body." The client doesn't know what a bionic weighs, so it can't say
   what won't fit. It says "the oldest of the 2 bodies here" where two lie on one tile, since they
-  draw as one and E takes the older first. A corpse goes ahead of a buyer or a bed, so one lying in
-  the clinic or by the bed can still be reached. An emptied one offers nothing. E sends `pick_up`.
+  draw as one and E takes the older first. An older one holding only items that won't fit is passed
+  over, as on the server. A corpse E can take from goes ahead of a news terminal, a buyer or a bed,
+  so one lying by any of them can still be reached. One it can't take from goes behind them and
+  gives way to a machine or the lockers on its cell, so it doesn't stop them making room. An emptied
+  one offers nothing. E sends `pick_up`.
 - At a buyer (`player_state`'s `buyer`), what it pays for everything they carry that it buys:
   "Press E to sell at the scrap trader's stall: 6 for your copper wire.", or "your salvage" for
   three things or more. E opens the trading panel below, to choose what to sell. With nothing it

@@ -197,7 +197,7 @@ describe('HungerHint', () => {
     const hint = new HungerHint(root);
     const corpse: Corpse = { id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 1, y: 1 }, money: 5, items: [], bionics: [] };
 
-    hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), { kind: 'pile', tiles: 0, pile: corpse, salvage: { corpse, others: 0 } });
+    hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), { kind: 'pile', tiles: 0, pile: corpse, salvage: { corpse, others: 0, takes: true } });
 
     expect(shown(root)).toEqual(['Press E to salvage what you can carry from your body.']);
   });

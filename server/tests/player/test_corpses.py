@@ -487,6 +487,17 @@ def test_what_doesnt_fit_stays_on_the_corpse_until_they_can_carry_it() -> None:
     assert player.corpses[0].bionics == []
 
 
+def test_items_use_up_the_room_before_a_bionic_is_weighed() -> None:
+    fall, pickups = salvaging(Player(carry_limit=3.0))
+    fall.player.corpses = [corpse("corpse_1", items=[WIRE], bionics=[Bionic.POWER_CELL])]
+
+    press(fall, pickups)
+
+    assert [item.id for item in fall.player.items] == ["lamp", "copper_wire"]
+    assert fall.player.load <= fall.player.carry_limit
+    assert fall.player.corpses[0].bionics == [Bionic.POWER_CELL]
+
+
 def test_a_stack_on_a_corpse_joins_the_one_they_carry() -> None:
     plastic = Item(
         id="plastic",
@@ -584,6 +595,29 @@ def test_a_corpse_out_of_reach_or_on_another_map_gives_nothing(far: Corpse) -> N
     press(fall, pickups)
 
     assert fall.player.corpses == [far]
+    assert [item.id for item in fall.player.items] == ["lamp"]
+
+
+def test_a_pile_nearer_than_a_corpse_goes_first() -> None:
+    fall, pickups = salvaging(Player())
+    fall.stand(12.4, 15, "kapok_walk")
+    fall.player.corpses = [corpse("corpse_1", x=13, items=[WIRE])]
+    fall.player.left = [Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[BUN])]
+
+    press(fall, pickups)
+
+    assert [item.id for item in fall.player.items] == ["lamp", "pork_bun"]
+    assert fall.player.corpses[0].items == [WIRE]
+
+
+def test_a_corpse_on_another_row_at_the_same_x_is_out_of_reach() -> None:
+    fall, pickups = salvaging(Player())
+    above = corpse("corpse_1", at=MapTile(map="kapok_walk", x=12, y=12), items=[WIRE])
+    fall.player.corpses = [above]
+
+    press(fall, pickups)
+
+    assert fall.player.corpses == [above]
     assert [item.id for item in fall.player.items] == ["lamp"]
 
 

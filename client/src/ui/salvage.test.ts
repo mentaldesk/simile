@@ -118,22 +118,18 @@ describe('sellPrompt', () => {
 });
 
 describe('salvagePrompt', () => {
-  const corpse = (held: Partial<Corpse>): Corpse => ({ id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 38, y: 12 }, money: 0, items: [], bionics: [], ...held });
-  const said = (held: Partial<Corpse>, others = 0, items: Item[] = [LAMP]) => salvagePrompt({ corpse: corpse(held), others }, player(items));
+  const corpse: Corpse = { id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 38, y: 12 }, money: 5, items: [], bionics: [] };
 
-  it('offers what they can carry of cash, what fits or a bionic it cannot weigh', () => {
-    const offer = 'Press E to salvage what you can carry from your body.';
-    expect(said({ money: 5 })).toBe(offer);
-    expect(said({ items: [WIRE] })).toBe(offer);
-    expect(said({ bionics: ['datajack'] })).toBe(offer);
-    expect(said({ bionics: ['datajack'] }, 0, [LAMP, SERVO, SERVO, SERVO])).toBe(offer);
+  it('offers what they can carry', () => {
+    expect(salvagePrompt({ corpse, others: 0, takes: true })).toBe('Press E to salvage what you can carry from your body.');
   });
 
   it('says so when nothing on it can fit', () => {
-    expect(said({ items: [SERVO] }, 0, [LAMP, SERVO, SERVO, WIRE, WIRE])).toBe("You can't carry any more of what's on your body.");
+    expect(salvagePrompt({ corpse, others: 0, takes: false })).toBe("You can't carry any more of what's on your body.");
+    expect(salvagePrompt({ corpse, others: 1, takes: false })).toBe("You can't carry any more of what's on the 2 bodies here.");
   });
 
   it('says which of two on one tile, since they draw as one', () => {
-    expect(said({ money: 5 }, 1)).toBe('Press E to salvage what you can carry from the oldest of the 2 bodies here.');
+    expect(salvagePrompt({ corpse, others: 1, takes: true })).toBe('Press E to salvage what you can carry from the oldest of the 2 bodies here.');
   });
 });
