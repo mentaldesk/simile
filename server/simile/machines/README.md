@@ -32,7 +32,7 @@ searched the bench can still find it.
 ## What the recycler makes
 
 `recycler.py`. Both offers list only what the player carries now, and each is `uses: "scrap"`, so the
-panel shows `item.amount` and `cost` in kilos as the server sends them.
+panel shows the item and `cost` in kilos as the server sends them.
 
 | Offer | `id` | Takes | Makes |
 |---|---|---|---|
@@ -40,9 +40,9 @@ panel shows `item.amount` and `cost` in kilos as the server sends them.
 | Copper wire | `copper_wire` | All their copper pipe, 3 kg each | 2 wire a pipe, the same weight |
 
 A press for wire takes every pipe they carry, as a press for plastic takes all their scrap, so the
-row says what it'll make of them and goes once they're used. Wire doesn't stack: the row's `item`
-has an `amount` to say how many, and they get that many single wires, which repairs and recipes
-count one by one. Pipes lie in the sewers (`content/street/README.md`) and come back.
+row says what it'll make of them and goes once they're used. Wire doesn't stack, so the row's `item`
+is one lot, `Copper wire ×6` weighing 9 kg, and they get that many single wires, which repairs and
+recipes count one by one. Pipes lie in the sewers (`content/street/README.md`) and come back.
 
 ## Adding a machine's offers
 

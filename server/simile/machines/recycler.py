@@ -45,21 +45,31 @@ def _is_pipe(item: Item) -> bool:
     return item.id == COPPER_PIPE.id
 
 
+def _wires(player: Player) -> int:
+    return WIRE_A_PIPE * sum(_is_pipe(item) for item in player.items)
+
+
 def _draw(player: Player) -> Product | None:
-    """All the copper pipe they carry as wire, or None if a `Product` couldn't hold it."""
-    pipes = [item for item in player.items if _is_pipe(item)]
-    kilos = sum(item.load for item in pipes)
+    """All the copper pipe they carry as wire, or None if a `Product` couldn't hold it. Salvage
+    doesn't stack, so the row's item is one lot, named for how many it is and weighing them all."""
+    kilos = sum(item.load for item in player.items if _is_pipe(item))
     if not 0 < kilos < math.inf:
         return None
-    wire = COPPER_WIRE.model_copy(update={"amount": float(WIRE_A_PIPE * len(pipes))})
-    return Product(item=wire, uses="scrap", cost=kilos)
+    wires = _wires(player)
+    lot = Item(
+        id=COPPER_WIRE.id,
+        kind=COPPER_WIRE.kind,
+        name=f"{COPPER_WIRE.name} ×{wires}",
+        weight=COPPER_WIRE.weight * wires,
+    )
+    return Product(item=lot, uses="scrap", cost=kilos)
 
 
 def _make_wire(player: Player) -> bool:
     draw = _draw(player)
     if draw is None or not _fits(player, draw):
         return False
-    wire = [COPPER_WIRE.model_copy() for _ in range(int(draw.item.amount))]
+    wire = [COPPER_WIRE.model_copy() for _ in range(_wires(player))]
     player.items = joined((item for item in player.items if not _is_pipe(item)), wire)
     logger.info("The player draws %s copper wire", len(wire))
     return True

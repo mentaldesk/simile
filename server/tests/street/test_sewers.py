@@ -475,6 +475,29 @@ def test_every_level_lays_copper_pipes_past_the_gate_on_the_way_on_for_any_legs_
         assert cell not in played.reached[OWN_JUMP], pipe.id
 
 
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_each_copper_pipe_is_in_a_room_of_its_own(
+    seed: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    built = []
+    lay = sewers_module.pipes
+
+    def laying(level: Any, plan: Any, cells: Any) -> None:
+        built.append(level)
+        lay(level, plan, cells)
+
+    monkeypatch.setattr(sewers_module, "pipes", laying)
+    plan = sewers(seed)
+
+    columns = built[-1].columns
+    rooms = {
+        (next(i for i, c in enumerate(columns) if c.x <= pipe.x < c.end), pipe.y)
+        for pipe in plan.pickups
+        if pipe.item and pipe.item.id == COPPER_PIPE.id
+    }
+    assert len(rooms) == PIPES
+
+
 def test_a_level_short_of_copper_pipes_in_reach_is_no_level() -> None:
     gone = sewers(2)
     gone.pickups = [p for p in gone.pickups if p.id != "sewers_copper_1"]

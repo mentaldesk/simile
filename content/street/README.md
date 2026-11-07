@@ -446,9 +446,8 @@ counts from the way through, which every grade of legs or feet takes:
 | `jump` | A pipe in the den's loft, past the dogs | `sewers_secret_den`, 90 to 120 money |
 | `bionic_legs` | The cave's ledge, past the dogs, the bats and a five-cell gap under the vault | `sewers_secret_cave`, 140 to 200 money |
 
-**Copper pipes** (`pipes`): three (`PIPES`) on every level, each in a room of its own past the gate
-where there are enough rooms, coming back 24 sim hours after they're taken, as all salvage does.
-They lie on floors `way_on` already walks, so they add nothing to a run on the lamp, and no bot gets
+**Copper pipes** (`pipes`): three (`PIPES`) on every level, each in a room of its own past the gate,
+coming back 24 sim hours after they're taken, as all salvage does. They lie on floors `way_on` already walks, so they add nothing to a run on the lamp, and no bot gets
 past the gate to take them. They're placed last, from their own random stream, so they move nothing
 else. The recycler draws them into copper wire. Its Apex board needs the bionic legs, so `WANTED`
 requires all three in reach of every kit with those.

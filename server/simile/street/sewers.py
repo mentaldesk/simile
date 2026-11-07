@@ -1012,8 +1012,8 @@ def boxes(level: Level, plan: Plan, cells: Stocker) -> None:
 
 
 def pipes(level: Level, plan: Plan, cells: Stocker) -> None:
-    """`PIPES` copper pipes on the floors the way on already walks, each in a room of its own where
-    there are enough, from their own random stream after the rest, so they move nothing."""
+    """`PIPES` copper pipes on the floors the way on already walks, each in a room of its own, from
+    their own random stream after the rest, so they move nothing."""
     rng = random.Random(f"sewers/{level.seed}/pipes")
     route = set(way_on(Cells(plan)))
 
@@ -1023,7 +1023,6 @@ def pipes(level: Level, plan: Plan, cells: Stocker) -> None:
     used: list[Node] = []
     for number in range(1, PIPES + 1):
         rooms = [n for n in level.nodes(1) if spots(n) and n not in used]
-        rooms = rooms or [n for n in level.nodes(1) if spots(n)]
         if not rooms:
             raise ValueError(f"no room for a copper pipe in sewers level {level.seed}")
         node = rng.choice(rooms)

@@ -24,7 +24,7 @@ const BROKEN: Machine = { id: 'printer_3d', kind: 'printer', state: 'broken', pa
 const WORKING: Machine = { id: 'printer_3d', kind: 'printer', state: 'working', parts: {}, makes: [PISTOL, ROUNDS] };
 const EMPTY: Machine = { ...WORKING, makes: [] };
 const STEEL: Item = { id: 'scrap_steel', kind: 'salvage', name: 'Scrap steel', weight: 4.5, charge: null, on: null };
-const DRAW: Product = { item: { ...WIRE, amount: 4 }, uses: 'scrap', cost: 6 };
+const DRAW: Product = { item: { ...WIRE, name: 'Copper wire ×4', weight: 6 }, uses: 'scrap', cost: 6 };
 const RECYCLER: Machine = { id: 'recycler', kind: 'recycler', state: 'working', parts: {}, makes: [{ item: { ...PLASTIC, amount: 4.5 }, uses: 'scrap', cost: 4.5 }, DRAW] };
 const AT_THE_PRINTER: Position = { x: 9, y: 2, map: 'maker_space_floor_0' };
 const player = (items: Item[]): Player => ({ items, money: 0, carry_limit: 20 }) as unknown as Player;

@@ -11,6 +11,8 @@ from simile.machines.materials import plastic
 from simile.machines.recycler import offers
 from simile.machines.workshop import MACHINES, Broken, Workshop, register_offers
 from simile.persistence import player_of
+from simile.protocol import MachineChangedMessage
+from simile.protocol.messages import server_messages
 from simile.player.config import SALVAGE
 from simile.schema import (
     PLAYER_ID,
@@ -259,8 +261,13 @@ def test_it_makes_nothing_of_scrap_with_no_weight() -> None:
 
 
 def wire(pipes: int) -> Product:
-    made = COPPER_WIRE.model_copy(update={"amount": 2.0 * pipes})
-    return Product(item=made, uses="scrap", cost=3.0 * pipes)
+    lot = Item(
+        id="copper_wire",
+        kind=ItemKind.SALVAGE,
+        name=f"Copper wire ×{2 * pipes}",
+        weight=3.0 * pipes,
+    )
+    return Product(item=lot, uses="scrap", cost=3.0 * pipes)
 
 
 def test_it_draws_every_pipe_they_carry_into_two_wires_each_and_leaves_the_rest() -> None:
@@ -271,6 +278,19 @@ def test_it_draws_every_pipe_they_carry_into_two_wires_each_and_leaves_the_rest(
 
     assert player.items == [lamp(), METAL_SHEET, COPPER_WIRE, *[COPPER_WIRE] * 4]
     assert listed(shop) == []
+
+
+@pytest.mark.parametrize("pipes", [1, 3])
+def test_the_wire_offer_is_one_the_servers_own_protocol_parses(pipes: int) -> None:
+    _, shop = working([COPPER_PIPE] * pipes)
+    frame = MachineChangedMessage(machine=shop.machine(RECYCLER))
+
+    parsed = server_messages.validate_json(frame.model_dump_json())
+
+    assert parsed == frame
+    [draw] = parsed.machine.makes
+    assert draw.item.amount == 1 and draw.item.load == draw.cost == 3.0 * pipes
+    assert draw.item.name == f"Copper wire ×{2 * pipes}"
 
 
 def test_each_wire_drawn_is_a_copy_of_its_own_that_counts_towards_a_repair() -> None:
@@ -445,8 +465,8 @@ def test_both_presses_over_the_socket_turn_what_each_takes_into_what_it_makes(
             snapshot = ws.receive_json()
             [press, draw] = next(m for m in snapshot["machines"] if m["id"] == RECYCLER)["makes"]
             assert (press["item"]["id"], press["cost"]) == ("plastic", 0.5)
-            assert (draw["item"]["id"], draw["item"]["amount"]) == ("copper_wire", 4)
-            assert (draw["uses"], draw["cost"]) == ("scrap", 6)
+            assert draw == wire(2).model_dump(mode="json")
+            assert "amount" not in draw["item"]
             ws.send_json({"type": "player_move", "position": position})
             until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == AT_IT)
 
