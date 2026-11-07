@@ -61,6 +61,7 @@ from simile.protocol import (
     Shut,
     ShutReason,
     StashMessage,
+    TakeMessage,
     Treatment,
     TreatMessage,
     Vital,
@@ -403,7 +404,12 @@ JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 IN_THE_SEWERS = SNAPSHOT.model_copy(update={"creatures": CREATURES})
 WITH_MACHINES = SNAPSHOT.model_copy(update={"machines": [MACHINES[0], MACHINES[2]]})
-AFTER_DYING = PlayerStateMessage(player=Player(corpses=CORPSES, repaired=["printer_3d"]))
+SALVAGED_JACK = Item(
+    id="datajack", kind=ItemKind.BIONIC, name="Datajack", weight=0.5, bionic=Bionic.DATAJACK
+)
+AFTER_DYING = PlayerStateMessage(
+    player=Player(corpses=CORPSES[:1], repaired=["printer_3d"]), bionics=[SALVAGED_JACK]
+)
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
@@ -497,7 +503,16 @@ CLIENT = [
     MakeMessage(machine="recycler", item="plastic"),
     StashMessage(item="plastic", action="store"),
     StashMessage(item="plastic", action="take"),
+    TakeMessage(corpse="corpse_1", pile=None, item=None, index=None, bionic=None),
+    TakeMessage(corpse="corpse_1", pile=None, item="copper_wire", index=1, bionic=None),
+    TakeMessage(corpse="corpse_1", pile=None, item=None, index=None, bionic=Bionic.POWER_CELL_2),
+    TakeMessage(
+        corpse=None, pile=MapTile(map="metro", x=3, y=15), item="plastic", index=0, bionic=None
+    ),
 ]
+
+
+TILE = {"map": "metro", "x": 3, "y": 15}
 
 
 def validator() -> Draft202012Validator:
@@ -1442,6 +1457,66 @@ def test_rejects_invalid_shooting_and_maker_space_messages(data: dict[str, Any])
         client_messages.validate_python(data)
 
 
+def take(**fields: Any) -> dict[str, Any]:
+    fields = {"corpse": "c", "pile": None, "item": None, "index": None, "bionic": None} | fields
+    return {"type": "take"} | fields
+
+
+def test_take_goes_from_client_to_server_naming_a_corpse_or_a_pile() -> None:
+    data = take(corpse=None, pile=TILE, item="plastic", index=2)
+    message = client_messages.validate_python(data)
+
+    assert isinstance(message, TakeMessage)
+    assert json.loads(message.model_dump_json()) == data
+    with pytest.raises(ValidationError):
+        server_messages.validate_python(take())
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        take(corpse=None),
+        take(pile=TILE),
+        take(item="plastic", index=0, bionic="datajack"),
+        take(corpse=None, pile=TILE, bionic="datajack"),
+        take(bionic="wings"),
+        take(item="plastic"),
+        take(index=0),
+        take(index=0, bionic="datajack"),
+        take(item="plastic", index=-1),
+        take(item="plastic", index=0.5),
+        take(item="plastic", index=True),
+        take(item="plastic", index="1"),
+        {"type": "take", "corpse": "c"},
+    ],
+    ids=[
+        "nowhere",
+        "two_places",
+        "two_things",
+        "bionic_in_pile",
+        "no_such_bionic",
+        "item_without_index",
+        "index_without_item",
+        "index_with_bionic",
+        "negative_index",
+        "fractional_index",
+        "bool_index",
+        "string_index",
+        "missing",
+    ],
+)
+def test_rejects_a_take_that_doesnt_name_one_thing_in_one_place(data: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        client_messages.validate_python(data)
+
+
+def test_player_state_says_what_a_bionic_on_a_corpse_comes_out_as() -> None:
+    assert "bionics" not in json.loads(PlayerStateMessage(player=Player()).model_dump_json())
+    sent = json.loads(AFTER_DYING.model_dump_json())
+    assert sent["bionics"][0]["weight"] == 0.5
+    assert AFTER_DYING in SERVER
+
+
 def test_a_flushed_line_says_so() -> None:
     message = LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=True)
 
@@ -1639,7 +1714,7 @@ def test_a_machine_changing_carries_all_of_it() -> None:
 def test_a_player_state_carries_their_corpses_and_repairs() -> None:
     data = json.loads(AFTER_DYING.model_dump_json())
 
-    assert data["player"]["corpses"] == json.loads((SCHEMA_TESTS / "corpses.json").read_text())
+    assert data["player"]["corpses"] == json.loads((SCHEMA_TESTS / "corpses.json").read_text())[:1]
     assert data["player"]["repaired"] == ["printer_3d"]
 
 

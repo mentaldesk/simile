@@ -229,6 +229,7 @@
           "sell_part": "#/$defs/SellPartMessage",
           "sell_recipe": "#/$defs/SellRecipeMessage",
           "stash": "#/$defs/StashMessage",
+          "take": "#/$defs/TakeMessage",
           "treat": "#/$defs/TreatMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
@@ -261,6 +262,9 @@
         },
         {
           "$ref": "#/$defs/PickUpMessage"
+        },
+        {
+          "$ref": "#/$defs/TakeMessage"
         },
         {
           "$ref": "#/$defs/SellMessage"
@@ -428,7 +432,7 @@
     },
     "Corpse": {
       "additionalProperties": false,
-      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It can\nhold nothing at all: it stays whatever it holds, unlike a `Pile`.",
+      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It goes\nonce nothing is left on it, and a save with an emptied one loads without it.",
       "properties": {
         "id": {
           "description": "Which corpse, as two can lie on one tile.",
@@ -1882,6 +1886,12 @@
           },
           "type": "array"
         },
+        "bodies": {
+          "default": 0,
+          "description": "How many corpses they've ever left, which numbers the next, so one that's gone never lends its id to a new one. Left out while there's been none.",
+          "minimum": 0,
+          "type": "integer"
+        },
         "taken": {
           "additionalProperties": {
             "format": "date-time",
@@ -1940,7 +1950,7 @@
     },
     "PlayerDiedMessage": {
       "additionalProperties": false,
-      "description": "The player died of `cause`: they starved, their power cell ran flat, or they had no health\nleft. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a\nwhole organic body. Their corpse stays where they fell, or where they wake if the server didn't\nknow where that was, at the end of `player_state`'s `corpses`.",
+      "description": "The player died of `cause`: they starved, their power cell ran flat, or they had no health\nleft. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a\nwhole organic body. Their corpse lies where they fell, or where they wake if the server didn't\nknow where that was, at the end of `player_state`'s `corpses`, unless nothing was on them.",
       "properties": {
         "type": {
           "const": "player_died",
@@ -2070,6 +2080,14 @@
           "description": "What's lying in the world for them to pick up, on every map, besides what they left (`player.left`): salvage and secrets. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Pile"
+          },
+          "type": "array"
+        },
+        "bionics": {
+          "default": [],
+          "description": "What each kind of bionic on their corpses comes out as, once each, with its name and weight, for showing what fits. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Item"
           },
           "type": "array"
         },
@@ -2720,6 +2738,87 @@
         "action"
       ],
       "title": "StashMessage",
+      "type": "object"
+    },
+    "TakeMessage": {
+      "additionalProperties": false,
+      "description": "Takes one thing from one of their corpses or a pile they left, within reach: of a stack, as\nmuch as fits under their carry limit. A corpse goes once it's empty, and so does a pile. The\nserver ignores it out of reach, if the thing isn't there, or if none of it fits.",
+      "properties": {
+        "type": {
+          "const": "take",
+          "default": "take",
+          "type": "string"
+        },
+        "corpse": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The corpse it's on, by its `id`, or null for a pile."
+        },
+        "pile": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MapTile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The tile of the pile in `player.left` it's in, the oldest on that tile, or null for a corpse."
+        },
+        "item": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "An item, by its `id`, or null for a bionic or the money."
+        },
+        "index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where that item is in the corpse's or pile's `items`, from 0, which must hold an item of that `id`. Null without `item`."
+        },
+        "bionic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Bionic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A bionic in the corpse. With neither this nor `item`, the money."
+        }
+      },
+      "required": [
+        "type",
+        "corpse",
+        "pile",
+        "item",
+        "index",
+        "bionic"
+      ],
+      "title": "TakeMessage",
       "type": "object"
     },
     "TreatMessage": {

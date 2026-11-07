@@ -69,7 +69,7 @@
     },
     "Corpse": {
       "additionalProperties": false,
-      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It can\nhold nothing at all: it stays whatever it holds, unlike a `Pile`.",
+      "description": "A body left `at` the tile it fell on, or the ground below it, with what was on it. It goes\nonce nothing is left on it, and a save with an emptied one loads without it.",
       "properties": {
         "id": {
           "description": "Which corpse, as two can lie on one tile.",
@@ -581,6 +581,13 @@
       },
       "title": "Corpses",
       "type": "array"
+    },
+    "bodies": {
+      "default": 0,
+      "description": "How many corpses they've ever left, which numbers the next, so one that's gone never lends its id to a new one. Left out while there's been none.",
+      "minimum": 0,
+      "title": "Bodies",
+      "type": "integer"
     },
     "taken": {
       "additionalProperties": {

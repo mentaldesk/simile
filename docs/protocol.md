@@ -22,11 +22,11 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a creature's `health`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `stash`, `left`, `corpses`, `taken`, `mind`, `power`, `health`,
+  `long_summary`, a wall's `map`, a player's `stash`, `left`, `corpses`, `bodies`, `taken`, `mind`, `power`, `health`,
   `effects`, `sales`, `searched`, `repaired` and `lift_open`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
   `bionic`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
-  `player_state`'s `meal`, `shut`, `buyer`, `piles`, `recipes`, `bed` and `resting`, below.
+  `player_state`'s `meal`, `shut`, `buyer`, `piles`, `bionics`, `recipes`, `bed` and `resting`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -324,6 +324,7 @@ change is sent at once. Clients that predate it ignore it.
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, in a save from before they could die, a destroyed bot's haul, and anything of a pickup that didn't fit. Left out while there's none. |
 | `corpses` | `Corpse[]` | Their own bodies, oldest first, each where they died. Each `player_state` has all of them, so read them from here: a corpse no longer in the list is gone. Left out while there's none. |
+| `bodies` | number | How many corpses they've ever left, which numbers the next, so a corpse that's gone never lends its id to a new one. Left out while there's been none. |
 | `taken` | object | When each pickup in the world was last emptied, by the player or a recycler bot, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
 | `searched` | `string[]` | The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none. |
@@ -426,6 +427,10 @@ such as salvage and secrets, as `Pile`s on every map. It's left out while there'
 some of is in their `left` from then on, with what didn't fit. Salvage comes back a while after
 it's taken, in a later `player_state`, and a secret never does.
 
+And it has `bionics`: what each kind of bionic on their `corpses` comes out as, once each, an `Item`
+of `kind` `"bionic"` with its `id`, `name` and `weight`, so the client can show what fits before
+they [`take`](#take) it. It's left out while no corpse holds a bionic.
+
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
 which prices salvage; its `kind`, `"salvage"`, `"food"`, `"lamp"`, `"part"`, something found that
 the doctor fits with a bionic and nobody buys, `"material"`, `"weapon"`, `"rounds"` or `"bionic"`,
@@ -456,8 +461,10 @@ of a pickup didn't fit. Salvage and secrets, in `piles`, are another.
 A `Corpse` is one of their own bodies, in `corpses`, with what was on it. It has its `id`, as two
 can lie on one tile; its `owner`, whose body it was, `"player"` for the player's own; `at`, a
 `MapTile`, the tile they fell on or the ground below it; `money`; `items`, what it still carries;
-and `bionics`, each `Bionic` still in it. Unlike a `Pile`, it stays whatever it holds, and can hold
-nothing at all.
+and `bionics`, each `Bionic` still in it. Like a `Pile`, it goes once nothing is left on it, and a
+save with an emptied one loads without it. Its trace in the sewers stays in `lift_open`. An `id` is
+never used twice, as `bodies` numbers them. See the note under [`take`](#take) for what the server
+does until Q19.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney`,
 `right_kidney`, `stomach` and `feet`. Each is `"present"`, `"sold"`, or the bionic fitted in its
@@ -500,7 +507,8 @@ The client puts them at `position`, snapping there as through a door, and can sa
 The [`player_state`](#player_state) that follows has what they lost: a new `Corpse` at the end of
 `corpses`, where they fell, or where they wake if the server didn't know where that was, with their
 money, everything they carried but the lamp and every bionic they had fitted, and a whole organic
-`body`. With nothing on them they still leave a corpse. They
+`body`. With nothing on them they leave no corpse, from Q19 (see the note under
+[`take`](#take)). They
 keep the lamp, switched off, so they can see to go back. They wake with no effects, full `power`,
 `hunger` of 0.75 at most, and a little `health`, resting in their bed if they have one. What they
 know, what they keep in the `stash`, what they've sold, what they've `repaired` and what's in `left`
@@ -629,13 +637,40 @@ carry limit is left where they stand, a new `Pile` at the end of their `left`. I
 `searched` from then on, even if it held nothing, and the server sends the
 [`player_state`](#player_state) that follows. The client knows what it held from the maps.
 
-And it salvages (Q11): one of their own `corpses` within a tile and a half on the map they're on, the
-nearer of it and a pile, the pile if they're as near. It's the nearest they can take something from,
-and the oldest of those on a tie, so of two on one tile the older goes first. It takes the corpse's
-`money` and each of its `items`, then each of its `bionics`, in order, that fits under their carry
-limit, as from a pile. A bionic comes out as an item of `kind` `bionic`, with its `id` and `bionic`
-the `Bionic`, grade and all. What doesn't fit stays on the corpse. An emptied corpse stays where it
-lies, holding nothing, and a `pick_up` ignores it, as it does a corpse with nothing that fits.
+It takes nothing from their `corpses`: that's [`take`](#take).
+
+### `take`
+
+Takes one thing from one of their `corpses` or a `Pile` in their `left`, within a tile and a half of
+where they stand, on the map they're on.
+
+- `corpse` names a corpse by its `id`, or `pile` a pile by its `MapTile`, the oldest pile in `left`
+  on that tile. Exactly one is `null`.
+- `item` and `index` name an item: `index` is where it is in the corpse's or pile's `items`, from 0,
+  and the item there must have that `id`. Two items can share an `id`, such as two printed pistols,
+  which don't stack. Both are `null` for anything else.
+- A `take` whose `index` now holds an item with another `id` changes nothing. One whose `index`
+  holds another item of that `id` takes it: after taking `[wire, pistol, pistol]`'s wire, index 1 is
+  the second pistol. So the client sends its next `take` only after the
+  [`player_state`](#player_state) that follows its last. A refused `take` has none, so it waits a
+  moment instead.
+- `bionic` is a `Bionic` in the corpse, and with neither it nor `item` it takes all the money. A
+  pile has no `bionic`.
+
+Of a stack, as much moves as fits under their carry limit, joining any of that `id` they carry, and
+the rest stays: rounds move whole and material in any amount, as with [`stash`](#stash). Anything
+else fits or stays. A bionic comes out as an item of `kind` `bionic`, as in `player_state`'s
+`bionics`. Money weighs nothing. Once nothing is left on a corpse it goes from `corpses`, and an
+empty pile goes from `left`. The server sends the [`player_state`](#player_state) that follows, and
+ignores a `take` out of reach, for something that isn't there, and when none of it fits.
+
+Salvage and secrets in `player_state`'s `piles` aren't named by this: E takes those with
+[`pick_up`](#pick_up).
+
+Until Q19 (#636), the server ignores `take` and sends no `bionics`, and `pick_up` still salvages
+the nearest corpse it can take from, as it did since Q11. A death with nothing on them still leaves
+a corpse, and an emptied corpse stays until the save is next loaded. Corpse ids already number from
+`bodies`.
 
 ### `sell`
 

@@ -1113,3 +1113,41 @@ def test_a_save_with_no_trace_of_the_lift_leaves_it_shut(elsewhere: dict[str, An
 
 def test_the_schema_names_the_sewers_as_the_street_builder_does() -> None:
     assert SEWERS == STREET_SEWERS
+
+
+def emptied(id: str, map: str = "kapok_walk") -> dict[str, Any]:
+    at = {"map": map, "x": 3, "y": 15}
+    return {"id": id, "owner": "player", "at": at, "money": 0.0, "items": [], "bionics": []}
+
+
+def test_an_old_saves_emptied_corpses_clear_on_load_and_their_ids_stay_used() -> None:
+    held = emptied("corpse_2") | {"money": 4.0}
+    saved = json.dumps({"corpses": [emptied("corpse_1"), held, emptied("corpse_3")]})
+
+    player = Player.model_validate_json(saved)
+
+    assert [corpse.id for corpse in player.corpses] == ["corpse_2"]
+    assert player.bodies == 3
+    assert Player.model_validate_json(player.model_dump_json()).bodies == 3
+
+
+def test_an_emptied_corpse_clearing_from_the_sewers_leaves_the_lift_open() -> None:
+    saved = json.dumps({"corpses": [emptied("corpse_1", "sewers")]})
+
+    player = Player.model_validate_json(saved)
+
+    assert player.corpses == []
+    assert player.lift_open
+    assert Player.model_validate_json(player.model_dump_json()).lift_open
+
+
+def test_a_corpse_gone_leaves_the_count_of_bodies_and_the_lift_as_they_were() -> None:
+    corpse = Corpse.model_validate(emptied("corpse_1", "sewers") | {"money": 4.0})
+    player = Player(corpses=[corpse])
+    assert (player.bodies, player.lift_open) == (1, True)
+
+    player.corpses = []
+
+    assert (player.bodies, player.lift_open) == (1, True)
+    assert "bodies" not in json.loads(Player().model_dump_json())
+    assert "bodies" not in schema("Player").schema["required"]
