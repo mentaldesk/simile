@@ -581,6 +581,9 @@ class LoopPlayer:
 
     async def take(self, pickup: Pickup) -> None:
         await self.to(Spot(pickup.map, pickup.x, pickup.y))
+        if not any(found.id == pickup.id for found, _ in self.lying({pickup.map})):
+            self.note(f"Something had taken what lay at {pickup.id} before they got there")
+            return
         money, items = self.money, list(self.player.items)
         self.send(PickUpMessage())
         if (self.money, self.player.items) == (money, items):
