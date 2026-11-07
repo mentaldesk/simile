@@ -186,7 +186,7 @@ describe('HungerHint', () => {
     expect(shown(root)).toEqual([]);
 
     hint.update(state(0.75, { meal: HOME, left: [left] }), { kind: 'pile', tiles: 0, pile: left });
-    expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', 'Press E to pick up what you left here.']);
+    expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', 'Press E to go through what you left here.']);
 
     hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), undefined);
     expect(shown(root)).toEqual(["Press E to sell at the scrap trader's stall: 6 for your copper wire."]);
@@ -199,7 +199,7 @@ describe('HungerHint', () => {
 
     hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), { kind: 'pile', tiles: 0, pile: corpse, salvage: { corpse, others: 0, takes: true } });
 
-    expect(shown(root)).toEqual(['Press E to salvage what you can carry from your body.']);
+    expect(shown(root)).toEqual(['Press E to go through your body.']);
   });
 
   it('shows their power in place of hunger once a cell is in', () => {

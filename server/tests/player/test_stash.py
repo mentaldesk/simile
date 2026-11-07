@@ -17,7 +17,7 @@ from simile.npc import load_npcs
 from simile.persistence import WorldStore, capture
 from simile.player.corpses import Death, Salvage
 from simile.player.stash import Lockers, fitting
-from simile.protocol import Vital
+from simile.protocol import TakeMessage, Vital
 from simile.schema import (
     PLAYER_ID,
     Corpse,
@@ -383,19 +383,23 @@ def corpse_beside_the_lockers(*items: Item) -> Corpse:
 
 
 def salvage_of(player: Player) -> Salvage:
-    return Salvage(player, None, None, {})  # type: ignore[arg-type]
+    movement = Movement(MAPS, World(Clock(NOW), FakeWallClock()).bus)
+    movement.track(PLAYER_ID, AT_THE_LOCKERS)
+    return Salvage(player, movement, None, None, {})  # type: ignore[arg-type]
+
+
+def taking(item: str) -> TakeMessage:
+    return TakeMessage(corpse="corpse_1", pile=None, item=item, bionic=None)
 
 
 def test_a_corpse_beside_the_lockers_gives_what_fits_and_leaves_the_stash_alone() -> None:
     stored = Stash(items=[plastic(2)])
     player = Player(items=[lamp()], stash=stored, corpses=[corpse_beside_the_lockers(WIRE)])
 
-    claim = salvage_of(player).claim(AT_THE_LOCKERS)
-    assert claim is not None
-    claim.take()
+    assert salvage_of(player).take(taking(WIRE.id))
 
     assert player.items == [lamp(), WIRE]
-    assert player.corpses[0].items == []
+    assert player.corpses == []
     assert player.stash == stored
 
 
@@ -405,15 +409,13 @@ def test_storing_makes_room_for_a_corpse_beside_the_lockers_that_did_not_fit() -
     player = Player(items=[crate], corpses=[corpse_beside_the_lockers(bolts)])
     salvage = salvage_of(player)
 
-    assert salvage.claim(AT_THE_LOCKERS) is None
+    assert not salvage.take(taking("bolts"))
     assert lockers_for(player).move("crate", "store")
-    claim = salvage.claim(AT_THE_LOCKERS)
-    assert claim is not None
-    claim.take()
+    assert salvage.take(taking("bolts"))
 
     assert player.items == [bolts]
     assert player.stash.items == [crate]
-    assert player.corpses[0].items == []
+    assert player.corpses == []
 
 
 def states_from(ws: Any) -> "queue.SimpleQueue[dict[str, Any]]":

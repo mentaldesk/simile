@@ -1,14 +1,15 @@
 import logging
 import math
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Mapping
 from itertools import count
 from typing import TYPE_CHECKING, Final
 
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.health import DEFAULT_HEALTH, HealthConfig
-from simile.player.pickups import Claim, joined
+from simile.player.pickups import joined
+from simile.player.stash import fitting, split
 from simile.player.where import here
-from simile.protocol import Vital
+from simile.protocol import TakeMessage, Vital
 from simile.schema import (
     PLAYER_ID,
     Bionic,
@@ -46,8 +47,8 @@ BIONIC_WEIGHTS: Final[dict[Bionic, float]] = {
 
 
 class Death:
-    """The player's death, whatever ran out: a corpse stays where they fell, and they wake in their
-    bed in a new body."""
+    """The player's death, whatever ran out: a corpse lies where they fell, if anything's on it,
+    and they wake in their bed in a new body."""
 
     def __init__(
         self,
@@ -74,20 +75,23 @@ class Death:
 
     def die(self, cause: Vital) -> None:
         """Leaves their money, all but the lamp and every bionic on a corpse where they are, or
-        where they wake if the server doesn't know where that is, and wakes them with no effects
-        in a whole organic body. What they know, stash, sold and repaired stays theirs."""
+        where they wake if the server doesn't know where that is, or no corpse with none of those,
+        and wakes them with no effects in a whole organic body. What they know, stash, sold and
+        repaired stays theirs."""
         player = self.player
         home = self._waking()
         fell = here(self.movement) or Point(home.x, home.y, home.map)
-        corpse = Corpse(
-            id=next_corpse(player.corpses),
-            owner=PLAYER_ID,
-            at=ground(self.movement, fell),
-            money=player.money,
-            items=[item for item in player.items if item.kind is not ItemKind.LAMP],
-            bionics=player.body.bionics,
-        )
-        player.corpses = [*player.corpses, corpse]
+        items = [item for item in player.items if item.kind is not ItemKind.LAMP]
+        if player.money or items or player.body.bionics:
+            corpse = Corpse(
+                id=next_corpse(player),
+                owner=PLAYER_ID,
+                at=ground(self.movement, fell),
+                money=player.money,
+                items=items,
+                bionics=player.body.bionics,
+            )
+            player.corpses = [*player.corpses, corpse]
         player.items = [item for item in player.items if item.kind is ItemKind.LAMP]
         if self.economy is not None:
             self.economy.drop(player.money)
@@ -111,18 +115,20 @@ class Death:
 
 
 class Salvage:
-    """E at their own corpse, one more claim on `pick_up`: its money, then each of its items and
-    bionics that fits under their carry limit. What doesn't fit stays on it."""
+    """Taking things one at a time from their own corpses and the piles they left: money, an item
+    or a bionic. A corpse or pile with nothing left goes."""
 
     def __init__(
         self,
         player: Player,
+        movement: Movement,
         economy: "Economy",
         clock: Clock,
         recipes: Mapping[Bionic, Recipe],
         config: PlayerConfig = DEFAULT_CONFIG,
     ) -> None:
         self.player = player
+        self.movement = movement
         self.economy = economy
         """Its `player` is this one, so the money comes back through its ledger."""
         self.clock = clock
@@ -130,73 +136,97 @@ class Salvage:
         """What each bionic is called."""
         self.config = config
 
-    def claim(self, at: Point) -> Claim | None:
-        """The nearest corpse in reach that they can take something from, the oldest on a tie."""
-        near = [
-            (distance, corpse)
-            for corpse in self.player.corpses
-            if corpse.at.map == at.map
-            and self._gives(corpse)
-            and (distance := math.dist(at, (corpse.at.x, corpse.at.y))) <= self.config.reach
-        ]
-        if not near:
-            return None
-        distance, corpse = min(near, key=lambda found: found[0])
-        return Claim(distance, lambda: self.take(corpse))
+    def take(self, message: TakeMessage) -> bool:
+        """Takes the thing `message` names, or as much of a stack as fits. Whether any moved."""
+        if message.corpse is not None:
+            return self._from_corpse(message.corpse, message.item, message.bionic)
+        return message.pile is not None and self._from_pile(message.pile, message.item)
 
-    def take(self, corpse: Corpse) -> None:
-        """Leaves the corpse in its place with what didn't fit, however little that is."""
-        room = self._room()
-        items, kept_items, room = _fitting(corpse.items, room)
-        bionics, kept, _ = _fitting(map(self.item, corpse.bionics), room)
-        rest = corpse.model_copy(
-            update={
-                "money": 0.0,
-                "items": kept_items,
-                "bionics": [item.bionic for item in kept if item.bionic],
-            }
-        )
-        self.player.corpses = [rest if c.id == corpse.id else c for c in self.player.corpses]
-        self.player.items = joined(self.player.items, [*items, *bionics])
-        if corpse.money:
-            self.economy.recover(corpse.money)
-        logger.info("%s  The player salvages %s", self.clock, corpse.id)
+    def bionics(self) -> list[Item]:
+        """What each kind of bionic on their corpses comes out as, once each."""
+        lying = (bionic for corpse in self.player.corpses for bionic in corpse.bionics)
+        return [self.item(bionic) for bionic in dict.fromkeys(lying)]
 
     def item(self, bionic: Bionic) -> Item:
         """`bionic` as a part they carry, to have refitted."""
+        recipe = self.recipes.get(bionic)
         return Item(
             id=bionic.value,
             kind=ItemKind.BIONIC,
-            name=self.recipes[bionic].name,
+            name=recipe.name if recipe else bionic.value.replace("_", " ").capitalize(),
             weight=BIONIC_WEIGHTS[bionic],
             bionic=bionic,
         )
 
+    def _from_corpse(self, id: Id, item: Id | None, bionic: Bionic | None) -> bool:
+        corpse = next((corpse for corpse in self.player.corpses if corpse.id == id), None)
+        if corpse is None or not self._reaches(corpse.at):
+            return False
+        if bionic is not None:
+            if bionic not in corpse.bionics or fitting(self.item(bionic), self._room()) <= 0:
+                return False
+            bionics = list(corpse.bionics)
+            bionics.remove(bionic)
+            self._carry(self.item(bionic))
+            self._leave(corpse.model_copy(update={"bionics": bionics}))
+        elif item is not None:
+            taken = split(corpse.items, item, self._room())
+            if taken is None:
+                return False
+            self._carry(taken[0])
+            self._leave(corpse.model_copy(update={"items": taken[1]}))
+        else:
+            if not corpse.money:
+                return False
+            self._leave(corpse.model_copy(update={"money": 0.0}))
+            self.economy.recover(corpse.money)
+        logger.info("%s  The player salvages from %s", self.clock, id)
+        return True
+
+    def _leave(self, rest: Corpse) -> None:
+        corpses = (rest if corpse.id == rest.id else corpse for corpse in self.player.corpses)
+        self.player.corpses = [c for c in corpses if c.money or c.items or c.bionics]
+
+    def _from_pile(self, at: MapTile, item: Id | None) -> bool:
+        if not self._reaches(at):
+            return False
+        left = self.player.left
+        for index, pile in enumerate(left):
+            if pile.at != at:
+                continue
+            if item is None and pile.money:
+                rest = pile.model_copy(update={"money": 0.0})
+                self.economy.recover(pile.money)
+            elif item is not None and (taken := split(pile.items, item, self._room())):
+                rest = pile.model_copy(update={"items": taken[1]})
+                self._carry(taken[0])
+            else:
+                continue
+            kept = [rest] if rest.items or rest.money else []
+            self.player.left = [*left[:index], *kept, *left[index + 1 :]]
+            return True
+        return False
+
+    def _carry(self, item: Item) -> None:
+        self.player.items = joined(self.player.items, [item])
+
     def _room(self) -> float:
         return self.player.carry_limit - self.player.load
 
-    def _gives(self, corpse: Corpse) -> bool:
-        things = [*corpse.items, *map(self.item, corpse.bionics)]
-        return bool(corpse.money) or any(thing.load <= self._room() + 1e-9 for thing in things)
+    def _reaches(self, tile: MapTile) -> bool:
+        at = here(self.movement)
+        return (
+            at is not None
+            and at.map == tile.map
+            and math.dist(at, (tile.x, tile.y)) <= self.config.reach
+        )
 
 
-def _fitting(items: Iterable[Item], room: float) -> tuple[list[Item], list[Item], float]:
-    """Of `items`, in order, those that fit in `room`, those that don't, and the room left."""
-    taken: list[Item] = []
-    kept: list[Item] = []
-    for item in items:
-        if item.load <= room + 1e-9:
-            taken.append(item)
-            room -= item.load
-        else:
-            kept.append(item)
-    return taken, kept, room
-
-
-def next_corpse(corpses: list[Corpse]) -> Id:
-    """An id none of `corpses` has, which a reload can't reuse since they're saved with it."""
-    taken = {corpse.id for corpse in corpses}
-    return next(id for n in count(len(corpses) + 1) if (id := f"corpse_{n}") not in taken)
+def next_corpse(player: Player) -> Id:
+    """Counts a new body and gives its id, which no corpse has had, even one that's gone."""
+    lying = {corpse.id for corpse in player.corpses}
+    player.bodies = next(n for n in count(player.bodies + 1) if f"corpse_{n}" not in lying)
+    return f"corpse_{player.bodies}"
 
 
 def ground(movement: Movement, here: Point) -> MapTile:

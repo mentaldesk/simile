@@ -11,6 +11,7 @@ import { feetOf, furniturePlacement, PPM, stretchWidth, xOf } from './layout';
 import type { Placed, SideMap, Village } from './maps';
 import { lootIcons } from './piles';
 import type { SceneryManifest } from './scenery';
+import type { StreetView } from './street-view';
 
 export type UsableKind = 'clue' | 'searchable' | 'jack' | 'terminal' | 'pile' | 'corpse';
 
@@ -58,6 +59,9 @@ export const clueId = (id: string): string => `clue:${id}`;
 export const pileId = ({ at }: Pile): string => `pile:${at.map}:${at.x},${at.y}`;
 export const corpseId = ({ id }: Corpse): string => `corpse:${id}`;
 export const spritesOf = ({ picture, loot = [] }: Usable): Sprite[] => [picture, ...loot];
+/** One on a floor shows only while the front is open, and one on the street only while the front behind it is on, like the street's own furniture. */
+export const usableShown = ({ building, picture }: Usable, street: Pick<StreetView, 'isOpen' | 'ghost'>): boolean =>
+  building ? street.isOpen(building) : street.ghost(picture.x) === 1;
 /** A pile keeps its id as what it holds changes, and its pictures with it. */
 export const glowKey = (usable: Usable): string =>
   `${usable.id}|${spritesOf(usable).map((sprite) => ('icon' in sprite ? sprite.icon : sprite.piece))}`;

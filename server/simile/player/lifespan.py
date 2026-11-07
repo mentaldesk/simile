@@ -10,7 +10,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.economy.economy import economy_of
     from simile.persistence import investigation_of, player_of
     from simile.player.clients import InGame
-    from simile.player.corpses import Death
+    from simile.player.corpses import Death, Salvage
     from simile.player.finds import Finds
     from simile.player.health import Health
     from simile.player.hunger import Hunger
@@ -34,6 +34,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         RestMessage,
         SellMessage,
         StashMessage,
+        TakeMessage,
         Vital,
         hub_of,
     )
@@ -84,6 +85,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         return None if spot is None else MapTile(map=spot.map, x=spot.x, y=spot.y)
 
     book = recipes_of(app)
+    salvage = Salvage(player, movement, economy, world.clock, book)
     sync = PlayerSync(
         player,
         hunger.meal,
@@ -91,6 +93,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         shut=hunger.shut,
         buyer=trade.buyer,
         piles=pickups.piles,
+        bionics=salvage.bionics,
         recipes=lambda: [book[bionic] for bionic in player.mind.recipes],
         bed=bed,
         resting=health.resting,
@@ -130,6 +133,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         pickups.pick_up(claimers_of(app))
         sync.update()
 
+    def on_take(message: TakeMessage) -> None:
+        if salvage.take(message):
+            sync.update()
+
     def on_sell(message: SellMessage) -> None:
         if trade.sell(message.item):
             sync.update()
@@ -159,6 +166,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(PlayerMoveMessage, in_game.moved),
         hub.subscribe(EatMessage, on_eat),
         hub.subscribe(PickUpMessage, on_pick_up),
+        hub.subscribe(TakeMessage, on_take),
         hub.subscribe(SellMessage, on_sell),
         hub.subscribe(BuyMessage, on_buy),
         hub.subscribe(StashMessage, on_stash),
