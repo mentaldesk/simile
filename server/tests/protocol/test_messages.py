@@ -1485,6 +1485,8 @@ def test_take_goes_from_client_to_server_naming_a_corpse_or_a_pile() -> None:
         take(index=0, bionic="datajack"),
         take(item="plastic", index=-1),
         take(item="plastic", index=0.5),
+        take(item="plastic", index=True),
+        take(item="plastic", index="1"),
         {"type": "take", "corpse": "c"},
     ],
     ids=[
@@ -1498,6 +1500,8 @@ def test_take_goes_from_client_to_server_naming_a_corpse_or_a_pile() -> None:
         "index_with_bionic",
         "negative_index",
         "fractional_index",
+        "bool_index",
+        "string_index",
         "missing",
     ],
 )

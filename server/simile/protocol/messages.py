@@ -690,9 +690,11 @@ class TakeMessage(Model):
         "null for a corpse."
     )
     item: Id | None = Field(description="An item, by its `id`, or null for a bionic or the money.")
-    index: Annotated[int, Field(ge=0)] | None = Field(
+    index: int | None = Field(
+        ge=0,
+        strict=True,
         description="Where that item is in the corpse's or pile's `items`, from 0, which must hold "
-        "an item of that `id`. Null without `item`."
+        "an item of that `id`. Null without `item`.",
     )
     bionic: Bionic | None = Field(
         description="A bionic in the corpse. With neither this nor `item`, the money."
