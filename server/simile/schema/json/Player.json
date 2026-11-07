@@ -625,6 +625,12 @@
       },
       "title": "Repaired",
       "type": "array"
+    },
+    "lift_open": {
+      "default": false,
+      "description": "Whether the maintenance lift works for them without a datajack. It's true for good once any body of theirs has had a datajack or they've left a trace in the sewers, as a save from before this field shows. Left out while it's false.",
+      "title": "Lift Open",
+      "type": "boolean"
     }
   },
   "required": [

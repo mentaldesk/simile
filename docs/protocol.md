@@ -23,7 +23,7 @@ interiors' ids; this document says where.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a creature's `health`, a line's `flushed`, an article's
   `long_summary`, a wall's `map`, a player's `stash`, `left`, `corpses`, `taken`, `mind`, `power`, `health`,
-  `effects`, `sales`, `searched` and `repaired`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
+  `effects`, `sales`, `searched`, `repaired` and `lift_open`, an item's `amount`, `material`, `rounds`, `capacity`, `condition` and
   `bionic`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
   `player_state`'s `meal`, `shut`, `buyer`, `piles`, `recipes`, `bed` and `resting`, below.
@@ -327,6 +327,7 @@ change is sent at once. Clients that predate it ignore it.
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
 | `searched` | `string[]` | The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none. |
 | `repaired` | `string[]` | The machines they've repaired, by interactable id, in the order they repaired them. It's here because `Player` is what's saved. A machine's state comes from the [`snapshot`](#snapshot) and [`machine_changed`](#machine_changed). Left out while there's none. |
+| `lift_open` | boolean | Whether the maintenance lift works for them without a datajack. It's true for good once any body of theirs has had a datajack or they've left a trace in the sewers: something searched or taken there, or a corpse or pile lying there. Left out while it's false: read it as `player.lift_open ?? false`. |
 
 Power is what hunger becomes once the power cell is fitted, but it's a field of its own rather than
 hunger read the other way. It runs from full to flat like the lamp's `charge`, and charges at a
@@ -484,7 +485,8 @@ still their own and knowing nothing. One with stage 1's legs loads them as the l
 and spring legs as the spring feet's first and second grades, with their own legs back, unless
 higher feet are already fitted; the sprint and blade legs as the legs' first and second; and the
 premium legs as the top grade of both. One from before vitals loads at full power and health, with
-no effects and nothing to buy back. One from before searching has searched nothing. Their
+no effects and nothing to buy back. One from before searching has searched nothing. One from
+before `lift_open` loads with it true if it shows a datajack or a trace of the sewers. Their
 humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
 never sent: the player sees it only in how residents treat them.
 

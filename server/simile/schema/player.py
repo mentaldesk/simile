@@ -8,6 +8,7 @@ from simile.schema.common import CHECKED, Id, Key, MapTile, Model, Timestamp, Un
 CARRY_LIMIT = 15.0
 OLD_CARRY_LIMIT: Final = 10.0
 STASH_LIMIT: Final = 20.0
+SEWERS: Final = "sewers"
 PRESENT: Final = "present"
 SOLD: Final = "sold"
 
@@ -561,6 +562,31 @@ class Player(Model):
         "them, saved here and shown by the snapshot and `machine_changed`. Left out while there's "
         "none.",
     )
+    lift_open: bool = Field(
+        default=False,
+        exclude_if=lambda lift_open: not lift_open,
+        description="Whether the maintenance lift works for them without a datajack. It's true for "
+        "good once any body of theirs has had a datajack or they've left a trace in the sewers, "
+        "as a save from before this field shows. Left out while it's false.",
+    )
+
+    @model_validator(mode="after")
+    def _the_lift_stays_open(self) -> Self:
+        if not self.lift_open and self._worked_the_lift():
+            self.lift_open = True
+        return self
+
+    def _worked_the_lift(self) -> bool:
+        corpses, left = self.corpses, self.left
+        held = [*self.items, *self.stash.items]
+        held += [item for lying in (*corpses, *left) for item in lying.items]
+        return (
+            Bionic.DATAJACK in self.body.bionics
+            or any(Bionic.DATAJACK in corpse.bionics for corpse in corpses)
+            or any(item.bionic == Bionic.DATAJACK for item in held)
+            or any(lying.at.map == SEWERS for lying in (*corpses, *left))
+            or any(thing.startswith(f"{SEWERS}_") for thing in (*self.taken, *self.searched))
+        )
 
     @field_validator("carry_limit")
     @classmethod
