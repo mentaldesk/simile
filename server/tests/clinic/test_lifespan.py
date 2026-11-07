@@ -137,6 +137,7 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
         "corpse": "corpse_1",
         "pile": None,
         "item": None,
+        "index": None,
         "bionic": None,
     }
 
@@ -151,9 +152,9 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
         dead = next_of(ws, "player_state")
         ws.send_json(move)
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
-        ws.send_json(take | {"item": "copper_wire"})
+        ws.send_json(take | {"item": "copper_wire", "index": 0})
         partial = next_of(ws, "player_state")
-        ws.send_json(take | {"item": "scrap_steel"})
+        ws.send_json(take | {"item": "scrap_steel", "index": 0})
         ws.send_json(take | {"bionic": "datajack"})
         jack = next_of(ws, "player_state")
         saved = player.model_dump_json()
@@ -175,7 +176,7 @@ def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
         ws.send_json(move)
         until(client, lambda: movement_of(again).entities().get(PLAYER_ID) == CLINIC)
         ws.send_json(take)
-        ws.send_json(take | {"item": "scrap_steel"})
+        ws.send_json(take | {"item": "scrap_steel", "index": 0})
         ws.send_json(take | {"corpse": "corpse_9"})
         until(client, lambda: not player_of(again).corpses)
         client.portal.call(world_of(again).loop.tick)
@@ -218,7 +219,7 @@ def test_dying_salvaging_and_refitting_gives_a_bionic_back_at_its_grade(
         ws.send_json(move)
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
         for bionic in (None, cell.value, legs.value):
-            take = {"type": "take", "corpse": "corpse_1", "pile": None, "item": None}
+            take = {"type": "take", "corpse": "corpse_1", "pile": None, "item": None, "index": None}
             ws.send_json(take | {"bionic": bionic})
         until(client, lambda: not player.corpses)
         salvaged = next_of(ws, "player_state")

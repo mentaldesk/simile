@@ -28,7 +28,7 @@ def fitting(item: Item, room: float) -> float:
     return item.amount if part > 0 and item.amount - part < 1 / FINEST else part
 
 
-def split(items: Sequence[Item], id: Id, room: float) -> tuple[Item, list[Item]] | None:
+def _split(items: Sequence[Item], id: Id, room: float) -> tuple[Item, list[Item]] | None:
     """What of the first of `id` fits in `room` kg, and `items` with the rest left in its place."""
     at = next((i for i, item in enumerate(items) if item.id == id), None)
     if at is None:
@@ -56,13 +56,13 @@ class Lockers:
             return False
         player, stash = self.player, self.player.stash
         if action == "take":
-            taken = split(stash.items, item, player.carry_limit - player.load)
+            taken = _split(stash.items, item, player.carry_limit - player.load)
             if taken is None:
                 return False
             player.stash = stash.model_copy(update={"items": taken[1]})
             player.items = joined(player.items, [taken[0]])
             return True
-        stored = split(player.items, item, stash.limit - stash.load)
+        stored = _split(player.items, item, stash.limit - stash.load)
         if stored is None:
             return False
         moved = stored[0]

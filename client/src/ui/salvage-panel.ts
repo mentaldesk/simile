@@ -5,7 +5,7 @@ import { callCue } from './call-cue';
 import { kg, many } from './character-panel';
 import './clinic-panel.css';
 import { pressedNewsKey } from './keys';
-import { amount, totalLoad } from './salvage';
+import { amount, loadOf, stackFits, totalLoad } from './salvage';
 import './salvage-panel.css';
 import { el, icon, note, rowsOf, weaponLine, type Row } from './stash-panel';
 import { NEWS_KEY } from './tuning';
@@ -18,8 +18,26 @@ const MONEY_ICON = 'credits';
 /** What the screen is open on: a corpse, or the oldest pile they left on a tile. */
 export type Source = { corpse: string } | { pile: MapTile };
 
-/** A thing on the body or in the pile that a row takes. */
-export type Thing = { kind: 'money'; id: string; name: string; money: number } | (Row & { kind: 'item' | 'bionic' });
+/** A thing on the body or in the pile that a row takes: an item by where the first like it is, or a bionic by its id. */
+export type Thing = { kind: 'money'; id: string; name: string; money: number } | (Row & { kind: 'item'; index: number }) | (Row & { kind: 'bionic' });
+
+/** A row per item, with any just like it counted in, against the `room` they have. */
+export function itemRows(items: readonly Item[], room: number): (Row & { kind: 'item'; index: number })[] {
+  const rows: (Row & { kind: 'item'; index: number })[] = [];
+  items.forEach((item, index) => {
+    const same = rows.find(({ first }) => JSON.stringify(first) === JSON.stringify(item));
+    if (same) {
+      same.count += item.amount ?? 1;
+      same.load += loadOf(item);
+    } else {
+      const { id, name, amount: count = 1 } = item;
+      rows.push({ kind: 'item', index, id, name, first: item, count, load: loadOf(item), moves: stackFits(item, room) });
+    }
+  });
+  return rows;
+}
+
+const keyOf = (thing: Thing) => `${thing.kind}:${thing.id}:${thing.kind === 'item' ? thing.index : ''}`;
 
 const onTile = (a: MapTile, b: MapTile) => a.map === b.map && a.x === b.x && a.y === b.y;
 
@@ -37,13 +55,13 @@ const nameOf = (bionic: Bionic) => {
 const partOf = (bionic: Bionic, parts: readonly Item[]): Item =>
   parts.find(({ id }) => id === bionic) ?? { id: bionic, kind: 'bionic', name: nameOf(bionic), weight: 0, bionic, charge: null, on: null };
 
-/** Its money, then a row per kind of item, then a row per kind of bionic, each against `room`. */
+/** Its money, then its items, then a row per kind of bionic, each against `room`. */
 export function thingsOf(holder: Corpse | Pile, room: number, parts: readonly Item[]): Thing[] {
   const money = holder.money ?? 0;
   const bionics = 'bionics' in holder ? holder.bionics.map((bionic) => partOf(bionic, parts)) : [];
   return [
     ...(money > 0 ? [{ kind: 'money' as const, id: MONEY_ICON, name: 'Money', money }] : []),
-    ...rowsOf(holder.items, room).map((row) => ({ ...row, kind: 'item' as const })),
+    ...itemRows(holder.items, room),
     ...rowsOf(bionics, room).map((row) => ({ ...row, kind: 'bionic' as const })),
   ];
 }
@@ -56,6 +74,7 @@ export function takeOf(source: Source, thing: Thing): TakeMessage | undefined {
     corpse: 'corpse' in source ? source.corpse : null,
     pile: 'pile' in source ? source.pile : null,
     item: thing.kind === 'item' ? thing.id : null,
+    index: thing.kind === 'item' ? thing.index : null,
     bionic: thing.kind === 'bionic' ? (thing.id as Bionic) : null,
   };
 }
@@ -147,11 +166,11 @@ export class SalvagePanel {
     const load = totalLoad(player.items);
     const room = player.carry_limit - load;
     const things = thingsOf(holder, room, parts);
-    const mine = rowsOf(player.items, Infinity);
+    const mine = itemRows(player.items, Infinity);
     const content = JSON.stringify([things, mine, player.money, player.carry_limit, room]);
     if (content === this.drawn) return;
     const chosen = this.things[this.at];
-    const kept = things.findIndex(({ kind, id }) => kind === chosen?.kind && id === chosen.id);
+    const kept = chosen ? things.findIndex((thing) => keyOf(thing) === keyOf(chosen)) : -1;
     this.at = kept !== -1 ? kept : Math.max(Math.min(this.at, things.length - 1), 0);
     this.things = things;
     this.room = room;

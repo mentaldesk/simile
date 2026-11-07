@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.health import DEFAULT_HEALTH, HealthConfig
 from simile.player.pickups import joined
-from simile.player.stash import fitting, split
+from simile.player.stash import fitting
 from simile.player.where import here
 from simile.protocol import TakeMessage, Vital
 from simile.schema import (
@@ -138,9 +138,10 @@ class Salvage:
 
     def take(self, message: TakeMessage) -> bool:
         """Takes the thing `message` names, or as much of a stack as fits. Whether any moved."""
+        item = None if message.item is None else (message.item, message.index or 0)
         if message.corpse is not None:
-            return self._from_corpse(message.corpse, message.item, message.bionic)
-        return message.pile is not None and self._from_pile(message.pile, message.item)
+            return self._from_corpse(message.corpse, item, message.bionic)
+        return message.pile is not None and self._from_pile(message.pile, item)
 
     def bionics(self) -> list[Item]:
         """What each kind of bionic on their corpses comes out as, once each."""
@@ -158,7 +159,7 @@ class Salvage:
             bionic=bionic,
         )
 
-    def _from_corpse(self, id: Id, item: Id | None, bionic: Bionic | None) -> bool:
+    def _from_corpse(self, id: Id, item: tuple[Id, int] | None, bionic: Bionic | None) -> bool:
         corpse = next((corpse for corpse in self.player.corpses if corpse.id == id), None)
         if corpse is None or not self._reaches(corpse.at):
             return False
@@ -170,7 +171,7 @@ class Salvage:
             self._carry(self.item(bionic))
             self._leave(corpse.model_copy(update={"bionics": bionics}))
         elif item is not None:
-            taken = split(corpse.items, item, self._room())
+            taken = self._split(corpse.items, item)
             if taken is None:
                 return False
             self._carry(taken[0])
@@ -187,25 +188,39 @@ class Salvage:
         corpses = (rest if corpse.id == rest.id else corpse for corpse in self.player.corpses)
         self.player.corpses = [c for c in corpses if c.money or c.items or c.bionics]
 
-    def _from_pile(self, at: MapTile, item: Id | None) -> bool:
-        if not self._reaches(at):
-            return False
+    def _from_pile(self, at: MapTile, item: tuple[Id, int] | None) -> bool:
         left = self.player.left
-        for index, pile in enumerate(left):
-            if pile.at != at:
-                continue
-            if item is None and pile.money:
-                rest = pile.model_copy(update={"money": 0.0})
-                self.economy.recover(pile.money)
-            elif item is not None and (taken := split(pile.items, item, self._room())):
-                rest = pile.model_copy(update={"items": taken[1]})
-                self._carry(taken[0])
-            else:
-                continue
-            kept = [rest] if rest.items or rest.money else []
-            self.player.left = [*left[:index], *kept, *left[index + 1 :]]
-            return True
-        return False
+        index = next((i for i, pile in enumerate(left) if pile.at == at), None)
+        if index is None or not self._reaches(at):
+            return False
+        pile = left[index]
+        if item is not None:
+            if (taken := self._split(pile.items, item)) is None:
+                return False
+            rest = pile.model_copy(update={"items": taken[1]})
+            self._carry(taken[0])
+        elif pile.money:
+            rest = pile.model_copy(update={"money": 0.0})
+            self.economy.recover(pile.money)
+        else:
+            return False
+        kept = [rest] if rest.items or rest.money else []
+        self.player.left = [*left[:index], *kept, *left[index + 1 :]]
+        return True
+
+    def _split(self, items: list[Item], named: tuple[Id, int]) -> tuple[Item, list[Item]] | None:
+        """What fits of the item at that index, if it has that id, and `items` with the rest."""
+        id, at = named
+        if at >= len(items) or items[at].id != id:
+            return None
+        item = items[at]
+        part = fitting(item, self._room())
+        if part <= 0:
+            return None
+        rest = (
+            [item.model_copy(update={"amount": item.amount - part})] if item.amount > part else []
+        )
+        return item.model_copy(update={"amount": part}), [*items[:at], *rest, *items[at + 1 :]]
 
     def _carry(self, item: Item) -> None:
         self.player.items = joined(self.player.items, [item])

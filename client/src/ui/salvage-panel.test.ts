@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { playerState, type Bionic, type Corpse, type Item, type Pile, type Player, type PlayerStateMessage, type Position, type TakeMessage } from '../net';
 import type { Reachable } from '../world/reach';
 import cases from './salvage-panel.cases.json';
-import { holderOf, SalvagePanel, takeOf, thingsOf, type Thing } from './salvage-panel';
+import { holderOf, itemRows, SalvagePanel, takeOf, thingsOf, type Thing } from './salvage-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'copper_wire' ? '/icons/copper_wire.webp' : undefined) }));
 vi.mock('../world/interactables', () => ({ interactableAt: () => undefined }));
@@ -44,6 +44,18 @@ describe('thingsOf', () => {
     expect(row).toMatchObject({ kind: 'bionic', count: 2, load: 1, moves: 1 });
   });
 
+  it('has a row for each item unlike the others, so two pistols are two rows, and counts what is just alike', () => {
+    const pistol = (rounds: number, condition: number): Item => ({ id: 'plastic_pistol', kind: 'weapon', name: 'Plastic pistol', weight: 0.5, material: 'plastic', rounds, capacity: 6, condition, charge: null, on: null });
+    const rows = itemRows([pistol(0, 0.1), WIRE, pistol(6, 1), WIRE], 9);
+
+    expect(rows.map(({ id, index, count }) => [id, index, count])).toEqual([
+      ['plastic_pistol', 0, 1],
+      ['copper_wire', 1, 2],
+      ['plastic_pistol', 2, 1],
+    ]);
+    expect(takeOf({ corpse: 'corpse_1' }, rows[2]!)).toMatchObject({ item: 'plastic_pistol', index: 2 });
+  });
+
   it('keeps an item and a bionic of one id apart', () => {
     const rows = thingsOf(body({ items: [JACK], bionics: ['datajack'] }), 9, [JACK]);
 
@@ -62,14 +74,15 @@ describe('takeOf', () => {
 
   it('names the corpse and the thing, and nothing that will not fit', () => {
     const on = { corpse: 'corpse_1' };
-    expect(takeOf(on, things[0]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, bionic: null });
-    expect(takeOf(on, things[1]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: 'copper_wire', bionic: null });
+    expect(takeOf(on, things[0]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, index: null, bionic: null });
+    expect(takeOf(on, things[1]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: 'copper_wire', index: 0, bionic: null });
     expect(takeOf(on, things[2]!)).toBeUndefined();
-    expect(takeOf(on, things[3]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, bionic: 'datajack' });
+    expect(things[2]).toMatchObject({ kind: 'item', index: 1 });
+    expect(takeOf(on, things[3]!)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, index: null, bionic: 'datajack' });
   });
 
   it('names a pile by its tile', () => {
-    expect(takeOf({ pile: AT }, things[1]!)).toEqual({ type: 'take', corpse: null, pile: AT, item: 'copper_wire', bionic: null });
+    expect(takeOf({ pile: AT }, things[1]!)).toEqual({ type: 'take', corpse: null, pile: AT, item: 'copper_wire', index: 0, bionic: null });
   });
 });
 
@@ -82,8 +95,8 @@ describe('the screen and the server', () => {
     const things = thingsOf(carried.corpses![0]!, room, bionics as Item[]);
 
     expect(things.map(({ kind, id }) => [kind, id])).toEqual(expect.arrayContaining(moves.map(({ kind, id }) => [kind, id])));
-    for (const { kind, id, moved } of moves) {
-      const thing = things.find((one) => one.kind === kind && one.id === id)!;
+    for (const { kind, id, moved, ...at } of moves) {
+      const thing = things.find((one) => one.kind === kind && one.id === id && (one.kind !== 'item' || one.index === (at as { index?: number }).index))!;
       expect(movesOf(thing)).toBeCloseTo(moved, 6);
       expect(takeOf({ corpse: 'corpse_1' }, thing) !== undefined).toBe(moved > 0);
     }
@@ -165,7 +178,7 @@ describe('SalvagePanel', () => {
     expect(status()).toBe('Enter to take it.');
 
     press('Enter');
-    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: null, bionic: null }]);
+    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: null, index: null, bionic: null }]);
     after(player({ money: 12, corpses: [{ ...corpse, money: 0 }] }));
     expect(lines(0)).toEqual(['Money12', 'Lamp1 kg']);
     expect(lines(1)).toEqual(['Copper wire1.5 kg', 'Datajack0.5 kg']);
@@ -174,7 +187,7 @@ describe('SalvagePanel', () => {
     press('ArrowDown');
     expect(selected()).toBe('Datajack0.5 kg');
     press('Enter');
-    expect(sent.at(-1)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, bionic: 'datajack' });
+    expect(sent.at(-1)).toEqual({ type: 'take', corpse: 'corpse_1', pile: null, item: null, index: null, bionic: 'datajack' });
     after(player({ money: 12, items: [LAMP, JACK], corpses: [{ ...corpse, money: 0, bionics: [] }] }));
     expect(lines(0)).toEqual(['Money12', 'Lamp1 kg', 'Datajack0.5 kg']);
     expect(selected()).toBe('Copper wire1.5 kg');
@@ -197,7 +210,7 @@ describe('SalvagePanel', () => {
 
     expect(status()).toBe("Enter to take 18 of 30. The rest won't fit.");
     press('Enter');
-    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'plastic', bionic: null }]);
+    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'plastic', index: 0, bionic: null }]);
   });
 
   it('clicking a row chooses it and takes it', () => {
@@ -206,7 +219,7 @@ describe('SalvagePanel', () => {
     (side(1).querySelectorAll('li')[1] as HTMLElement).click();
 
     expect(selected()).toBe('Copper wire1.5 kg');
-    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'copper_wire', bionic: null }]);
+    expect(sent).toEqual([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'copper_wire', index: 0, bionic: null }]);
   });
 
   it('does not take twice for a held Enter', () => {
@@ -274,7 +287,7 @@ describe('SalvagePanel', () => {
 
     press('ArrowDown');
     press('Enter');
-    expect(sent).toEqual([{ type: 'take', corpse: null, pile: AT, item: 'copper_wire', bionic: null }]);
+    expect(sent).toEqual([{ type: 'take', corpse: null, pile: AT, item: 'copper_wire', index: 0, bionic: null }]);
 
     after(player({ items: [WIRE], left: [next] }));
     expect(lines(1)).toEqual(['Lamp1 kg']);

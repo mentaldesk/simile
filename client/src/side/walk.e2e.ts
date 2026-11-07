@@ -1229,7 +1229,7 @@ async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promis
   await page.keyboard.press('Enter');
   await run(page, 100);
   const taken = JSON.stringify(await usesSent(page));
-  if (taken !== JSON.stringify([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'servo_motor', bionic: null }])) throw new Error(`${name}: Enter sent ${taken}`);
+  if (taken !== JSON.stringify([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'servo_motor', index: 0, bionic: null }])) throw new Error(`${name}: Enter sent ${taken}`);
   await holding(page, [HEAVY], [LAMP]);
   await run(page, 300);
   if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: the screen stayed once the body had gone`);
@@ -1247,7 +1247,7 @@ async function salvageLeg(page: Page, api: Api, index: number): Promise<void> {
   const JACK = { id: 'datajack', kind: 'bionic', name: 'Datajack', weight: 0.5, bionic: 'datajack', charge: null, on: null };
   const body = (money: number, items: object[], bionics: string[]) => ({ id: 'corpse_1', owner: 'player', at, money, items, bionics });
   const state = { bionics: [JACK] };
-  const take = (item: string | null, bionic: string | null) => [{ type: 'take', corpse: 'corpse_1', pile: null, item, bionic }];
+  const take = (item: string | null, bionic: string | null) => [{ type: 'take', corpse: 'corpse_1', pile: null, item, index: item && 0, bionic }];
   const enter = async (sent: object[], where: string) => {
     await page.keyboard.press('Enter');
     await run(page, 100);
@@ -1310,10 +1310,10 @@ async function salvageLeg(page: Page, api: Api, index: number): Promise<void> {
   await page.keyboard.press('e');
   await run(page, 300);
   if (!(await shown(page, '.salvage-panel'))?.includes('Left here')) throw new Error(`${name}: E didn't open the pile`);
-  await enter([{ type: 'take', corpse: null, pile: at, item: null, bionic: null }], 'on the money in a pile');
+  await enter([{ type: 'take', corpse: null, pile: at, item: null, index: null, bionic: null }], 'on the money in a pile');
   await holding(page, [LAMP], [], [], { player: { money: 3, left: [{ at, items: [WIRE] }] } });
   await run(page, 100);
-  await enter([{ type: 'take', corpse: null, pile: at, item: 'copper_wire', bionic: null }], 'on the last of a pile');
+  await enter([{ type: 'take', corpse: null, pile: at, item: 'copper_wire', index: 0, bionic: null }], 'on the last of a pile');
   await holding(page, [LAMP, WIRE], [], [], { player: { money: 3 } });
   await run(page, 300);
   if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: the screen stayed once the pile had gone`);

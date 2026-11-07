@@ -2771,7 +2771,7 @@
               "type": "null"
             }
           ],
-          "description": "The tile of the pile in `player.left` it's in, the oldest there that holds it, or null for a corpse."
+          "description": "The tile of the pile in `player.left` it's in, the oldest on that tile, or null for a corpse."
         },
         "item": {
           "anyOf": [
@@ -2784,7 +2784,19 @@
               "type": "null"
             }
           ],
-          "description": "An item, by its `id`: the first of that id."
+          "description": "An item, by its `id`, or null for a bionic or the money."
+        },
+        "index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Where that item is in the corpse's or pile's `items`, from 0, which must hold an item of that `id`. Null without `item`."
         },
         "bionic": {
           "anyOf": [
@@ -2803,6 +2815,7 @@
         "corpse",
         "pile",
         "item",
+        "index",
         "bionic"
       ],
       "title": "TakeMessage",

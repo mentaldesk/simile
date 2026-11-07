@@ -389,7 +389,7 @@ def salvage_of(player: Player) -> Salvage:
 
 
 def taking(item: str) -> TakeMessage:
-    return TakeMessage(corpse="corpse_1", pile=None, item=item, bionic=None)
+    return TakeMessage(corpse="corpse_1", pile=None, item=item, index=0, bionic=None)
 
 
 def test_a_corpse_beside_the_lockers_gives_what_fits_and_leaves_the_stash_alone() -> None:

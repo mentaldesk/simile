@@ -289,11 +289,28 @@ def test_a_saved_worlds_emptied_corpses_clear_on_load(tmp_path: Path) -> None:
     assert (loaded.player.bodies, loaded.player.lift_open) == (1, True)
 
 
+def test_an_id_that_cleared_on_load_is_not_used_again() -> None:
+    at = MapTile(map="kapok_walk", x=3, y=15)
+    empty = Corpse(id="corpse_1", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
+    loaded = Player.model_validate_json(Player(corpses=[empty]).model_dump_json())
+    assert loaded.corpses == []
+    loaded.items = [lamp(), WIRE]
+    fall = Fall(loaded)
+    fall.stand(12, 15, "kapok_walk")
+
+    fall.death.die(Vital.HEALTH)
+
+    assert [corpse.id for corpse in loaded.corpses] == ["corpse_2"]
+    assert loaded.bodies == 2
+
+
 def test_the_id_skips_any_already_taken() -> None:
     at = MapTile(map="metro", x=3, y=15)
     corpse = Corpse(id="corpse_2", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
 
     assert next_corpse(Player(corpses=[corpse])) == "corpse_3"
+    assert next_corpse(Player(corpses=[corpse], bodies=1)) == "corpse_3"
+    assert next_corpse(Player(corpses=[corpse], bodies=5)) == "corpse_6"
     with pytest.raises(ValidationError, match="own id"):
         Player(corpses=[corpse, corpse])
 
@@ -451,7 +468,8 @@ class Scene:
         )
 
     def take(self, **named: Any) -> bool:
-        fields = {"corpse": None, "pile": None, "item": None, "bionic": None, **named}
+        fields = {"corpse": None, "pile": None, "item": None, "index": None, "bionic": None}
+        fields |= named
         return self.salvage.take(TakeMessage(**fields))
 
 
@@ -468,10 +486,11 @@ def test_a_real_death_gives_up_one_thing_at_a_time_and_goes_with_the_last() -> N
     salvage = Salvage(player, fall.movement, fall.economy, fall.world.clock, CLINIC_CONFIG.recipes)
 
     def take(**named: Any) -> bool:
-        fields = {"corpse": "corpse_1", "pile": None, "item": None, "bionic": None, **named}
+        fields = {"corpse": "corpse_1", "pile": None, "item": None, "index": None, "bionic": None}
+        fields |= named
         return salvage.take(TakeMessage(**fields))
 
-    assert take(item="pork_bun")
+    assert take(item="pork_bun", index=1)
     assert ids(player) == ["lamp", "pork_bun"]
     assert player.money == 0
     assert take()
@@ -481,7 +500,7 @@ def test_a_real_death_gives_up_one_thing_at_a_time_and_goes_with_the_last() -> N
     assert ids(player) == ["lamp", "pork_bun", "datajack"]
     assert player.items[-1].bionic is Bionic.DATAJACK
     assert [c.items for c in player.corpses] == [[WIRE]]
-    assert take(item="copper_wire")
+    assert take(item="copper_wire", index=0)
     assert player.corpses == []
     assert [(e.kind, e.payer, e.payee) for e in fall.economy.ledger.entries] == [
         (Kind.DROPPED, PLAYER, PILES),
@@ -495,7 +514,7 @@ def test_nothing_goes_past_the_carry_limit_and_what_wont_fit_stays() -> None:
     body = corpse(items=[heavy], bionics=[Bionic.BIONIC_LEGS_3])
     scene = Scene(Player(items=[lamp()], carry_limit=5.0, corpses=[body]))
 
-    assert not scene.take(corpse="corpse_1", item="scrap_steel")
+    assert not scene.take(corpse="corpse_1", item="scrap_steel", index=0)
     assert not scene.take(corpse="corpse_1", bionic=Bionic.BIONIC_LEGS_3)
 
     assert scene.player.corpses == [body]
@@ -511,12 +530,12 @@ def test_of_a_stack_as_much_as_fits_moves_and_joins_the_one_they_carry() -> None
         )
     )
 
-    assert scene.take(corpse="corpse_1", item="plastic")
+    assert scene.take(corpse="corpse_1", item="plastic", index=0)
 
     assert scene.player.items == [plastic(5)]
     assert scene.player.load == pytest.approx(2.5)
     assert scene.player.corpses[0].items == [plastic(6), rounds(50)]
-    assert not scene.take(corpse="corpse_1", item="plastic_rounds")
+    assert not scene.take(corpse="corpse_1", item="plastic_rounds", index=1)
 
 
 def test_two_of_one_bionic_come_out_one_at_a_time() -> None:
@@ -535,7 +554,7 @@ def test_a_salvaged_bionic_they_died_carrying_is_an_item_not_a_bionic() -> None:
     )
     scene = Scene(Player(corpses=[corpse(items=[part], bionics=[Bionic.DATAJACK])]))
 
-    assert scene.take(corpse="corpse_1", item="datajack")
+    assert scene.take(corpse="corpse_1", item="datajack", index=0)
 
     [left] = scene.player.corpses
     assert (left.items, left.bionics) == ([], [Bionic.DATAJACK])
@@ -554,7 +573,7 @@ def test_a_corpse_or_pile_out_of_reach_gives_nothing(where: dict[str, Any]) -> N
     scene = Scene(Player(corpses=[corpse(money=5.0)], left=[pile]), **where)
 
     assert not scene.take(corpse="corpse_1")
-    assert not scene.take(pile=HERE, item="pork_bun")
+    assert not scene.take(pile=HERE, item="pork_bun", index=0)
 
     assert scene.player.money == 0
     assert scene.player.left == [pile]
@@ -572,7 +591,8 @@ def test_a_corpse_they_never_had_and_a_thing_that_isnt_on_it_give_nothing() -> N
 
     assert not scene.take(corpse="corpse_9")
     assert not scene.take(corpse="corpse_1")
-    assert not scene.take(corpse="corpse_1", item="pork_bun")
+    assert not scene.take(corpse="corpse_1", item="pork_bun", index=0)
+    assert not scene.take(corpse="corpse_1", item="copper_wire", index=1)
     assert not scene.take(corpse="corpse_1", bionic=Bionic.DATAJACK)
 
 
@@ -580,16 +600,16 @@ def test_a_pile_gives_up_one_thing_at_a_time_and_goes_with_the_last() -> None:
     pile = Pile(at=HERE, items=[WIRE, BUN], money=8.0)
     scene = Scene(Player(left=[pile]))
 
-    assert scene.take(pile=HERE, item="pork_bun")
+    assert scene.take(pile=HERE, item="pork_bun", index=1)
     assert scene.player.left == [Pile(at=HERE, items=[WIRE], money=8.0)]
     assert scene.take(pile=HERE)
     assert scene.player.money == 8.0
     assert scene.player.left == [Pile(at=HERE, items=[WIRE])]
-    assert scene.take(pile=HERE, item="copper_wire")
+    assert scene.take(pile=HERE, item="copper_wire", index=0)
     assert scene.player.left == []
 
 
-def test_of_two_piles_on_a_tile_it_takes_from_the_oldest_that_holds_the_thing() -> None:
+def test_of_two_piles_on_a_tile_it_takes_from_the_oldest() -> None:
     other = MapTile(map="kapok_walk", x=13, y=15)
     piles = [
         Pile(at=other, items=[BUN]),
@@ -598,10 +618,34 @@ def test_of_two_piles_on_a_tile_it_takes_from_the_oldest_that_holds_the_thing() 
     ]
     scene = Scene(Player(left=piles))
 
-    assert scene.take(pile=HERE, item="pork_bun")
-    assert scene.player.left == [piles[0], piles[1], Pile(at=HERE, items=[WIRE])]
-    assert scene.take(pile=HERE, item="copper_wire")
+    assert not scene.take(pile=HERE, item="pork_bun", index=0)
+    assert scene.take(pile=HERE, item="copper_wire", index=0)
+    assert scene.player.left == [piles[0], piles[2]]
+    assert scene.take(pile=HERE, item="pork_bun", index=0)
     assert scene.player.left == [piles[0], Pile(at=HERE, items=[WIRE])]
+
+
+def test_of_two_items_with_one_id_it_takes_the_one_at_the_index() -> None:
+    worn, loaded = (
+        Item(
+            id="plastic_pistol",
+            kind=ItemKind.WEAPON,
+            name="Plastic pistol",
+            weight=0.5,
+            material="plastic",
+            rounds=rounds,
+            capacity=6,
+            condition=condition,
+        )
+        for rounds, condition in ((0, 0.1), (6, 1.0))
+    )
+    scene = Scene(Player(corpses=[corpse(items=[worn, loaded])]))
+
+    assert not scene.take(corpse="corpse_1", item="plastic_pistol", index=2)
+    assert scene.take(corpse="corpse_1", item="plastic_pistol", index=1)
+
+    assert scene.player.items[-1] == loaded
+    assert scene.player.corpses[0].items == [worn]
 
 
 def test_a_death_with_nothing_on_them_leaves_no_body_and_uses_no_id() -> None:
@@ -623,7 +667,8 @@ def test_a_removed_corpses_id_is_never_used_again_even_across_a_reload() -> None
     salvage = Salvage(
         fall.player, fall.movement, fall.economy, fall.world.clock, CLINIC_CONFIG.recipes
     )
-    assert salvage.take(TakeMessage(corpse="corpse_1", pile=None, item=None, bionic=None))
+    taking = TakeMessage(corpse="corpse_1", pile=None, item=None, index=None, bionic=None)
+    assert salvage.take(taking)
     assert fall.player.corpses == []
 
     loaded = Player.model_validate_json(fall.player.model_dump_json())
@@ -729,8 +774,12 @@ def random_case(rng: random.Random) -> tuple[Player, list[dict[str, Any]]]:
     carried = merged([random_item(rng) for _ in range(rng.randint(0, 3))])
     limit = max(sum(item.load for item in carried) + rng.choice([0.0, 0.05, 0.3, 1.0, 5.0]), 0.05)
     player = Player(items=carried, carry_limit=limit, corpses=[corpse(**held)])
-    things: list[dict[str, Any]] = [{"kind": "item", "id": item.id} for item in held["items"]]
-    things = list({thing["id"]: thing for thing in things}.values())
+    items = held["items"]
+    things: list[dict[str, Any]] = [
+        {"kind": "item", "id": item.id, "index": index}
+        for index, item in enumerate(items)
+        if item not in items[:index]
+    ]
     things += [{"kind": "bionic", "id": b.value} for b in dict.fromkeys(held["bionics"])]
     if held["money"]:
         things.insert(0, {"kind": "money", "id": "credits"})
@@ -744,7 +793,9 @@ def moved(fall: Fall, player: Player, thing: dict[str, Any]) -> float:
     salvage = Salvage(copy, fall.movement, fall.economy, fall.world.clock, CLINIC_CONFIG.recipes)
     item = thing["id"] if thing["kind"] == "item" else None
     bionic = Bionic(thing["id"]) if thing["kind"] == "bionic" else None
-    took = salvage.take(TakeMessage(corpse="corpse_1", pile=None, item=item, bionic=bionic))
+    index = thing.get("index")
+    taking = TakeMessage(corpse="corpse_1", pile=None, item=item, index=index, bionic=bionic)
+    took = salvage.take(taking)
     if not took:
         return 0.0
     assert copy.load <= copy.carry_limit + 1e-9
