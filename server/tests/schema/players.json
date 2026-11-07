@@ -297,6 +297,7 @@
       "right_kidney": "present"
     },
     "hunger": 0.0,
+    "bodies": 1,
     "corpses": [
       {
         "id": "corpse_1",

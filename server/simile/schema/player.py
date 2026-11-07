@@ -341,8 +341,8 @@ BODY_PARTS: Final[tuple[BodyPart, ...]] = get_args(BodyPart.__value__)
 
 
 class Corpse(Model):
-    """A body left `at` the tile it fell on, or the ground below it, with what was on it. It can
-    hold nothing at all: it stays whatever it holds, unlike a `Pile`."""
+    """A body left `at` the tile it fell on, or the ground below it, with what was on it. It goes
+    once nothing is left on it, and a save with an emptied one loads without it."""
 
     model_config = CHECKED
 
@@ -535,6 +535,13 @@ class Player(Model):
         description="Their own bodies, oldest first, each where they died. Left out while "
         "there's none.",
     )
+    bodies: int = Field(
+        default=0,
+        ge=0,
+        exclude_if=lambda bodies: not bodies,
+        description="How many corpses they've ever left, which numbers the next, so one that's "
+        "gone never lends its id to a new one. Left out while there's been none.",
+    )
     taken: dict[Key, Timestamp] = Field(
         default={},
         exclude_if=lambda taken: not taken,
@@ -574,6 +581,19 @@ class Player(Model):
     def _the_lift_stays_open(self) -> Self:
         if not self.lift_open and self._worked_the_lift():
             self.lift_open = True
+        return self
+
+    @model_validator(mode="after")
+    def _every_body_counted(self) -> Self:
+        if self.bodies < len(self.corpses):
+            self.bodies = len(self.corpses)
+        return self
+
+    @model_validator(mode="after")
+    def _no_emptied_corpses_in_old_saves(self, info: ValidationInfo) -> Self:
+        held = [c for c in self.corpses if c.money or c.items or c.bionics]
+        if info.mode == "json" and len(held) != len(self.corpses):
+            self.corpses = held
         return self
 
     def _worked_the_lift(self) -> bool:

@@ -260,6 +260,7 @@ def test_corpses_survive_a_save_and_a_reload_and_the_next_gets_a_new_id() -> Non
 
     loaded = Player.model_validate_json(fall.player.model_dump_json())
     assert loaded == fall.player
+    loaded.items = [lamp(), WIRE]
     fall.dying(loaded).die(Vital.POWER)
 
     reloaded = Player.model_validate_json(loaded.model_dump_json())
@@ -272,6 +273,7 @@ def test_corpses_survive_the_world_being_saved_and_loaded(tmp_path: Path) -> Non
     fall.stand(12, 15, "kapok_walk")
     fall.death.die(Vital.HUNGER)
     fall.stand(30, 15, "kapok_walk")
+    fall.player.items = [lamp(), WIRE]
     fall.death.die(Vital.HEALTH)
     path = tmp_path / "simile.db"
 
@@ -283,6 +285,22 @@ def test_corpses_survive_the_world_being_saved_and_loaded(tmp_path: Path) -> Non
     assert loaded is not None
     assert loaded.player == fall.player
     assert [corpse.id for corpse in loaded.player.corpses] == ["corpse_1", "corpse_2"]
+
+
+def test_a_saved_worlds_emptied_corpses_clear_on_load(tmp_path: Path) -> None:
+    at = MapTile(map="sewers", x=3, y=15)
+    empty = Corpse(id="corpse_1", owner=PLAYER_ID, at=at, money=0, items=[], bionics=[])
+    fall = Fall(Player(corpses=[empty]))
+    path = tmp_path / "simile.db"
+
+    with MemoryStore(path) as memory, WorldStore(memory) as store:
+        store.save(capture(fall.behaviour, player=fall.player))
+    with MemoryStore(path) as memory, WorldStore(memory) as store:
+        loaded = store.load()
+
+    assert loaded is not None
+    assert loaded.player.corpses == []
+    assert (loaded.player.bodies, loaded.player.lift_open) == (1, True)
 
 
 def test_the_id_skips_any_already_taken() -> None:

@@ -545,6 +545,12 @@ class PlayerStateMessage(Model):
         description="What's lying in the world for them to pick up, on every map, besides what "
         "they left (`player.left`): salvage and secrets. Left out while there's none.",
     )
+    bionics: list[Item] = Field(
+        default=[],
+        exclude_if=lambda bionics: not bionics,
+        description="What each kind of bionic on their corpses comes out as, once each, with its "
+        "name and weight, for showing what fits. Left out while there's none.",
+    )
     bed: MapTile | None = Field(
         default=None,
         exclude_if=lambda bed: bed is None,
@@ -588,8 +594,8 @@ class Vital(StrEnum):
 class PlayerDiedMessage(Model):
     """The player died of `cause`: they starved, their power cell ran flat, or they had no health
     left. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a
-    whole organic body. Their corpse stays where they fell, or where they wake if the server didn't
-    know where that was, at the end of `player_state`'s `corpses`."""
+    whole organic body. Their corpse lies where they fell, or where they wake if the server didn't
+    know where that was, at the end of `player_state`'s `corpses`, unless nothing was on them."""
 
     type: Literal["player_died"] = "player_died"
     position: Position
@@ -670,6 +676,33 @@ class PickUpMessage(Model):
     its clue is found on the next one."""
 
     type: Literal["pick_up"] = "pick_up"
+
+
+class TakeMessage(Model):
+    """Takes one thing from one of their corpses or a pile they left, within reach: of a stack, as
+    much as fits under their carry limit. A corpse goes once it's empty, and so does a pile. The
+    server ignores it out of reach, if the thing isn't there, or if none of it fits."""
+
+    type: Literal["take"] = "take"
+    corpse: Id | None = Field(description="The corpse it's on, by its `id`, or null for a pile.")
+    pile: MapTile | None = Field(
+        description="The tile of the pile in `player.left` it's in, the oldest there that holds "
+        "it, or null for a corpse."
+    )
+    item: Id | None = Field(description="An item, by its `id`: the first of that id.")
+    bionic: Bionic | None = Field(
+        description="A bionic in the corpse. With neither this nor `item`, the money."
+    )
+
+    @model_validator(mode="after")
+    def _one_place_and_one_thing(self) -> Self:
+        if (self.corpse is None) == (self.pile is None):
+            raise ValueError("take names a corpse or a pile")
+        if self.item is not None and self.bionic is not None:
+            raise ValueError("take names one thing")
+        if self.pile is not None and self.bionic is not None:
+            raise ValueError("a pile holds no fitted bionics")
+        return self
 
 
 class LampMessage(Model):
@@ -822,6 +855,7 @@ type ClientMessage = Annotated[
     | ReadWorkMessage
     | EatMessage
     | PickUpMessage
+    | TakeMessage
     | SellMessage
     | LampMessage
     | SellPartMessage

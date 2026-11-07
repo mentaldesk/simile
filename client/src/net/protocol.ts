@@ -139,6 +139,7 @@ export type ClientMessage =
   | ReadWorkMessage
   | EatMessage
   | PickUpMessage
+  | TakeMessage
   | SellMessage
   | LampMessage
   | SellPartMessage
@@ -637,6 +638,10 @@ export interface PlayerStateMessage {
    */
   piles?: Pile[];
   /**
+   * What each kind of bionic on their corpses comes out as, once each, with its name and weight, for showing what fits. Left out while there's none.
+   */
+  bionics?: Item[];
+  /**
    * The cell of their own bed at home where they stand, where `rest` lies them down. Left out everywhere else.
    */
   bed?: MapTile | null;
@@ -692,6 +697,10 @@ export interface Player {
    * Their own bodies, oldest first, each where they died. Left out while there's none.
    */
   corpses?: Corpse[];
+  /**
+   * How many corpses they've ever left, which numbers the next, so one that's gone never lends its id to a new one. Left out while there's been none.
+   */
+  bodies?: number;
   /**
    * When each pickup in the world was last emptied, by the player or a recycler bot, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.
    */
@@ -802,8 +811,8 @@ export interface MapTile {
   y: number;
 }
 /**
- * A body left `at` the tile it fell on, or the ground below it, with what was on it. It can
- * hold nothing at all: it stays whatever it holds, unlike a `Pile`.
+ * A body left `at` the tile it fell on, or the ground below it, with what was on it. It goes
+ * once nothing is left on it, and a save with an emptied one loads without it.
  */
 export interface Corpse {
   /**
@@ -1060,8 +1069,8 @@ export interface Lead {
 /**
  * The player died of `cause`: they starved, their power cell ran flat, or they had no health
  * left. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a
- * whole organic body. Their corpse stays where they fell, or where they wake if the server didn't
- * know where that was, at the end of `player_state`'s `corpses`.
+ * whole organic body. Their corpse lies where they fell, or where they wake if the server didn't
+ * know where that was, at the end of `player_state`'s `corpses`, unless nothing was on them.
  */
 export interface PlayerDiedMessage {
   type: 'player_died';
@@ -1140,6 +1149,30 @@ export interface EatMessage {
  */
 export interface PickUpMessage {
   type: 'pick_up';
+}
+/**
+ * Takes one thing from one of their corpses or a pile they left, within reach: of a stack, as
+ * much as fits under their carry limit. A corpse goes once it's empty, and so does a pile. The
+ * server ignores it out of reach, if the thing isn't there, or if none of it fits.
+ */
+export interface TakeMessage {
+  type: 'take';
+  /**
+   * The corpse it's on, by its `id`, or null for a pile.
+   */
+  corpse: string | null;
+  /**
+   * The tile of the pile in `player.left` it's in, the oldest there that holds it, or null for a corpse.
+   */
+  pile: MapTile | null;
+  /**
+   * An item, by its `id`: the first of that id.
+   */
+  item: string | null;
+  /**
+   * A bionic in the corpse. With neither this nor `item`, the money.
+   */
+  bionic: Bionic | null;
 }
 /**
  * Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The
