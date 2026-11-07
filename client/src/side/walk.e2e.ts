@@ -243,7 +243,8 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
   await shot(page, index, leg.name);
-  const eFree = !used && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  const eHinted = (await shown(page, '.counter-hint'))?.startsWith('Press E');
+  const eFree = !used && !eHinted && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
   const place = await shown(page, '.place-label');
   if (leg.key === 'e') await page.keyboard.press('e');
   else {
@@ -873,6 +874,7 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
     ['Vitals', 'Lamp'],
     ['Body', 'Your own'],
     ['Gear', 'Lamp'],
+    ['Stash', 'Stored'],
     ['Vitals', 'Lamp'],
   ] as const) {
     const selected = await shown(page, '.character-tabs [aria-selected="true"]');
@@ -1060,6 +1062,92 @@ async function machineLeg(page: Page, api: Api, index: number): Promise<void> {
   }
 }
 
+/** E at the lockers lists both sides, Enter sends the move, the state that follows shows on both sides and on the character screen, and Esc closes without the pause menu. */
+async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the lockers';
+  const at = { map: 'maker_space_floor_2', x: 7, y: 2 };
+  const LAMP = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.8, on: false };
+  const WIRE = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
+  const PISTOL = { id: 'plastic_pistol', kind: 'weapon', name: 'Plastic pistol', weight: 0.5, charge: null, on: null, material: 'plastic', rounds: 2, capacity: 6, condition: 0.4 };
+  const holding = (items: object[], stored: object[]) =>
+    page.evaluate(
+      async ([items, stored]) => {
+        const net = '/src/net/index.ts';
+        const { server } = await import(/* @vite-ignore */ net);
+        const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
+        const player = { money: 0, items, carry_limit: 10, stash: { items: stored, limit: 20 }, body, hunger: 0, health: 1 };
+        server.dispatch(JSON.stringify({ type: 'player_state', player }));
+      },
+      [items, stored] as const,
+    );
+  const sends = () =>
+    page.evaluate(async () => {
+      const net = '/src/net/index.ts';
+      const { server } = await import(/* @vite-ignore */ net);
+      const seen = window as unknown as { stashSent?: object[] };
+      if (!seen.stashSent) {
+        seen.stashSent = [];
+        const send = server.send;
+        server.send = (message: { type: string }) => {
+          if (message.type === 'stash') seen.stashSent!.push(message);
+          return send(message);
+        };
+      }
+      return seen.stashSent.splice(0);
+    });
+  await teleport(page, api, at, name);
+  await sends();
+  await holding([LAMP, WIRE], [PISTOL]);
+  await run(page, 300);
+  const hint = await shown(page, '.counter-hint');
+  if (hint !== 'Press E to use the lockers.') throw new Error(`${name}: the hint is ${hint}`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const panel = await shown(page, '.stash-panel');
+  if (!['Lockers', 'Lamp', 'Copper wire', 'Plastic pistol', '2 of 6 rounds, 40%', 'of 10 kg', 'of 20 kg', 'Enter to store it.'].every((text) => panel?.includes(text))) {
+    throw new Error(`${name}: E didn't list both sides: ${panel}`);
+  }
+  await page.keyboard.press('ArrowDown');
+  await run(page, 100);
+  await page.keyboard.press('Enter');
+  await run(page, 100);
+  const stored = JSON.stringify(await sends());
+  if (stored !== JSON.stringify([{ type: 'stash', item: 'copper_wire', action: 'store' }])) throw new Error(`${name}: Enter sent ${stored}`);
+  await holding([LAMP], [PISTOL, WIRE]);
+  await run(page, 100);
+  const after = await page.evaluate(() => [...document.querySelectorAll('.stash-panel .clinic-side')].map((side) => side.textContent));
+  if (after[0]?.includes('Copper wire') || !after[1]?.includes('Copper wire')) throw new Error(`${name}: storing didn't show: ${after}`);
+  await press(page, 'ArrowRight');
+  await page.keyboard.press('Enter');
+  await run(page, 100);
+  const taken = JSON.stringify(await sends());
+  if (taken !== JSON.stringify([{ type: 'stash', item: 'plastic_pistol', action: 'take' }])) throw new Error(`${name}: Enter on the other side sent ${taken}`);
+  await press(page, 'ArrowLeft', 'ArrowUp');
+  if (!near(await api.state(), at)) throw new Error(`${name}: the arrows moved the player`);
+  await shot(page, index, name);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, '.stash-panel')) !== null) throw new Error(`${name}: Esc didn't close it`);
+  if ((await shown(page, '.pause')) !== null) throw new Error(`${name}: Esc opened the pause menu too`);
+  await page.keyboard.press('c');
+  await run(page, 200);
+  for (let tab = await shown(page, '.character-tabs [aria-selected="true"]'); tab !== 'Stash'; tab = await shown(page, '.character-tabs [aria-selected="true"]')) {
+    await page.keyboard.press('ArrowRight');
+    await run(page, 100);
+  }
+  const screen = await shown(page, '.character-page');
+  if (!['Stored', '2 kg of 20 kg', 'Plastic pistol', 'Copper wire'].every((text) => screen?.includes(text))) {
+    throw new Error(`${name}: the character screen shows ${screen}`);
+  }
+  await shot(page, index, `${name}, on the character screen`);
+  await page.keyboard.press('c');
+  await run(page, 200);
+  await teleport(page, api, { map: 'maker_space_floor_2', x: 6, y: 2 }, `${name}, stepping away`);
+  await run(page, 200);
+  if ((await shown(page, '.counter-hint')) !== null) throw new Error(`${name}: the hint stayed off the stand tile`);
+  await api.hurt(1);
+}
+
 const root = new URL('../..', import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { port: 0 } });
 await server.listen();
@@ -1116,6 +1204,7 @@ try {
     ['dying, and the corpses left', () => deathLeg(open)],
     ['firing and reloading', () => shootingLeg(open)],
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
+    ['E at the lockers', (i) => stashLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();

@@ -30,6 +30,7 @@ import { PauseGate, PauseMenu } from './pause-menu';
 import { fitOverlay, inOverlay } from './overlay';
 import { PlaceLabel } from './place-label';
 import { setMaps } from './side-view';
+import { StashPanel } from './stash-panel';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
 import { WayPromptLayer } from './way-prompts';
@@ -55,6 +56,7 @@ export class DialogueScene extends Phaser.Scene {
   private murals!: MuralPanel;
   private clinic!: ClinicPanel;
   private machines!: MachinePanel;
+  private stash!: StashPanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private lamp!: LampGauge;
@@ -98,6 +100,7 @@ export class DialogueScene extends Phaser.Scene {
       chat.open();
     });
     this.machines = new MachinePanel(this.root);
+    this.stash = new StashPanel(this.root);
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopDeaths = server.on('player_died', ({ cause }) => hunger.died(cause));
@@ -170,9 +173,11 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, !used && !ordered && lookedAtByV(player)?.kind === 'mural' && !this.news.isOpen);
     const prompted = used?.kind === 'jack' || used?.kind === 'searchable';
-    const atMachine = this.machines.prompt(player, doorOnE(here) || used !== undefined);
+    const blocked = doorOnE(here) || used !== undefined;
+    const atMachine = this.machines.prompt(player, blocked) ?? this.stash.prompt(player, blocked);
     this.counter.update(prompted ? used.interactable : (ordered ?? atMachine), !this.chat.isOpen);
     this.machines.update(player);
+    this.stash.update(player);
     const buyer = trading(used);
     this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
     const sells = !this.clinic.isOpen && !doorOnE(here);
@@ -181,7 +186,7 @@ export class DialogueScene extends Phaser.Scene {
     this.lamp.update(playerState.latest);
     this.health.update(playerState.latest);
     this.character.update(playerState.latest);
-    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.character.isOpen;
+    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     this.ways.render(panelOpen ? [] : here, this.fromGame);
     const talks = !panelOpen && !this.chat.isOpen && !this.log.isReading && !ordered;
@@ -190,14 +195,15 @@ export class DialogueScene extends Phaser.Scene {
   }
 
   private panelOpen(): boolean {
-    return this.chat.isOpen || this.log.isReading || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen;
+    return this.chat.isOpen || this.log.isReading || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.machines.isOpen || this.stash.isOpen;
   }
 
   private pressE(): void {
-    const used = eUse(this.player(), wayPrompts());
+    const [player, ways] = [this.player(), wayPrompts()];
+    const used = eUse(player, ways);
     if (playerState.latest?.resting) server.send({ type: 'rest', on: false });
     else if (used) this.use(used);
-    else if (this.machines.use(this.player(), doorOnE(wayPrompts()))) this.character.close();
+    else if (this.machines.use(player, doorOnE(ways)) || this.stash.use(player, doorOnE(ways))) this.character.close();
   }
 
   /** The counter T orders at here, if any, and whoever serves there. */

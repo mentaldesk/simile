@@ -240,7 +240,7 @@ pile on a tie, as the server does.
 ## The character screen
 
 C opens the character screen (`CharacterPanel` in [`character-panel.ts`](character-panel.ts)), and
-C or Esc closes it. It shows the last `player_state` in three tabs, and ← → or a click switch them.
+C or Esc closes it. It shows the last `player_state` in four tabs, and ← → or a click switch them.
 It opens on the tab it was left on, and takes the keys while it's open, so the player stands still.
 Opening it closes the journal and the controls.
 
@@ -260,8 +260,18 @@ Opening it closes the journal and the controls.
   none), how many when there's more than one, its name, and the lamp's charge or a weapon's
   condition. Hovering over a tile, or Down then the arrows, shows what it's for, its weight, the
   lamp's charge, each weapon's rounds and condition, and which recipes they know use it. Up off the top row lets go of the grid, so ← → switch tabs again.
+- **Stash:** the Gear tab's grid for what's in the lockers, against the stash's limit, leaving out
+  what the keys do to what they carry.
 
 The side walk opens it on C and goes through its tabs.
+
+## The lockers
+
+E on the stand tile of Aris's lockers in the loft opens `StashPanel`
+([`stash-panel.ts`](stash-panel.ts)), the clinic's list with what they carry beside what's in the
+lockers. The hint is the scene's `CounterPrompt`. ← → choose a side, ↑ ↓ a row per kind of thing,
+and Enter or a click sends `stash` for the first of it, saying first how much of a stack fits, or
+why none does. It keeps the keys from the game, and Esc, E or walking away closes it.
 
 ## Keys
 

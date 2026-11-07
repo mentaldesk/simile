@@ -1,4 +1,4 @@
-import type { Bionic, Body, BodyPart, Effect, Item, ItemKind, Player, PlayerStateMessage, Recipe } from '../net';
+import type { Bionic, Body, BodyPart, Effect, Item, ItemKind, Player, PlayerStateMessage, Recipe, Stash } from '../net';
 import { FIRE_KEY, RELOAD_KEY } from '../side/input';
 import { firesNext } from '../side/shooting';
 import { LAMP_KEY, lampHere, lampOf } from '../side/lamp';
@@ -13,7 +13,7 @@ import { CHARACTER_KEY, EAT_KEY } from './tuning';
 
 const KEY = CHARACTER_KEY.toUpperCase();
 
-export const TABS = ['Vitals', 'Body', 'Gear'] as const;
+export const TABS = ['Vitals', 'Body', 'Gear', 'Stash'] as const;
 export type Tab = (typeof TABS)[number];
 
 /** Head to foot. */
@@ -113,12 +113,14 @@ export type GearTile = {
 };
 export type Gear = { tiles: GearTile[]; load: number; limit: number };
 
-const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
+export const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
 
-/** What they carry, a tile per kind of item in the order they got it, against the carry limit. */
-export function gear(player: Player): Gear {
+export const stashOf = (player: Player): Stash => player.stash ?? { items: [], limit: 20 };
+
+/** A tile per kind of item in the order they got it, against a limit. */
+function gearOf(items: readonly Item[], limit: number): Gear {
   const tiles = new Map<string, GearTile>();
-  for (const item of player.items) {
+  for (const item of items) {
     const { id, kind, name, weight, charge, on, amount: many = 1 } = item;
     const tile = tiles.get(id) ?? {
       id,
@@ -138,7 +140,16 @@ export function gear(player: Player): Gear {
     }
     tiles.set(id, tile);
   }
-  return { tiles: [...tiles.values()], load: totalLoad(player.items), limit: player.carry_limit };
+  return { tiles: [...tiles.values()], load: totalLoad(items), limit };
+}
+
+/** What they carry against the carry limit. */
+export const gear = (player: Player): Gear => gearOf(player.items, player.carry_limit);
+
+/** What's in the lockers against the stash's limit. */
+export function stashed(player: Player): Gear {
+  const { items, limit } = stashOf(player);
+  return gearOf(items, limit);
 }
 
 const KINDS: Record<ItemKind, string> = {
@@ -156,16 +167,16 @@ const listed = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).jo
 
 export type ItemDetails = { title: string; kind: ItemKind; status: string; lines: string[] };
 
-/** What it's for, its weight, the lamp's charge, each weapon's rounds and condition, and which recipes they know use it. */
-export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = []): ItemDetails {
+/** What it's for, its weight, the lamp's charge, each weapon's rounds and condition, and which recipes they know use it. Stored, no key does anything to it. */
+export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = [], stored = false): ItemDetails {
   const { id, kind, name, count, each, weight } = tile;
   const lines = [count !== 1 ? `${amount(count)} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
-  if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}. ${LAMP_KEY} switches it.`);
-  if (kind === 'food') lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
+  if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}.${stored ? '' : ` ${LAMP_KEY} switches it.`}`);
+  if (kind === 'food' && !stored) lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
   for (const { rounds, capacity, condition } of tile.weapons ?? []) {
     lines.push(condition ? `${rounds} of ${capacity} rounds loaded, ${percent(condition)} condition.` : 'Worn out.');
   }
-  if (kind === 'weapon') lines.push(`${FIRE_KEY} fires it and ${RELOAD_KEY} reloads it.`);
+  if (kind === 'weapon' && !stored) lines.push(`${FIRE_KEY} fires it and ${RELOAD_KEY} reloads it.`);
   const using = (player.mind?.recipes ?? [])
     .filter((bionic) => recipes.find((recipe) => recipe.bionic === bionic)?.parts[id])
     .map((bionic) => `the ${bionicName(bionic, recipes).toLowerCase()}`);
@@ -194,7 +205,7 @@ function row(label: string, ...rest: (Node | string)[]): HTMLElement {
   return item;
 }
 
-/** The player's own screen, opened with C: vitals, body and gear, a tab each. */
+/** The player's own screen, opened with C: vitals, body, gear and the stash, a tab each. */
 export class CharacterPanel {
   private readonly panel: HTMLElement;
   private readonly tabs: HTMLButtonElement[];
@@ -202,7 +213,7 @@ export class CharacterPanel {
   private shown = 0;
   private part = 0;
   private map?: { rows: BodyRow[]; slots: HTMLElement[]; details: HTMLElement };
-  private grid?: { tiles: GearTile[]; cells: HTMLElement[]; details: HTMLElement; player: Player; recipes: readonly Recipe[] };
+  private grid?: { tiles: GearTile[]; cells: HTMLElement[]; details: HTMLElement; player: Player; recipes: readonly Recipe[]; stored: boolean };
   private item?: string;
   private itemAt = 0;
   private state?: PlayerStateMessage;
@@ -307,7 +318,8 @@ export class CharacterPanel {
     const tab = this.tab;
     if (tab === 'Vitals') this.page.replaceChildren(...this.vitals(vitals(player, where)));
     else if (tab === 'Body') this.page.replaceChildren(this.body(bodyRows(player.body, recipes)));
-    else this.page.replaceChildren(...this.gear(gear(player), player, recipes));
+    else if (tab === 'Gear') this.page.replaceChildren(...this.gear(gear(player), player, recipes));
+    else this.page.replaceChildren(...this.gear(stashed(player), player, recipes, true));
   }
 
   private vitals({ meters, credits, effects }: Vitals): HTMLElement[] {
@@ -370,11 +382,11 @@ export class CharacterPanel {
     );
   }
 
-  private gear({ tiles, load, limit }: Gear, player: Player, recipes: readonly Recipe[]): HTMLElement[] {
+  private gear({ tiles, load, limit }: Gear, player: Player, recipes: readonly Recipe[], stored = false): HTMLElement[] {
     const carrying = el('ul', undefined, 'character-rows');
     const left = 1 - load / (limit || 1);
-    carrying.appendChild(row('Carrying', meter({ fill: load / (limit || 1), good: left }), el('span', `${kg(load)} of ${kg(limit)}`)));
-    if (!tiles.length) return [carrying, el('p', 'You carry nothing.', 'character-empty')];
+    carrying.appendChild(row(stored ? 'Stored' : 'Carrying', meter({ fill: load / (limit || 1), good: left }), el('span', `${kg(load)} of ${kg(limit)}`)));
+    if (!tiles.length) return [carrying, el('p', stored ? 'Nothing. E at the lockers in the loft stores things.' : 'You carry nothing.', 'character-empty')];
     const shown = el('div', undefined, 'character-gear');
     const grid = shown.appendChild(el('div', undefined, 'character-grid'));
     grid.style.setProperty('--columns', String(COLUMNS));
@@ -401,7 +413,7 @@ export class CharacterPanel {
       cell.addEventListener('click', () => this.pick(i));
       return cell;
     });
-    this.grid = { tiles, cells, player, recipes, details: shown.appendChild(el('div', undefined, 'character-item')) };
+    this.grid = { tiles, cells, player, recipes, stored, details: shown.appendChild(el('div', undefined, 'character-item')) };
     const at = tiles.findIndex(({ id }) => id === this.item);
     this.pick(this.item === undefined ? undefined : at >= 0 ? at : Math.min(this.itemAt, tiles.length - 1));
     return [carrying, shown];
@@ -431,7 +443,7 @@ export class CharacterPanel {
 
   private pick(index: number | undefined, scroll = false): void {
     if (!this.grid) return;
-    const { tiles, cells, details, player, recipes } = this.grid;
+    const { tiles, cells, details, player, recipes, stored } = this.grid;
     this.item = index === undefined ? undefined : tiles[index].id;
     if (index !== undefined) this.itemAt = index;
     cells.forEach((cell, i) => cell.classList.toggle('character-picked', i === index));
@@ -439,7 +451,7 @@ export class CharacterPanel {
       details.replaceChildren(el('small', 'Hover, or ↓ then the arrows, for each thing’s details'));
       return;
     }
-    const { title, kind, status, lines } = itemDetails(tiles[index], player, recipes);
+    const { title, kind, status, lines } = itemDetails(tiles[index], player, recipes, stored);
     details.replaceChildren(
       el('h3', title),
       el('b', status, `character-item-${kind}`),
