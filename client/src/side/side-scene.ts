@@ -144,7 +144,7 @@ export class SideScene extends Phaser.Scene {
       }),
       server.on('snapshot', () => this.moves.reset()),
       server.on('player_died', ({ position: { x, y, map } }) => {
-        this.moves.collapsed();
+        this.moves.died();
         this.wake({ x, y, map: map ?? '' });
       }),
       setMuralView({
@@ -372,7 +372,7 @@ export class SideScene extends Phaser.Scene {
     this.view.setTo(this.centre.x - size.width / 2, this.centre.y - size.height / 2, size.width, size.height);
   }
 
-  /** The server moved them home after they collapsed. */
+  /** The server moved them home after they died. */
   private wake(at: MapPosition): void {
     if (this.passing || !this.street) this.waking = at;
     else this.takeDoorTo(at, () => this.moves.woke());

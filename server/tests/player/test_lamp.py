@@ -9,6 +9,7 @@ from starlette.testclient import TestClient
 
 from simile.app import create_app
 from simile.persistence import player_of
+from simile.player.health import health_of
 from simile.player.lamp import Lamp, LampConfig
 from simile.player.sync import PlayerSync
 from simile.protocol import PlayerStateMessage
@@ -263,19 +264,19 @@ def test_the_client_switches_the_lamp_and_hears_it_run_down_and_charge(
     assert rising[-1] == 1, "the full charge is sent before the switch"
 
 
-def test_a_collapse_switches_the_lamp_off(make_package: MakePackage) -> None:
+def test_a_death_switches_the_lamp_off_and_they_keep_it(make_package: MakePackage) -> None:
     app = make_app(make_package)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        player = player_of(app)
         next_of(ws, "player_state")
         ws.send_json({"type": "player_move", "position": {"x": 65, "y": 15, "map": "metro"}})
         ws.send_json({"type": "lamp", "on": True})
         switched = next_of(ws, "player_state")
-        client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
-        client.portal.call(world_of(app).loop.tick)
+        client.portal.call(health_of(app).hurt, 2.0)
         next_of(ws, "player_died")
+        client.portal.call(world_of(app).loop.tick)
         woken = next_of(ws, "player_state")
 
     assert lamp_of(switched)["on"] is True
     assert lamp_of(woken)["on"] is False
+    assert woken["player"]["corpses"][0]["items"] == []

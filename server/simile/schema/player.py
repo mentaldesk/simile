@@ -178,7 +178,8 @@ class Stash(Model):
 
 class Pile(Model):
     """Items, money or both lying `at` a tile in the world for the player to pick up, such as
-    salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed."""
+    salvage, a secret's cash, a destroyed bot's haul, or what they left when they collapsed, in a
+    save from before they could die."""
 
     model_config = CHECKED
 
@@ -523,9 +524,9 @@ class Player(Model):
         default=[],
         exclude_if=lambda left: not left,
         description="What they left lying in the world, oldest first: what they carried when they "
-        "collapsed, on the tile they fell on or the ground below it, a destroyed bot's haul, on "
-        "the cell it went down in, and anything of a pickup that didn't fit when they took from "
-        "it. Left out while there's none.",
+        "collapsed, in a save from before they could die, a destroyed bot's haul, on the cell it "
+        "went down in, and anything of a pickup that didn't fit when they took from it. Left out "
+        "while there's none.",
     )
     corpses: list[Corpse] = Field(
         default=[],

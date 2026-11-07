@@ -11,7 +11,8 @@ OUTSIDE = "outside"
 PLAYER = PLAYER_ID
 """The player, who isn't a resident: their money is in the ledger but not in what residents hold."""
 PILES = "piles"
-"""What the player left when they collapsed: money in it is theirs again once picked up."""
+"""What the player left on their corpses, or in piles in an older save: money in it is theirs
+again once picked up."""
 _NOT_RESIDENTS = frozenset({OUTSIDE, PLAYER, PILES})
 
 
@@ -32,9 +33,9 @@ class Kind(StrEnum):
     FOUND = "found"
     """Money the player picks up, such as a secret's cash."""
     DROPPED = "dropped"
-    """Money the player leaves in a pile when they collapse."""
+    """Money the player leaves on their corpse when they die, or in a pile in an older save."""
     RECOVERED = "recovered"
-    """Money the player picks up from a pile they left."""
+    """Money the player picks up from what they left."""
 
 
 class Entry(Model):

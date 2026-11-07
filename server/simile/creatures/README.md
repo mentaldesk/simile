@@ -51,13 +51,13 @@ datajack. It too sees the player only on its own floor, which it never leaves, s
 way past it. Bots are placed to start within `Collect`'s reach of salvage but patrol at least
 eight steps from any, so a player who heads straight for it gets there first.
 
-A careless pass costs about a third of full health, and three collapse the player: walking
+A careless pass costs about a third of full health, and three kill the player: walking
 through a bot's patrol, it lands one hit of 0.35, and walking through a nest of three rats with
 food, a bite from each, 0.36 (`tests/creatures/test_kinds.py`). Running through is a gamble.
 
 Three dogs keep to their den's floor past the ladder by its door (`content/street/README.md`), and
 nothing puts them down or holds them back. A player on their own legs or the feet who runs across
-their floor and back is bitten about fifteen times, and collapses. On the first legs, it leaves
+their floor and back is bitten about fifteen times, and dies. On the first legs, it leaves
 about a tenth of their health, and on the best legs under half (`tests/creatures/test_den.py`).
 
 A bat hangs at its roost while the player's lamp is off, however near they are. While it's on, a
@@ -65,7 +65,7 @@ bat that sees the lamp, with nothing solid between, flies at the player's chest 
 attacking, and goes back to its roost once the lamp's off. Walking across a
 room of two roosting bats by lamplight and back costs about a fifth of the player's health, and
 running about a twentieth; with the lamp off, nothing. The cave's thirty bats
-collapse a player who crosses it by lamplight on any legs, and leave one who crosses in the dark
+kill a player who crosses it by lamplight on any legs, and leave one who crosses in the dark
 untouched (`tests/creatures/test_bats.py`).
 
 ## Placing them
@@ -117,7 +117,8 @@ for bats, and `fitted` for bots.
 
 ## Hurting the player
 
-A creature whose way attacks, in `reach` of the player, starts its attack: `attacking` for `windup`,
+An attack lands on where the player is at that moment, so a second creature striking in the tick of
+their death misses their new body. A creature whose way attacks, in `reach` of the player, starts its attack: `attacking` for `windup`,
 facing them. Then, if they're still in reach, it lands, `bite(damage)` or `hurt(damage)` on
 `health_of(app)`, looked up as it lands, and it rests for `rest`. A kind that `lunges` keeps
 moving after the player while it winds up. A player more than 0.8 tiles above a walking creature

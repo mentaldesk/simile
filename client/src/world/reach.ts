@@ -45,11 +45,11 @@ export function atNight(hour: number): boolean {
   return hour >= NIGHT.from || hour < NIGHT.until;
 }
 
-/** Their bed where they stand, unless they're resting already, or in the daytime well or infected, when the server ignores `rest`. */
+/** Their bed where they stand, unless they're resting already, or in the daytime well, infected or starving, when the server ignores `rest`. */
 export function restsAt(state: PlayerStateMessage | undefined, hour = sideClock.hour()): MapTile | undefined {
   if (!state?.bed || state.resting) return undefined;
   if (atNight(hour)) return state.bed;
-  if ((state.player.health ?? 1) >= 1) return undefined;
+  if ((state.player.health ?? 1) >= 1 || state.player.hunger >= 1) return undefined;
   return state.player.effects?.some(({ kind }) => kind === 'infection') ? undefined : state.bed;
 }
 

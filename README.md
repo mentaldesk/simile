@@ -27,10 +27,10 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | Space or PgUp | Jump. Hold the key to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. Land on a rat to kill it. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
-| E | Go through a door, or onto another street. Off a door, read the news at a terminal, pick up what you left when you collapsed, or look at a clue in Aris's workshop. |
+| E | Go through a door, or onto another street. Off a door, read the news at a terminal, pick up what's lying there, or look at a clue in Aris's workshop. |
 | T | Talk to the ringed resident. At a counter, order from whoever serves there. With nobody near, open or close the log of what you've heard, to read back. |
 | V | Look at a mural or a painting. |
-| F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and if it runs out you collapse. |
+| F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and once you're starving it hurts until you eat, or until you die. |
 | J | Open or close your journal: what you've learned about what happened to Aris, from whom and when, and the leads still open. A red mark shows where your infrared eye caught someone flush. |
 | L | Switch your lamp on or off. Parts of the tunnels are dark, and only the lamp lights them. Its battery runs down while it's on: the gauge under the controls shows what's left, and standing at a plug charges it, at home, at the café or the noodle bar, or in the tunnels. |
 | X | Fire your weapon the way you're facing, along the row, at the first creature or wall in range. Each round wears it a little, and its condition shows on its tile in your character. |

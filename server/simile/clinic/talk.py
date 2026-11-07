@@ -219,7 +219,7 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "",
             "Your prices are fixed and you say them as facts. You never haggle, discount, give "
             "credit or offer anything else:",
-            f"- You buy a healthy kidney for {_money(config.kidney)}, one from each customer, "
+            f"- You buy a healthy kidney for {_money(config.kidney)}, one from each body, "
             "never the last.",
             f"- You buy salvage: {bought}.",
             "- You build bionics from a recipe the customer knows: they pay your fee "

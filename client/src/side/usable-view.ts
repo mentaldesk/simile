@@ -1,10 +1,10 @@
 import type Phaser from 'phaser';
-import { playerState, type Pile, type Position } from '../net';
+import { playerState, type Corpse, type Pile, type Position } from '../net';
 import { iconUrl } from '../ui/icons';
 import { clues } from '../world/clues';
 import { reachables, wayPrompts } from '../world/reach';
 import { PPM } from './layout';
-import { sameItems } from './piles';
+import { sameCorpses, sameItems } from './piles';
 import type { Content, StreetView } from './street-view';
 import type { SideTextures } from './textures';
 import { glowKey, glowing, spritesOf, usablesOn, type Sprite, type Usable } from './usables';
@@ -22,7 +22,7 @@ export class UsableView {
   private shown: Shown[] = [];
   private readonly glows = new Map<string, Glow>();
   private glowing?: string;
-  private drawnFor?: { street: StreetView; searched: string; jacked: boolean; piles: readonly Pile[] };
+  private drawnFor?: { street: StreetView; searched: string; jacked: boolean; piles: readonly Pile[]; corpses: readonly Corpse[] };
   private readonly scene: Phaser.Scene;
   private readonly textures: SideTextures;
 
@@ -34,15 +34,16 @@ export class UsableView {
   update(content: Content, street: StreetView, player: Position | undefined, seconds: number): void {
     const searched = playerState.latest?.player.searched ?? [];
     const piles = reachables.piles();
+    const corpses = playerState.latest?.player.corpses ?? [];
     const jacked = !!reachables.jacked?.();
     const drawn = this.drawnFor;
     const same = drawn?.street === street && drawn.searched === searched.join() && drawn.jacked === jacked;
-    if (!same || !sameItems(drawn.piles, piles)) {
+    if (!same || !sameItems(drawn.piles, piles) || !sameCorpses(drawn.corpses, corpses)) {
       if (drawn?.street !== street) this.unglow();
       this.clear();
-      const usables = usablesOn(content.village, content.scenery, street.map, { searched, piles, clues, jacked });
+      const usables = usablesOn(content.village, content.scenery, street.map, { searched, piles, corpses, clues, jacked });
       this.shown = usables.map((usable) => ({ usable, images: [] }));
-      this.drawnFor = { street, searched: searched.join(), jacked, piles };
+      this.drawnFor = { street, searched: searched.join(), jacked, piles, corpses };
     }
     for (const shown of this.shown) this.show(shown, street);
     this.light(glowing(player, wayPrompts()), street, seconds);

@@ -587,8 +587,9 @@ class Vital(StrEnum):
 
 class PlayerDiedMessage(Model):
     """The player died of `cause`: they starved, their power cell ran flat, or they had no health
-    left. They wake in their bed, at `position`, in a whole organic body. Their corpse stays where
-    they fell, at the end of `player_state`'s `corpses`."""
+    left. They wake at `position`, in their bed or at the entry of `home` if it has no bed, in a
+    whole organic body. Their corpse stays where they fell, or where they wake if the server didn't
+    know where that was, at the end of `player_state`'s `corpses`."""
 
     type: Literal["player_died"] = "player_died"
     position: Position

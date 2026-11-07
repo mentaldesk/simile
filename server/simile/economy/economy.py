@@ -225,7 +225,7 @@ class Economy:
         self.pay(OUTSIDE, PLAYER, amount, Kind.FOUND, pickup)
 
     def drop(self, amount: float) -> None:
-        """The player leaves money in a pile when they collapse."""
+        """The player leaves money on their corpse when they die."""
         self.pay(PLAYER, PILES, amount, Kind.DROPPED)
 
     def recover(self, amount: float) -> None:

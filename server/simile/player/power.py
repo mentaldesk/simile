@@ -28,9 +28,6 @@ class PowerConfig(BaseModel):
         description="How much more it uses each sim hour for each other bionic fitted: with "
         "three, two hours.",
     )
-    waking: float = Field(
-        default=0.25, gt=0, le=1, description="Their power when they wake after it ran flat."
-    )
     runs: dict[Bionic, int] = Field(
         default={Bionic.POWER_CELL: 3, Bionic.POWER_CELL_2: 4, Bionic.POWER_CELL_3: 5},
         description="How many other bionics each grade of cell runs. The clinic fits none past it.",
@@ -64,7 +61,7 @@ def runs(body: Body, bionic: Bionic, config: PowerConfig = DEFAULT_POWER) -> boo
 
 class Power:
     """The player's power cell, once one is fitted: drains faster with each bionic, charges at a
-    plug, and collapses them when flat. Tick it on the sim loop."""
+    plug, and kills them when flat. Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -73,7 +70,7 @@ class Power:
         *,
         charging: Callable[[float], float] = lambda dt: 0.0,
         playing: Callable[[], bool] = lambda: True,
-        collapse: Callable[[], None] = lambda: None,
+        die: Callable[[], None] = lambda: None,
         config: PowerConfig = DEFAULT_POWER,
     ) -> None:
         self.player = player
@@ -81,7 +78,7 @@ class Power:
         self.charging = charging
         """How much of a full charge a plug gives them in a tick: the lamp's."""
         self.playing = playing
-        self.collapse = collapse
+        self.die = die
         self.config = config
 
     def drain(self) -> float:
@@ -98,6 +95,6 @@ class Power:
         if power > 0:
             self.player.power = power
             return
-        self.player.power = self.config.waking
+        self.player.power = 0.0
         logger.info("%s  The player's power cell runs flat", self.clock)
-        self.collapse()
+        self.die()

@@ -43,6 +43,9 @@ type SideWalk = {
   textureLimit(): number | null;
   rest(): { health: number; resting: boolean; bed: Place | null };
   hurt(health: number): void;
+  corpses(corpses: object[]): void;
+  died(cause: string, position: Place): void;
+  movesSent(): Place[];
 } & Shooting;
 type Paged = { sideWalk: SideWalk };
 type Shooting = {
@@ -92,6 +95,10 @@ const walkApi = (page: Page) => ({
   textureLimit: () => page.evaluate(() => (window as unknown as Paged).sideWalk.textureLimit()),
   rest: () => page.evaluate(() => (window as unknown as Paged).sideWalk.rest()),
   hurt: (health: number) => page.evaluate((health) => (window as unknown as Paged).sideWalk.hurt(health), health),
+  corpses: (corpses: object[]) => page.evaluate((corpses) => (window as unknown as Paged).sideWalk.corpses(corpses), corpses),
+  died: (cause: string, position: Place) =>
+    page.evaluate(([cause, position]) => (window as unknown as Paged).sideWalk.died(cause as string, position as Place), [cause, position] as const),
+  movesSent: () => page.evaluate(() => (window as unknown as Paged).sideWalk.movesSent()),
   weapon: () => page.evaluate(() => (window as unknown as Paged).sideWalk.weapon()),
   shot: () => page.evaluate(() => (window as unknown as Paged).sideWalk.shot()),
   flashFromFeet: () => page.evaluate(() => (window as unknown as Paged).sideWalk.flashFromFeet()),
@@ -590,6 +597,37 @@ async function restLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 200);
 }
 
+/** The corpses in `player_state` drawn and redrawn, and `player_died` saying why, sending no move until they're in bed. */
+async function deathLeg(open: (query: string) => Promise<[Page, Api]>): Promise<void> {
+  const name = 'dying, and the corpses left';
+  const [page, api] = await open('at=metro:65:15');
+  const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+  const corpse = (id: string, x: number) => ({ id, owner: 'player', at: { map: 'metro', x, y: 15 }, money: 0, items: [], bionics: [] });
+  const drawn = async () => (await api.usables()).filter(({ id, shown }) => id.startsWith('corpse:') && shown).map(({ id }) => id);
+  try {
+    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65)]);
+    await until(page, async () => (await drawn()).length === 2, 10, `${name}: two corpses on one tile drawn`);
+    if ((await usable(api, 'corpse:corpse_1', name)).glowing) throw new Error(`${name}: E glows at a corpse before Q11`);
+    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65), corpse('corpse_3', 69)]);
+    await until(page, async () => (await drawn()).length === 3, 10, `${name}: a new corpse drawn`);
+    await page.keyboard.down('ArrowRight');
+    await run(page, 300);
+    await api.movesSent();
+    while (!(await api.movesSent()).length) await run(page, FRAME_MS);
+    await run(page, 150);
+    await page.keyboard.up('ArrowRight');
+    await api.died('hunger', bed);
+    await until(page, async () => near(await api.state(), bed), 10, `${name}: waking in bed`);
+    await run(page, 100);
+    const stale = (await api.movesSent()).filter(({ map }) => map !== bed.map);
+    if (stale.length) throw new Error(`${name}: moves sent after dying: ${JSON.stringify(stale)}`);
+    const said = 'You starved to death, and woke in your bed in a new body.';
+    if (!(await cornerLines(page)).includes(said)) throw new Error(`${name}: no line saying why: ${await cornerLines(page)}`);
+  } finally {
+    await page.close();
+  }
+}
+
 /** X and R with a pistol: the flash and the flinch, and X doing nothing on a ladder, in bed or through a door. */
 async function shootingLeg(open: (query: string) => Promise<[Page, Api]>): Promise<void> {
   const name = 'firing and reloading';
@@ -1075,6 +1113,7 @@ try {
     ['C for the character screen', (i) => characterLeg(page, api, i)],
     ['E at the clinic', (i) => clinicLeg(page, api, i)],
     ["E at the scrap trader's stall", (i) => traderLeg(page, api, i)],
+    ['dying, and the corpses left', () => deathLeg(open)],
     ['firing and reloading', () => shootingLeg(open)],
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],

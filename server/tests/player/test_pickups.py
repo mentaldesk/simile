@@ -10,7 +10,6 @@ from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE, Salvage
-from simile.player.hunger import Hunger
 from simile.player.pickups import Pickups, joined
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Material, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
@@ -312,48 +311,6 @@ def test_money_they_left_comes_back_with_their_gear_through_the_ledger() -> None
     assert [(e.kind, e.amount, e.payer, e.payee) for e in recovered] == [
         (Kind.RECOVERED, 31.5, PILES, PLAYER)
     ]
-    assert tunnels.balanced()
-
-
-def test_collapsing_with_money_and_picking_it_up_leaves_their_net_where_it_was() -> None:
-    tunnels = Tunnels(Player(money=31.5))
-    hunger = Hunger(tunnels.player, tunnels.movement, tunnels.clock, economy=tunnels.economy)
-    ledger = tunnels.economy.ledger
-    tunnels.stand(12)
-
-    hunger.collapse()
-
-    assert tunnels.player.money == 0
-    assert (ledger.net(PLAYER), ledger.net(PILES)) == (-31.5, 31.5)
-    assert tunnels.balanced()
-    tunnels.stand(12)
-    assert tunnels.pickups.pick_up()
-    assert tunnels.player.money == 31.5
-    assert (ledger.net(PLAYER), ledger.net(PILES)) == (0, 0)
-    assert [entry.kind for entry in ledger.entries] == [Kind.DROPPED, Kind.RECOVERED]
-    assert tunnels.balanced()
-
-
-def test_two_piles_left_before_a_pickup_each_come_back_through_the_ledger() -> None:
-    tunnels = Tunnels(Player(money=20))
-    hunger = Hunger(tunnels.player, tunnels.movement, tunnels.clock, economy=tunnels.economy)
-    ledger = tunnels.economy.ledger
-    tunnels.stand(12)
-    hunger.collapse()
-    tunnels.stand(40)
-    assert tunnels.pickups.pick_up()
-    tunnels.stand(14)
-    hunger.collapse()
-
-    assert tunnels.player.left == [at(12, money=20), at(14, money=25)]
-    assert (ledger.net(PLAYER), ledger.net(PILES)) == (-20, 45)
-    tunnels.stand(12)
-    assert tunnels.pickups.pick_up()
-    tunnels.stand(14)
-    assert tunnels.pickups.pick_up()
-
-    assert tunnels.player.money == 45
-    assert (ledger.net(PLAYER), ledger.net(PILES)) == (25, 0)
     assert tunnels.balanced()
 
 

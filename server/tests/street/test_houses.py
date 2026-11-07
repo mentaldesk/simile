@@ -77,7 +77,7 @@ def test_a_days_exploring_on_foot_pays_for_the_cell_and_the_datajack_without_the
     """Pacing: searching everything, taking every secret and one round of salvage on their own legs,
     the player finds the parts for both with a spare of each and, selling the rest of the salvage,
     affords both without the kidney or a respawn, in a day. Fetching each from home and back on its
-    own takes less than half the time from a meal to collapsing."""
+    own takes less than half the time from a meal to starving."""
     seconds = walk()
     found = [
         thing

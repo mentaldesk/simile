@@ -2,17 +2,18 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from simile.behaviour import Activity, Goal, Need
 from simile.economy import PLAYER
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.hours import hours, next_opening
 from simile.player.power import cell_in
 from simile.player.where import here, location
-from simile.protocol import Meal, Shut, ShutReason, Vital
-from simile.schema import PLAYER_ID, Id, ItemKind, Location, MapTile, Pile, Player
+from simile.protocol import Meal, Shut, ShutReason
+from simile.schema import Id, ItemKind, Location, Player
 from simile.sim import Clock
-from simile.world.movement import Movement, Point, cell_of, inside
-from simile.world.paths import Spot
+from simile.world.movement import Movement, Point, inside
 
 if TYPE_CHECKING:
     from simile.economy.economy import Economy
@@ -25,8 +26,28 @@ HOME = "home"
 type Supply = Callable[[Goal, Need], float]
 
 
+class StarvingConfig(BaseModel):
+    """What going without food does once hunger is full."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    every: float = Field(
+        default=0.2, gt=0, description="Sim hours between each pang: twelve sim minutes."
+    )
+    damage: float = Field(
+        default=0.1,
+        gt=0,
+        le=1,
+        description="The health each pang takes: from full to dead in ten pangs, two sim hours, "
+        "and a hit the client shows at full strength.",
+    )
+
+
+DEFAULT_STARVING = StarvingConfig()
+
+
 class Hunger:
-    """The player's hunger, eating and collapsing, until a power cell takes the stomach's place.
+    """The player's hunger, eating and starving, until a power cell takes the stomach's place.
     Tick it on the sim loop."""
 
     def __init__(
@@ -38,9 +59,9 @@ class Hunger:
         supply: Supply = lambda goal, need: 1.0,
         economy: "Economy | None" = None,
         playing: Callable[[], bool] = lambda: True,
-        collapsed: Callable[[MapTile, Vital], None] = lambda home, cause: None,
-        bed: Callable[[], Spot | None] = lambda: None,
+        pang: Callable[[float], None] = lambda damage: None,
         config: PlayerConfig = DEFAULT_CONFIG,
+        starving: StarvingConfig = DEFAULT_STARVING,
     ) -> None:
         self.player = player
         self.movement = movement
@@ -50,11 +71,11 @@ class Hunger:
         self.economy = economy
         """Its `player` is this one, so meals are paid through its ledger."""
         self.playing = playing
-        self.collapsed = collapsed
-        """Told where they wake after collapsing, and what ran out."""
-        self.bed = bed
-        """The bed they wake in after collapsing, if their home has one."""
+        self.pang = pang
+        """Takes that much of their health, starving them to death at none."""
         self.config = config
+        self.starving = starving
+        self.since_pang = 0.0
 
     def tick(self, dt: float) -> None:
         if self._on_cell():
@@ -63,10 +84,15 @@ class Hunger:
         if not self.playing():
             return
         hunger = self.player.hunger + self.config.rise * dt / HOUR
-        if hunger >= 1:
-            self.collapse()
-        else:
-            self.player.hunger = hunger
+        self.player.hunger = min(hunger, 1.0)
+        if hunger < 1:
+            self.since_pang = 0.0
+            return
+        self.since_pang += dt
+        every = self.starving.every * HOUR
+        while self.since_pang >= every and self.player.hunger >= 1:
+            self.since_pang -= every
+            self.pang(self.starving.damage)
 
     def meal(self) -> Meal | None:
         """The meal on offer where they stand, if any."""
@@ -101,35 +127,6 @@ class Hunger:
         if self._on_cell():
             return False
         return self._eat_meal() if item is None else self._eat_item(item)
-
-    def collapse(self, cause: Vital = Vital.HUNGER) -> None:
-        """Leaves their money and all but the lamp where they are, clears their effects, and wakes
-        them in their bed at home, or at its entry without one, still hungry if that's why."""
-        at = here(self.movement)
-        kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
-        dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
-        money = self.player.money
-        if at is not None and (dropped or money):
-            pile = Pile(at=ground(self.movement, at), items=dropped, money=money)
-            self.player.left = [*self.player.left, pile]
-            self.player.items = kept
-            if self.economy is not None:
-                self.economy.drop(money)
-            self.player.money = 0.0
-        self.player.effects = []
-        home = self._waking()
-        self.movement.track(PLAYER_ID, Point(home.x, home.y, home.map))
-        if cause is Vital.HUNGER:
-            self.player.hunger = self.config.waking
-        logger.info("%s  The player collapses (%s) and wakes at home", self.clock, cause)
-        self.collapsed(home, cause)
-
-    def _waking(self) -> MapTile:
-        bed = self.bed()
-        if bed is not None:
-            return MapTile(map=bed.map, x=bed.x, y=bed.y)
-        house = self.movement.town.location(self.config.home)
-        return MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
 
     def _on_cell(self) -> bool:
         return cell_in(self.player.body) is not None
@@ -197,13 +194,3 @@ class Hunger:
     def _price(self, place: Id) -> float | None:
         shop = self.economy.config.shops.get(place) if self.economy is not None else None
         return None if shop is None else shop.meal
-
-
-def ground(movement: Movement, here: Point) -> MapTile:
-    """The cell they're on, or the first one below it to stand on."""
-    x, y = (max(n, 0) for n in cell_of(here))
-    town = movement.maps.get(here.map)
-    if town is not None:
-        x, y = min(x, town.width - 1), min(y, town.height - 1)
-        y = next((row for row in range(y, town.height) if town.standing(x, row)), y)
-    return MapTile(map=here.map, x=x, y=y)

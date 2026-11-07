@@ -99,6 +99,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   `attackerOf`: the nearest creature attacking them within `HIT_FROM_TILES` (3 tiles, across rows
   too) on their map, else the nearest there, never one going down. With none, the drops burst
   straight up.
+- **Corpses** (`player_state`'s `corpses`): each is the `corpse` icon, 0.6 m tall, where it lies, however much it holds. E does nothing at one until Q11.
 - **Loot** (`piles.ts`'s `lootIcons`): what a pile or a searchable holds is drawn as a heap of up
   to three icons from [`content/icons/`](../../../content/icons/README.md), the first in front: a
   `schematic` for a recipe, each kind of item, or `unknown_item` for one without an icon, then
@@ -163,7 +164,7 @@ The Phaser-free halves are tested under vitest.
 - While `player_state` says they're `resting`, the player lies down on their bed's cell over
   `LIE_SECONDS`, moving to its middle as they sit on the edge, and gets up once it doesn't, at full
   health or on a key, by `poses.ts`'s `settle`. No key moves them until they're up. Placed, or after
-  a snapshot, while resting already, as on waking in bed after a collapse, they're lying at once.
+  a snapshot, while resting already, as on waking in bed after dying, they're lying at once.
 - Resting at night, the server skips to morning (`server/simile/player/README.md`). While they
   rest and the `clock` message's `speed` is `SKIP_SPEED` (600) or more, the scene dims to
   `SLEEP_DIM` over `DIM_SECONDS` and draws a clock face and the time spinning forward in the middle
@@ -191,9 +192,9 @@ The Phaser-free halves are tested under vitest.
   lands with a squash over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with
   height. The camera stays at the height the jump left from, following only a fall below it
   (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
-- When the player collapses from hunger, `player_died` puts them at home, as through a door,
+- When the player dies, `player_died` puts them in their bed at home, as through a door,
   once the street is shown and any door they're going through is done. It's also where the scene
-  starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed.
+  starts them next (`sideResidents.start`), for a tab that wasn't in the game when they died.
   After every `snapshot` the scene sends the player's position again, so a restarted server knows
   where they are. From `player_died` until it has placed them where the server woke them, the
   scene sends no position (`report.ts`), so a move the throttle held back can't take them off the

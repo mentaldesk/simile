@@ -3,7 +3,7 @@ import type { MapPosition } from './player';
 
 const same = (a: MapPosition, b: MapPosition) => a.x === b.x && a.y === b.y && a.map === b.map;
 
-/** The player's positions to send, throttled, and none from a collapse until the scene has woken them. */
+/** The player's positions to send, throttled, and none from a death until the scene has woken them. */
 export class MoveReport {
   private readonly throttle = new MoveThrottle();
   private readonly sent: MapPosition = { x: NaN, y: NaN, map: '' };
@@ -30,7 +30,7 @@ export class MoveReport {
     this.waking = false;
   }
 
-  collapsed(): void {
+  died(): void {
     this.waking = true;
   }
 

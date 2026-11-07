@@ -131,7 +131,7 @@ By gaining access to some of her archives you can get access to more advanced de
 
 Before you have weapons, the tunnels are about getting past things, in the spirit of Rick
 Dangerous: each danger moves in its own way, and learning how is the puzzle. Getting hurt costs
-health, and at none you collapse and wake at home, as when you starve. Each danger is also a door:
+health, and at none you die, as when you starve. Each danger is also a door:
 the bionic or tool that answers it is further on.
 
 - **Rats** are the weakest. Jumping on one kills it. Running into a handful hurts enough to matter.

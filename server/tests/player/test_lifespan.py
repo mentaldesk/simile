@@ -15,6 +15,7 @@ from simile.npc import load_npcs
 from simile.persistence import investigation_of, player_of
 from simile.player.config import SALVAGE
 from simile.player.health import DEFAULT_HEALTH, health_of
+from simile.player.hunger import DEFAULT_STARVING
 from simile.schema import PLAYER_ID, Bionic, Body, Item, ItemKind
 from simile.sim import STEP, Clock, World, world_of
 from simile.story import make_disappearance
@@ -122,61 +123,66 @@ def test_the_player_eats_at_home_and_from_what_they_carry(make_package: MakePack
     assert snacked["player"]["hunger"] < 0.5
 
 
-def test_starving_wakes_them_in_bed_and_they_pick_up_what_they_left(
-    make_package: MakePackage,
-) -> None:
-    app = make_app(make_package)
-
-    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        tick = world_of(app).loop.tick
-        player = player_of(app)
-        move(client, app, ws, 12, 15, "kapok_walk")
-        client.portal.call(lambda: setattr(player, "items", [*player.items, BUN]))
-        client.portal.call(lambda: setattr(player, "money", 20.0))
-        client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
-        client.portal.call(tick)
-        collapsed = next_of(ws, "player_died")
-        woken = next_of(ws, "player_state")
-        home = client.portal.call(movement_of(app).position, PLAYER_ID)
-
-        move(client, app, ws, 12, 15, "kapok_walk")
-        ws.send_json({"type": "pick_up"})
-        picked_up = next_of(ws, "player_state")
-
-    assert collapsed["position"] == BED
-    assert home == Point(5, 2, "maker_space_floor_2")
-    assert woken["player"]["hunger"] == 0.75
-    assert woken["player"]["money"] == 0
-    assert [item["id"] for item in woken["player"]["items"]] == ["lamp"]
-    assert woken["player"]["left"] == [
-        {
-            "at": {"map": "kapok_walk", "x": 12, "y": 15},
-            "items": [BUN.model_dump(mode="json")],
-            "money": 20.0,
-        }
-    ]
-    assert woken["meal"] == HOME
-    assert [item["id"] for item in picked_up["player"]["items"]] == ["lamp", "pork_bun"]
-    assert picked_up["player"]["money"] == 20.0
-    assert "left" not in picked_up["player"]
+def starve(client: TestClient, app: Starlette, ws: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Starves them to death where they stand with one pang, and what the client hears."""
+    player, world = player_of(app), world_of(app)
+    client.portal.call(lambda: setattr(player, "health", DEFAULT_STARVING.damage))
+    client.portal.call(lambda: setattr(player, "hunger", 1.0))
+    client.portal.call(lambda: setattr(world.loop, "step", DEFAULT_STARVING.every * 3600))
+    client.portal.call(world.loop.tick)
+    client.portal.call(lambda: setattr(world.loop, "step", STEP))
+    return next_of(ws, "player_died"), next_of(ws, "player_state")
 
 
-def starve(client: TestClient, app: Starlette, ws: Any) -> dict[str, Any]:
-    """Collapses them from hunger at half health, and their first state after."""
-    player = player_of(app)
-    move(client, app, ws, 12, 15, "kapok_walk")
-    client.portal.call(lambda: setattr(player, "health", 0.5))
-    client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
+def killed(client: TestClient, app: Starlette, ws: Any) -> dict[str, Any]:
+    """Kills them where they stand, and their first state after."""
+    client.portal.call(health_of(app).hurt, 2.0)
     client.portal.call(world_of(app).loop.tick)
     next_of(ws, "player_died")
     return next_of(ws, "player_state")
 
 
-def test_starving_wakes_them_resting_until_they_are_full(make_package: MakePackage) -> None:
+def test_starving_to_death_wakes_them_in_bed_with_a_corpse_where_they_fell(
+    make_package: MakePackage,
+) -> None:
     app = make_app(make_package)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        woken = starve(client, app, ws)
+        player = player_of(app)
+        move(client, app, ws, 12, 15, "kapok_walk")
+        client.portal.call(lambda: setattr(player, "items", [*player.items, BUN]))
+        client.portal.call(lambda: setattr(player, "money", 20.0))
+        died, woken = starve(client, app, ws)
+        home = client.portal.call(movement_of(app).position, PLAYER_ID)
+        ledger = economy_of(app).ledger.entries
+
+    assert died["cause"] == "hunger"
+    assert died["position"] == BED
+    assert [entry.amount for entry in ledger if entry.kind is Kind.DROPPED] == [20.0]
+    assert home == Point(5, 2, "maker_space_floor_2")
+    assert woken["player"]["hunger"] == 0.75
+    assert woken["player"]["money"] == 0
+    assert [item["id"] for item in woken["player"]["items"]] == ["lamp"]
+    assert "left" not in woken["player"]
+    assert woken["player"]["corpses"] == [
+        {
+            "id": "corpse_1",
+            "owner": "player",
+            "at": {"map": "kapok_walk", "x": 12, "y": 15},
+            "money": 20.0,
+            "items": [BUN.model_dump(mode="json")],
+            "bionics": [],
+        }
+    ]
+    assert woken["meal"] == HOME
+
+
+def test_they_wake_resting_until_they_are_full(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        move(client, app, ws, 12, 15, "kapok_walk")
+        woken = killed(client, app, ws)
         state, ticks = woken, 1
         while state["player"].get("health", 1) < 1:
             assert state["resting"]
@@ -184,15 +190,33 @@ def test_starving_wakes_them_resting_until_they_are_full(make_package: MakePacka
             state, ticks = next_of(ws, "player_state"), ticks + 1
 
     assert (woken["bed"], woken["resting"]) == (BED, True)
-    assert ticks * STEP == pytest.approx(0.5 * DEFAULT_HEALTH.rest, abs=0.15)
+    assert ticks * STEP == pytest.approx(
+        (1 - DEFAULT_HEALTH.waking) * DEFAULT_HEALTH.rest, abs=0.15
+    )
     assert (state["bed"], "resting" in state) == (BED, False)
 
 
-def test_moving_off_the_bed_after_a_collapse_ends_the_rest(make_package: MakePackage) -> None:
+def test_two_deaths_leave_two_corpses_that_both_stay(make_package: MakePackage) -> None:
     app = make_app(make_package)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        woken = starve(client, app, ws)
+        move(client, app, ws, 12, 15, "kapok_walk")
+        starve(client, app, ws)
+        move(client, app, ws, 30, 15, "kapok_walk")
+        _, woken = starve(client, app, ws)
+
+    assert [(c["id"], c["at"]["x"]) for c in woken["player"]["corpses"]] == [
+        ("corpse_1", 12),
+        ("corpse_2", 30),
+    ]
+
+
+def test_moving_off_the_bed_after_dying_ends_the_rest(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        move(client, app, ws, 12, 15, "kapok_walk")
+        woken = killed(client, app, ws)
         move(client, app, ws, 8, 2, "maker_space_floor_2")
         client.portal.call(world_of(app).loop.tick)
         up = state_where(ws, lambda m: "bed" not in m)

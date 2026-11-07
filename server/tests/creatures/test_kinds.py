@@ -275,7 +275,7 @@ def careless(*placed: Spawn, **player: Any) -> float:
     ],
     ids=["past a bot", "through a nest of three"],
 )
-def test_a_careless_walk_costs_about_a_third_of_full_health_and_three_collapse_the_player(
+def test_a_careless_walk_costs_about_a_third_of_full_health_and_three_kill_the_player(
     walks: list[list[Spawn]],
 ) -> None:
     costs = [careless(*placed, body=FITTED, items=[RATION]) for placed in walks]

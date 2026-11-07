@@ -13,6 +13,7 @@ from simile.app import create_app
 from simile.persistence import player_of
 from simile.player.health import DEFAULT_HEALTH, Health, beds_in, health_of
 from simile.player.sync import PlayerSync
+from simile.protocol import Vital
 from simile.schema import PLAYER_ID, SOLD, Body, Effect, EffectKind, Player
 from simile.sim import STEP, Clock, EventBus, World, world_of
 from simile.world import Movement, Point, movement_of
@@ -44,7 +45,7 @@ class Patient:
     ) -> None:
         self.player = player or Player()
         self.playing = True
-        self.collapses = 0
+        self.deaths: list[Vital] = []
         self.movement = Movement(MAPS, EventBus())
         self.movement.track(PLAYER_ID, at)
         self.clock = Clock(NOW)
@@ -53,12 +54,9 @@ class Patient:
             self.movement,
             self.clock,
             playing=lambda: self.playing,
-            collapse=self.collapse,
+            die=self.deaths.append,
             beds=beds,
         )
-
-    def collapse(self) -> None:
-        self.collapses += 1
 
     def run(self, hours: float, step: float = 60.0) -> None:
         for _ in range(round(hours * HOUR / step)):
@@ -82,7 +80,7 @@ def test_damage_takes_health() -> None:
     patient.health.bite(TAKES)
 
     assert patient.player.health == pytest.approx(0.7 - TAKES)
-    assert patient.collapses == 0
+    assert patient.deaths == []
 
 
 def test_it_comes_back_slowly_and_faster_at_home() -> None:
@@ -183,13 +181,13 @@ def test_moving_off_the_bed_ends_the_rest_even_once_they_are_back() -> None:
     assert patient.player.health == pytest.approx(before + AT_HOME)
 
 
-def test_collapsing_ends_the_rest() -> None:
+def test_dying_ends_the_rest() -> None:
     patient = Patient(Player(health=0.1), at=BED)
     patient.health.rest(True)
 
     patient.health.hurt(0.2)
 
-    assert patient.collapses == 1
+    assert patient.deaths == [Vital.HEALTH]
     assert not patient.health.resting()
 
 
@@ -257,13 +255,53 @@ def test_nothing_changes_while_nobody_is_playing() -> None:
     assert patient.strength(BITE) == DEFAULT_HEALTH.bitten
 
 
-def test_at_none_they_collapse_and_wake_with_some_health() -> None:
+def test_at_none_they_die_of_it() -> None:
     patient = Patient(Player(health=0.04))
 
     patient.health.bite(TAKES)
 
-    assert patient.collapses == 1
-    assert patient.player.health == DEFAULT_HEALTH.waking
+    assert patient.deaths == [Vital.HEALTH]
+    assert patient.player.health == 0
+
+
+def test_starving_they_die_of_hunger_at_none() -> None:
+    patient = Patient(Player(health=0.04, hunger=1.0))
+
+    patient.health.hurt(0.1, Vital.HUNGER)
+
+    assert patient.deaths == [Vital.HUNGER]
+
+
+def test_ten_pangs_kill_exactly_despite_rounding() -> None:
+    patient = Patient()
+
+    for _ in range(10):
+        patient.health.hurt(0.1, Vital.HUNGER)
+
+    assert patient.deaths == [Vital.HUNGER]
+
+
+def test_no_health_comes_back_and_no_rest_starts_while_starving() -> None:
+    patient = Patient(Player(health=0.5, hunger=1.0), at=BED)
+
+    assert not patient.health.rest(True)
+    patient.run(1)
+
+    assert patient.player.health == 0.5
+
+
+def test_starving_ends_a_rest_until_they_eat() -> None:
+    patient = Patient(Player(health=0.2), at=BED)
+    assert patient.health.rest(True)
+
+    patient.player.hunger = 1.0
+    patient.health.tick(60)
+    assert not patient.health.resting()
+
+    patient.player.hunger = 0.6
+    assert patient.health.rest(True)
+    patient.run(1)
+    assert patient.player.health > 0.2
 
 
 def test_a_single_bite_fades_before_it_can_turn() -> None:
@@ -388,7 +426,7 @@ def next_of(ws: Any, type: str) -> dict[str, Any]:
     raise AssertionError(f"no {type}")
 
 
-def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_resting_in_bed(
+def test_a_bite_at_no_health_kills_them_for_health_and_they_wake_resting_in_bed(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
@@ -404,7 +442,7 @@ def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_resting_in_
         client.portal.call(lambda: setattr(player, "health", 0.01))
         client.portal.call(lambda: setattr(player, "money", 12.0))
         client.portal.call(health_of(app).bite, TAKES)
-        collapsed = next_of(ws, "player_died")
+        died = next_of(ws, "player_died")
         client.portal.call(world_of(app).loop.tick)
         woken = next_of(ws, "player_state")
         state, ticks = woken, 1
@@ -414,15 +452,24 @@ def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_resting_in_
             state, ticks = next_of(ws, "player_state"), ticks + 1
 
     bed = {"x": BED.x, "y": BED.y, "map": BED.map}
-    assert collapsed["cause"] == "health"
-    assert collapsed["position"] == bed
+    assert died["cause"] == "health"
+    assert died["position"] == bed
     assert (woken["bed"], woken["resting"]) == (bed, True)
     assert woken["player"]["health"] < DEFAULT_HEALTH.waking + 0.05
     assert woken["player"]["hunger"] < 0.01
     assert "effects" not in woken["player"]
     assert woken["player"]["money"] == 0
-    left = {"at": {"map": "metro", "x": 65, "y": 15}, "items": [], "money": 12.0}
-    assert woken["player"]["left"] == [left]
+    assert "left" not in woken["player"]
+    assert woken["player"]["corpses"] == [
+        {
+            "id": "corpse_1",
+            "owner": "player",
+            "at": {"map": "metro", "x": 65, "y": 15},
+            "money": 12.0,
+            "items": [],
+            "bionics": [],
+        }
+    ]
     assert ticks * STEP == pytest.approx(
         (1 - DEFAULT_HEALTH.waking) * DEFAULT_HEALTH.rest, abs=0.15
     )

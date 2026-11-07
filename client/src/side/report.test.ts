@@ -22,7 +22,7 @@ describe('reporting moves', () => {
     expect(moves.next({ x: 1.5, y: 15, map: 'high_street' }, 1)).toBeUndefined();
   });
 
-  it('wakes a player who collapsed while moving still resting in their bed', () => {
+  it('wakes a player who died while moving still resting in their bed', () => {
     const moves = new MoveReport();
     const player = new SidePlayer(village, { x: 10, y: 15, map: 'high_street' });
     let on: MapPosition = { ...player.mapPosition };
@@ -45,7 +45,7 @@ describe('reporting moves', () => {
     expect(on.x).toBeLessThan(player.position.x);
 
     on = { ...BED };
-    moves.collapsed();
+    moves.died();
     tell();
     for (let t = 0; t < DOOR_FADE_OUT_SECONDS + SEND_INTERVAL_SECONDS; t += DT) {
       now += DT;
@@ -64,7 +64,7 @@ describe('reporting moves', () => {
     const player = new SidePlayer(village, { x: 10, y: 15, map: 'high_street' });
     const sent: MapPosition[] = [];
     let now = 0;
-    moves.collapsed();
+    moves.died();
     player.place(BED);
     moves.woke();
     for (let t = 0; t < 2; t += DT) {

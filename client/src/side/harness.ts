@@ -1,6 +1,6 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type Bionic, type Body, type ClientMessage, type Creature, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type SideFacing, type Wall } from '../net';
+import { server, type Bionic, type Body, type ClientMessage, type Corpse, type Creature, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Vital, type Recipe, type SideFacing, type Wall } from '../net';
 import { isPlayerFigure } from '../dolls/bionics';
 import { SpriteFigure } from '../dolls/sprite-figure';
 import { speakingSeconds } from '../ui/bubbles';
@@ -305,9 +305,12 @@ let body: Body = {
   right_kidney: 'present',
 };
 
+let corpses: Corpse[] = [];
+const movesSent: Position[] = [];
+
 function sendPlayerState(): void {
   const mind = known.length ? { mind: { recipes: known } } : {};
-  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, health, ...(searched.length ? { searched } : {}), ...mind };
+  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, health, ...(searched.length ? { searched } : {}), ...(corpses.length ? { corpses } : {}), ...mind };
   const recipes = known.map((bionic) => RECIPES[bionic] ?? { bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] });
   const rest = { ...(bed && { bed }), ...(resting && { resting }) };
   dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}), ...rest });
@@ -621,6 +624,12 @@ function exposeWalk(scene: SideScene, village: Village): void {
         health = to;
         sendPlayerState();
       },
+      corpses: (to: Corpse[]) => {
+        corpses = to;
+        sendPlayerState();
+      },
+      died: (cause: Vital, position: Position) => dispatch({ type: 'player_died', cause, position }),
+      movesSent: () => movesSent.splice(0),
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
         sendPlayerState();
@@ -644,6 +653,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   server.close();
   server.send = (message) => {
     console.info('Side harness: sent', message);
+    if (message.type === 'player_move') movesSent.push(message.position);
     answer(message, scene, village);
     return true;
   };

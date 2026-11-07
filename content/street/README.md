@@ -212,7 +212,7 @@ That's 62 in all. With the metro's secrets a jump reaches (95), one round of its
 the salvage stripped from the finds, keeping a spare of every part the recipes use (36), it pays
 for the power cell and the datajack (200) without the kidney or waiting for salvage to come back
 (`tests/street/test_houses.py`). Fetching each find, secret and salvage from home and back on its
-own takes about 70 sim minutes on foot, under half the time from a meal to collapsing.
+own takes about 70 sim minutes on foot, under half the time from a meal to starving.
 
 ## The village
 
@@ -258,7 +258,7 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
 - **Spark Maker Space**: the foot of the stairs (2), a workbench, the laser cutter, 3D printer, loom
   and sewing machine (7–12), the entry (13) and the mat (14). Three workbenches on the first floor,
   two in the loft up the ladder from x 6. A plug, `maker_space_plug`, is on the wall at the entry,
-  where the player wakes after collapsing (`simile.player`), since it's their home.
+  where the player wakes after dying if their home has no bed (`simile.player`), since it's their home.
 - **The Gallery**: the mat (2), the entry (3), paintings 1 to 3 and a bench on the ground floor,
   4 to 8 and two benches on the first, 9 to 13 and a bench on the second. The lift is at the east
   end: on each floor, x 15 and 16 go to the other two floors.
@@ -390,7 +390,7 @@ slab, the row under them. West to east it's columns of rooms:
   (P34) is up the first ladder, out of their reach, along the loft to the stash, and on over the
   far ladder's top through a doorway into the bat cave's middle tier. Crossing their floor to the
   far ladder and back instead, or dropping through the hole by its top and running for it, is
-  almost certain collapse on the player's own legs or the feet; on the legs, they get out with a
+  almost certain death on the player's own legs or the feet; on the legs, they get out with a
   little health (`server/simile/creatures/README.md`).
 - **The cave** (`cave`, P15), the bats', is a column of its own past the den, 18 wide (`CAVE`),
   made after the den from its own random stream, so it moves nothing: the den only gains doorways
@@ -400,7 +400,7 @@ slab, the row under them. West to east it's columns of rooms:
   east wall holds a stash, `sewers_secret_cave`, 140 to 200 money. As with the hall's ledge only the
   bionic legs cross the gap, as only they get through the den. A fall from the gap lands on the
   cave's floor. Thirty bats (`CAVE_BATS`) roost under its ceilings, kept to the cave: by lamplight
-  they collapse a player on any legs before they're back out, and with the lamp off they never stir.
+  they kill a player on any legs before they're back out, and with the lamp off they never stir.
   Without the infrared eye it can only be crossed blind.
 - **The hatch** (`HATCH`, `sewers_hatch`) is a `jack` in the room past the gate that the most
   doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
