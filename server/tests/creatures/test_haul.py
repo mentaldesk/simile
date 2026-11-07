@@ -249,3 +249,11 @@ def test_a_starting_haul_is_one_or_two_chosen_by_the_seed() -> None:
 
 def test_with_everything_lying_on_its_map_a_bot_starts_with_nothing() -> None:
     assert starting_haul("a_bot", 0, {item.id for item in SALVAGE_ITEMS}) == []
+
+
+def test_a_starting_haul_is_these_items_in_any_process_until_the_list_of_kinds_changes() -> None:
+    def ids(lying: set[str]) -> list[str]:
+        return [item.id for item in starting_haul("metro_bot_1", 0, lying)]
+
+    assert ids(set()) == ["copper_coil", "float_valve"]
+    assert ids({"copper_coil", "pump_impeller"}) == ["brass_fitting", "filter_mesh"]

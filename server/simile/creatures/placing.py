@@ -39,10 +39,9 @@ def populate(
     creatures: Creatures,
     placed: list[tuple[str, Spawn]],
     seed: int,
-    lying: Mapping[str, Collection[Id]],
+    lying_by_map: Mapping[str, Collection[Id]],
 ) -> list[Creature]:
-    """Spawns each on a map the creatures have, but for those gone for good. `lying` has the ids
-    of what each map's pickups hold."""
+    """Spawns each on a map the creatures have, but for those gone for good."""
     made = []
     for map_id, spawn in placed:
         if map_id not in creatures.maps or creatures.is_gone(spawn.id):
@@ -53,7 +52,7 @@ def populate(
         if spawn.span is not None:
             options["span"] = spawn.span
         if placing.stocked:
-            options["haul"] = starting_haul(spawn.id, seed, lying.get(map_id, ()))
+            options["haul"] = starting_haul(spawn.id, seed, lying_by_map.get(map_id, ()))
         made.append(creatures.spawn(placing.kind, at, id=spawn.id, **options))
     return made
 

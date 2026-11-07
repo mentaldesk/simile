@@ -334,6 +334,26 @@ async def test_a_bots_untouched_start_is_the_same_after_a_restart_and_what_chang
 
 
 @pytest.mark.anyio
+async def test_a_bots_untouched_start_is_the_same_after_every_pickup_is_taken(
+    database: Path,
+) -> None:
+    held: dict[str, list[Item]] = {}
+
+    async def take_everything(app: Starlette) -> None:
+        held.update({bot.id: bot.haul for bot in bots(app)})
+        player_of(app).taken = dict.fromkeys(pickups(app).lying, world_of(app).clock.now)
+
+    await run_village(BRIEFLY, after=take_everything)
+    assert saved(database).creatures == {}
+
+    async def same(app: Starlette) -> None:
+        assert pickups(app).piles() == []
+        assert {bot.id: bot.haul for bot in bots(app)} == held
+
+    await run_village(BRIEFLY, after=same)
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize("level", range(level_count()))
 async def test_every_bot_drops_what_it_started_with_and_none_of_it_lies_on_its_map(
     database: Path, monkeypatch: pytest.MonkeyPatch, level: int
