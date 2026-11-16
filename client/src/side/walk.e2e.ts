@@ -618,30 +618,23 @@ async function deathLeg(open: (query: string) => Promise<[Page, Api]>): Promise<
   const [page, api] = await open('at=metro:65:15');
   const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
   const corpse = (id: string, x: number, bionics: string[] = []) => ({ id, owner: 'player', at: { map: 'metro', x, y: 15 }, money: 0, items: [], bionics });
-  const pickUps: string[] = [];
-  page.on('console', (message) => {
-    if (message.text().includes('pick_up')) pickUps.push(message.text());
-  });
   const drawn = async () => (await api.usables()).filter(({ id, shown }) => id.startsWith('corpse:') && shown).map(({ id }) => id);
   try {
-    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65)]);
-    await until(page, async () => (await drawn()).length === 2, 10, `${name}: two corpses on one tile drawn`);
-    await run(page, 100);
-    if ((await usable(api, 'corpse:corpse_1', name)).glowing) throw new Error(`${name}: E glows at an emptied corpse`);
-    await page.keyboard.press('e');
-    await run(page, 100);
-    if (pickUps.length) throw new Error(`${name}: E at an emptied corpse sent ${pickUps}`);
     await api.corpses([corpse('corpse_1', 65, ['datajack']), corpse('corpse_2', 65, ['power_cell_2'])]);
+    await until(page, async () => (await drawn()).length === 2, 10, `${name}: two corpses on one tile drawn`);
     await until(page, async () => (await usable(api, 'corpse:corpse_1', name)).glowing, 10, `${name}: the older of two on one tile glowing`);
     if ((await usable(api, 'corpse:corpse_2', name)).glowing) throw new Error(`${name}: the newer glows too`);
-    const offer = 'Press E to salvage what you can carry from the oldest of the 2 bodies here.';
-    await until(page, async () => (await cornerLines(page)).includes(offer), 10, `${name}: saying which body E takes`);
+    const offer = 'Press E to go through the oldest of the 2 bodies here.';
+    await until(page, async () => (await cornerLines(page)).includes(offer), 10, `${name}: saying which body E opens`);
     await page.keyboard.press('e');
-    await until(page, async () => pickUps.length === 1, 10, `${name}: E sending pick_up`);
-    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65, ['power_cell_2'])]);
-    await until(page, async () => (await usable(api, 'corpse:corpse_2', name)).glowing, 10, `${name}: the glow moving to the newer once the older's emptied`);
-    await api.corpses([corpse('corpse_1', 65), corpse('corpse_2', 65), corpse('corpse_3', 69)]);
-    await until(page, async () => (await drawn()).length === 3, 10, `${name}: a new corpse drawn`);
+    await until(page, async () => (await shown(page, '.salvage-panel'))?.includes('Datajack') ?? false, 10, `${name}: E opening the older`);
+    await page.keyboard.press('Escape');
+    await run(page, 100);
+    await api.corpses([corpse('corpse_2', 65, ['power_cell_2'])]);
+    await until(page, async () => (await usable(api, 'corpse:corpse_2', name)).glowing, 10, `${name}: the glow moving to the newer once the older's gone`);
+    await until(page, async () => (await drawn()).length === 1, 10, `${name}: the older's picture gone`);
+    await api.corpses([corpse('corpse_2', 65, ['power_cell_2']), corpse('corpse_3', 69, ['datajack'])]);
+    await until(page, async () => (await drawn()).length === 2, 10, `${name}: a new corpse drawn`);
     await page.keyboard.down('ArrowRight');
     await run(page, 300);
     await api.movesSent();
@@ -1098,19 +1091,19 @@ const LAMP = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.8, o
 const WIRE = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
 
 /** The `player_state` the server would send, since the harness has no stash. */
-const holding = (page: Page, items: object[], stored: object[], corpses: object[] = []) =>
+const holding = (page: Page, items: object[], stored: object[], corpses: object[] = [], more: { player?: object; state?: object } = {}) =>
   page.evaluate(
-    async ([items, stored, corpses]) => {
+    async ([items, stored, corpses, more]) => {
       const net = '/src/net/index.ts';
       const { server } = await import(/* @vite-ignore */ net);
       const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
-      const player = { money: 0, items, carry_limit: 10, stash: { items: stored, limit: 20 }, corpses, body, hunger: 0, health: 1 };
-      server.dispatch(JSON.stringify({ type: 'player_state', player }));
+      const player = { money: 0, items, carry_limit: 10, stash: { items: stored, limit: 20 }, corpses, body, hunger: 0, health: 1, ...more.player };
+      server.dispatch(JSON.stringify({ type: 'player_state', player, ...more.state }));
     },
-    [items, stored, corpses] as const,
+    [items, stored, corpses, more] as const,
   );
 
-/** The `stash` and `pick_up` messages sent since it was last called. */
+/** The `stash`, `pick_up` and `take` messages sent since it was last called. */
 const usesSent = (page: Page) =>
   page.evaluate(async () => {
     const net = '/src/net/index.ts';
@@ -1120,7 +1113,7 @@ const usesSent = (page: Page) =>
       seen.usesSent = [];
       const send = server.send;
       server.send = (message: { type: string }) => {
-        if (message.type === 'stash' || message.type === 'pick_up') seen.usesSent!.push(message);
+        if (message.type === 'stash' || message.type === 'pick_up' || message.type === 'take') seen.usesSent!.push(message);
         return send(message);
       };
     }
@@ -1188,23 +1181,23 @@ async function stashLeg(page: Page, api: Api, index: number): Promise<void> {
   await api.hurt(1);
 }
 
-/** A corpse beside the lockers takes E while it holds what they can carry, and gives way to them while it doesn't, so they can make room. */
+/** A corpse beside the lockers takes E while something on it fits, and gives way to them while nothing does, so they can make room. */
 async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the lockers beside a corpse';
   const HEAVY = { id: 'servo_motor', kind: 'salvage', name: 'Servo motor', weight: 9.5, charge: null, on: null };
   const body = (item: object) => ({ id: 'corpse_1', owner: 'player', at: { map: AT_THE_LOCKERS.map, x: 8, y: 2 }, money: 0, items: [item], bionics: [] });
-  const salvage = 'Press E to salvage what you can carry from your body.';
+  const salvage = 'Press E to go through your body.';
   const expects = async (where: string, hint: string | null, offered: boolean) => {
     const [shownHint, lines] = [await shown(page, '.counter-hint'), await cornerLines(page)];
     if (shownHint !== hint) throw new Error(`${name}: ${where}, the hint is ${shownHint}`);
     if (lines.includes(salvage) !== offered) throw new Error(`${name}: ${where}, the corner says ${lines}`);
   };
-  const pressE = async (where: string, sent: object[], panel: boolean) => {
+  const pressE = async (where: string, opens: '.stash-panel' | '.salvage-panel') => {
     await page.keyboard.press('e');
     await run(page, 300);
     const uses = JSON.stringify(await usesSent(page));
-    if (uses !== JSON.stringify(sent)) throw new Error(`${name}: ${where}, E sent ${uses}`);
-    if (((await shown(page, '.stash-panel')) !== null) !== panel) throw new Error(`${name}: ${where}, the panel is ${panel ? 'shut' : 'open'}`);
+    if (uses !== '[]') throw new Error(`${name}: ${where}, E sent ${uses}`);
+    if ((await shown(page, opens)) === null) throw new Error(`${name}: ${where}, E didn't open ${opens}`);
   };
   await teleport(page, api, AT_THE_LOCKERS, name);
   await usesSent(page);
@@ -1212,12 +1205,14 @@ async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promis
   await holding(page, [LAMP], [], [body(WIRE)]);
   await run(page, 300);
   await expects('with what fits on it', null, true);
-  await pressE('with what fits on it', [{ type: 'pick_up' }], false);
+  await pressE('with what fits on it', '.salvage-panel');
+  await page.keyboard.press('Escape');
+  await run(page, 200);
 
   await holding(page, [LAMP], [], [body(HEAVY)]);
   await run(page, 300);
   await expects("with what doesn't fit on it", 'Press E to use the lockers.', false);
-  await pressE("with what doesn't fit on it", [], true);
+  await pressE("with what doesn't fit on it", '.stash-panel');
   await shot(page, index, name);
 
   await page.keyboard.press('Enter');
@@ -1230,7 +1225,128 @@ async function stashBesideCorpseLeg(page: Page, api: Api, index: number): Promis
   await page.keyboard.press('Escape');
   await run(page, 200);
   await expects('with room made for it', null, true);
-  await pressE('with room made for it', [{ type: 'pick_up' }], false);
+  await pressE('with room made for it', '.salvage-panel');
+  await page.keyboard.press('Enter');
+  await run(page, 100);
+  const taken = JSON.stringify(await usesSent(page));
+  if (taken !== JSON.stringify([{ type: 'take', corpse: 'corpse_1', pile: null, item: 'servo_motor', index: 0, bionic: null }])) throw new Error(`${name}: Enter sent ${taken}`);
+  await holding(page, [HEAVY], [LAMP]);
+  await run(page, 300);
+  if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: the screen stayed once the body had gone`);
+  await api.hurt(1);
+}
+
+const salvageSide = (page: Page, index: number) =>
+  page.evaluate((index) => document.querySelectorAll('.salvage-panel .clinic-side')[index]?.textContent ?? '', index);
+
+/** E at a body opens the screen, Enter takes one thing at a time and it moves across, a row that won't fit says why, and the body goes with the last thing. Then the same for a pile in `left`. */
+async function salvageLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'E at a body';
+  const at = { map: 'metro', x: 65, y: 15 };
+  const STEEL = { id: 'scrap_steel', kind: 'salvage', name: 'Scrap steel', weight: 9.5, charge: null, on: null };
+  const JACK = { id: 'datajack', kind: 'bionic', name: 'Datajack', weight: 0.5, bionic: 'datajack', charge: null, on: null };
+  const body = (money: number, items: object[], bionics: string[]) => ({ id: 'corpse_1', owner: 'player', at, money, items, bionics });
+  const state = { bionics: [JACK] };
+  const take = (item: string | null, bionic: string | null) => [{ type: 'take', corpse: 'corpse_1', pile: null, item, index: item && 0, bionic }];
+  const enter = async (sent: object[], where: string) => {
+    await page.keyboard.press('Enter');
+    await run(page, 100);
+    const uses = JSON.stringify(await usesSent(page));
+    if (uses !== JSON.stringify(sent)) throw new Error(`${name}: ${where}, Enter sent ${uses}`);
+  };
+  const across = async (where: string, what: string, has: string) => {
+    await run(page, 100);
+    const [left, right] = [await salvageSide(page, 0), await salvageSide(page, 1)];
+    if (!left.includes(what) || !left.includes(has)) throw new Error(`${name}: ${where}, what they carry shows ${left}`);
+    if (right.includes(what)) throw new Error(`${name}: ${where}, it's still on the body: ${right}`);
+  };
+  await teleport(page, api, at, name);
+  await usesSent(page);
+
+  await holding(page, [LAMP], [], [body(12, [WIRE, STEEL], ['datajack'])], { state });
+  await run(page, 300);
+  if (!(await cornerLines(page)).includes('Press E to go through your body.')) throw new Error(`${name}: the corner says ${await cornerLines(page)}`);
+  if (!(await usable(api, 'corpse:corpse_1', name)).glowing) throw new Error(`${name}: the body doesn't glow`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const panel = await shown(page, '.salvage-panel');
+  const expected = ['Your body', 'You carry 1 of 10 kg', 'Lamp', 'On your body', 'Money', '12', 'Copper wire', '1.5 kg', 'Scrap steel', 'Too heavy', 'Datajack', '0.5 kg', 'Enter to take it.'];
+  if (!expected.every((text) => panel?.includes(text))) throw new Error(`${name}: E didn't list both sides: ${panel}`);
+  if ((await cornerLines(page)).includes('Press E to go through your body.')) throw new Error(`${name}: the prompt stayed over the open screen`);
+  if ((await page.$$eval('.salvage-panel .clinic-icon img', (images) => images.length)) < 4) throw new Error(`${name}: no icons`);
+  await shot(page, index, name);
+
+  await enter(take(null, null), 'on the money');
+  await holding(page, [LAMP], [], [body(0, [WIRE, STEEL], ['datajack'])], { state, player: { money: 12 } });
+  await across('the money', 'Money', '12');
+
+  await enter(take('copper_wire', null), 'on the wire');
+  await holding(page, [LAMP, WIRE], [], [body(0, [STEEL], ['datajack'])], { state, player: { money: 12 } });
+  await across('the wire', 'Copper wire', '2.5 of 10 kg');
+
+  await enter([], "on what won't fit");
+  if (!(await shown(page, '.salvage-panel'))?.includes("It's too heavy. You can carry 7.5 kg more.")) throw new Error(`${name}: the row doesn't say why`);
+
+  await press(page, 'ArrowDown');
+  await enter(take(null, 'datajack'), 'on the bionic');
+  await holding(page, [LAMP, WIRE, JACK], [], [body(0, [STEEL], [])], { player: { money: 12 } });
+  await across('the bionic', 'Datajack', '3 of 10 kg');
+
+  await press(page, 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'Tab');
+  if (!near(await api.state(), at)) throw new Error(`${name}: the arrows moved the player`);
+  await holding(page, [], [], [body(0, [STEEL], [])], { player: { money: 12 } });
+  await run(page, 100);
+  await enter(take('scrap_steel', null), 'on the last thing');
+  await holding(page, [STEEL], [], [], { player: { money: 12 } });
+  await run(page, 300);
+  if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: the screen stayed once the body had gone`);
+  if ((await api.usables()).some(({ id }) => id === 'corpse:corpse_1')) throw new Error(`${name}: the picture stayed once the body had gone`);
+  if (await page.evaluate(() => document.activeElement?.classList.contains('salvage-panel'))) throw new Error(`${name}: the closed screen kept the focus`);
+
+  const pile = { at, items: [WIRE], money: 3 };
+  await holding(page, [LAMP], [], [], { player: { left: [pile] } });
+  await run(page, 300);
+  if (!(await cornerLines(page)).includes("Press E to go through what's lying here.")) throw new Error(`${name}: at a pile, the corner says ${await cornerLines(page)}`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  if (!(await shown(page, '.salvage-panel'))?.includes('Lying here')) throw new Error(`${name}: E didn't open the pile`);
+  await enter([{ type: 'take', corpse: null, pile: at, item: null, index: null, bionic: null }], 'on the money in a pile');
+  await holding(page, [LAMP], [], [], { player: { money: 3, left: [{ at, items: [WIRE] }] } });
+  await run(page, 100);
+  await enter([{ type: 'take', corpse: null, pile: at, item: 'copper_wire', index: 0, bionic: null }], 'on the last of a pile');
+  await holding(page, [LAMP, WIRE], [], [], { player: { money: 3 } });
+  await run(page, 300);
+  if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: the screen stayed once the pile had gone`);
+  if ((await api.usables()).some(({ id }) => id.startsWith('pile:'))) throw new Error(`${name}: the pile's picture stayed`);
+
+  await holding(page, [LAMP], [], [], { state: { piles: [{ at, items: [WIRE] }] } });
+  await run(page, 300);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const lying = JSON.stringify(await usesSent(page));
+  if (lying !== JSON.stringify([{ type: 'pick_up' }])) throw new Error(`${name}: at salvage lying about, E sent ${lying}`);
+  if ((await shown(page, '.salvage-panel')) !== null) throw new Error(`${name}: salvage lying about opened the screen`);
+  await api.hurt(1);
+}
+
+/** A body or pile on the street leaves the picture while the front behind it is off, as the street's own furniture does. */
+async function dollHouseLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'a body and a pile outside the doll house';
+  const [before, along] = [{ map: 'high_street', x: 10, y: 15 }, { map: 'high_street', x: 30, y: 15 }];
+  const lying = { player: { left: [{ at: before, items: [WIRE] }, { at: along, items: [WIRE] }] } };
+  const body = (id: string, at: object) => ({ id, owner: 'player', at, money: 1, items: [], bionics: [] });
+  const drawn = async () => (await api.usables()).filter(({ shown, id }) => shown && /^(corpse|pile):/.test(id)).map(({ id }) => id).sort();
+  const all = ['corpse:front', 'corpse:far', 'pile:high_street:10,15', 'pile:high_street:30,15'].sort();
+  await teleport(page, api, { map: 'high_street', x: 40, y: 15 }, name);
+  await holding(page, [LAMP], [], [body('front', before), body('far', along)], lying);
+  await until(page, async () => JSON.stringify(await drawn()) === JSON.stringify(all), 10, `${name}: all four drawn from the street`);
+  await teleport(page, api, { map: 'maker_space_floor_0', x: 8, y: 2 }, name);
+  const beyond = ['corpse:far', 'pile:high_street:30,15'].sort();
+  await until(page, async () => JSON.stringify(await drawn()) === JSON.stringify(beyond), 10, `${name}: only those beyond the front drawn from inside`);
+  await run(page, 1000);
+  await shot(page, index, name);
+  await teleport(page, api, { map: 'high_street', x: 40, y: 15 }, name);
+  await until(page, async () => JSON.stringify(await drawn()) === JSON.stringify(all), 10, `${name}: all four back once the front is on`);
   await api.hurt(1);
 }
 
@@ -1292,6 +1408,8 @@ try {
     ['E at the broken printer', (i) => machineLeg(page, api, i)],
     ['E at the lockers', (i) => stashLeg(page, api, i)],
     ['E at the lockers beside a corpse', (i) => stashBesideCorpseLeg(page, api, i)],
+    ['E at a body, and at a pile lying there', (i) => salvageLeg(page, api, i)],
+    ['a body and a pile outside the doll house', (i) => dollHouseLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();

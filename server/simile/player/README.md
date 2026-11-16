@@ -46,11 +46,11 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 `Vital` that ran out as `cause`:
 
 - **The corpse.** A new `Corpse` goes at the end of `Player.corpses`, assigned as a new list so its
-  validator checks the id: `next_corpse` gives an id none of the saved ones has, so a reload can't
-  reuse one. It holds their money, through the ledger as `dropped`, everything they carried but the
+  validator checks the id: `next_corpse` counts it in `Player.bodies`, so no id is used twice, even
+  once a corpse has gone and across a reload. It holds their money, through the ledger as `dropped`, everything they carried but the
   lamp, and every bionic fitted. It lies on the tile they fell on or the ground below it, or where
   they wake if the server doesn't yet know where they are, as a new body can't keep the old one's
-  bionics. It stays whatever it holds, and a second death leaves a second.
+  bionics. A second death leaves a second. With nothing on them but the lamp, they leave none.
 - **The lamp** stays with them, switched off, as stage 2's collapse had it, so they can see to go
   back. Everything else they carried is on the corpse.
 - **The new body.** `Body()`, whole and organic, so every part can be sold again: the clinic reads
@@ -79,20 +79,21 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 
 ## Salvaging your own body
 
-`Salvage` (`corpses.py`, Q11) is one more claim on `pick_up` (`claimers_of(app)`), made by
-`simile.clinic`'s `running` hook, since the clinic's recipes name each bionic.
+`Salvage` (`corpses.py`, Q19) answers `take`, one thing at a time from one of their corpses by `id`,
+or a pile in `Player.left` by its tile, the oldest pile on that tile. `pick_up` doesn't reach corpses.
 
-- **Which corpse.** The nearest within `reach` (1.5 tiles) that they can take something from, the
-  oldest of those on a tie, so of two on one tile, which draw as one, the older goes first and the
-  next E takes the newer.
-- **What comes out.** Its money, through the ledger as `recovered`, then each of its items and then
-  each of its bionics, in order, that fits under their carry limit, a stack whole and joining any
-  of its `id` they carry. A bionic comes out as a `bionic` item with its grade, named by its recipe,
-  weighing what `BIONIC_WEIGHTS` says: half a kilo for the datajack or the eye, up to 8 kg for the
-  third legs. A full set is more than a new body carries, so it can take two trips.
-- **What doesn't fit** stays on the corpse.
-- **An emptied corpse stays,** as every corpse does whatever it holds, picture and all, but E no
-  longer offers anything there. The doctor refits what they took (`simile.clinic`'s *Refitting*).
+- **Reach.** Within `reach` (1.5 tiles), on the map they're on.
+- **What comes out.** All the money, through the ledger as `recovered`, or the item at `index`, which
+  must have the `id` named, or a bionic. Of a stack, as much as fits, as the lockers move it (`stash.py`'s `fitting`), joining
+  any of its `id` they carry. A bionic comes out as a `bionic` item with its grade, named by its
+  recipe, weighing what `BIONIC_WEIGHTS` says: half a kilo for the datajack or the eye, up to 8 kg for
+  the third legs. A full set is more than a new body carries, so it can take two trips.
+- **What doesn't fit** stays, and the `take` changes nothing.
+- **Telling the client.** `player_state`'s `bionics` is `Salvage.bionics()`, what each kind on a
+  corpse comes out as, so the screen shows what fits before they press anything.
+- **An empty corpse or pile goes** from `Player`. The lift stays open, since `Player.lift_open` only
+  ever turns true, and a save's emptied corpses clear on load after the lift has seen their trace.
+- The doctor refits what they took (`simile.clinic`'s *Refitting*).
 
 ## Power
 

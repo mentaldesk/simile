@@ -76,9 +76,8 @@ describe('pickUpPrompt', () => {
 
   it('says only that it is lying here of a pile in left, as that can be a bot\'s haul', () => {
     const left = pile([WIRE, SERVO]);
-    expect(pickUpPrompt(left, player([LAMP], { left: [left] }))).toBe("Press E to pick up what's lying here.");
-    expect(pickUpPrompt(left, player([LAMP, SERVO, SERVO], { left: [left] }))).toBe("Press E to pick up what you can carry of what's lying here.");
-    expect(pickUpPrompt(left, player([LAMP, SERVO, SERVO, WIRE, WIRE], { left: [left] }))).toBe("You can't carry any more of what's lying here.");
+    expect(pickUpPrompt(left, player([LAMP], { left: [left] }))).toBe("Press E to go through what's lying here.");
+    expect(pickUpPrompt(left, player([LAMP, SERVO, SERVO, WIRE, WIRE], { left: [left] }))).toBe("Press E to go through what's lying here.");
   });
 });
 
@@ -118,16 +117,16 @@ describe('sellPrompt', () => {
 describe('salvagePrompt', () => {
   const corpse: Corpse = { id: 'corpse_1', owner: 'player', at: { map: 'metro', x: 38, y: 12 }, money: 5, items: [], bionics: [] };
 
-  it('offers what they can carry', () => {
-    expect(salvagePrompt({ corpse, others: 0, takes: true })).toBe('Press E to salvage what you can carry from your body.');
+  it('offers to go through it', () => {
+    expect(salvagePrompt({ corpse, others: 0, takes: true })).toBe('Press E to go through your body.');
   });
 
-  it('says so when nothing on it can fit', () => {
-    expect(salvagePrompt({ corpse, others: 0, takes: false })).toBe("You can't carry any more of what's on your body.");
-    expect(salvagePrompt({ corpse, others: 1, takes: false })).toBe("You can't carry any more of what's on the 2 bodies here.");
+  it('says so when nothing on it fits, since E still opens it', () => {
+    expect(salvagePrompt({ corpse, others: 0, takes: false })).toBe("Press E to go through your body. You can't carry anything on it.");
+    expect(salvagePrompt({ corpse, others: 1, takes: false })).toBe("Press E to go through the oldest of the 2 bodies here. You can't carry anything on it.");
   });
 
   it('says which of two on one tile, since they draw as one', () => {
-    expect(salvagePrompt({ corpse, others: 1, takes: true })).toBe('Press E to salvage what you can carry from the oldest of the 2 bodies here.');
+    expect(salvagePrompt({ corpse, others: 1, takes: true })).toBe('Press E to go through the oldest of the 2 bodies here.');
   });
 });

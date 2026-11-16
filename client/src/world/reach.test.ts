@@ -327,9 +327,7 @@ describe('a corpse E takes from', () => {
     expect(corpseInReach(at(10.8), [older, newer, beside])).toMatchObject({ salvage: { corpse: beside, others: 0 } });
   });
 
-  it('is never an emptied one, one out of reach or one on another map', () => {
-    expect(corpseInReach(at(10), [corpse('corpse_1', 10, {})])).toBeUndefined();
-    expect(corpseInReach(at(10), [corpse('corpse_1', 10, {}), corpse('corpse_2', 10)])).toMatchObject({ salvage: { others: 0 } });
+  it('is never one out of reach or on another map', () => {
     expect(corpseInReach(at(12), [corpse('corpse_1', 10)])).toBeUndefined();
     expect(corpseInReach({ ...at(10), map: 'rooftops' }, [corpse('corpse_1', 10)])).toBeUndefined();
   });
@@ -339,7 +337,7 @@ describe('a corpse E takes from', () => {
     expect(corpseInReach(at(10), [corpse('corpse_1', 10, { items: [{ id: 'x', kind: 'salvage', name: 'X', weight: 1, charge: null, on: null }] })])).toBeDefined();
   });
 
-  it('is a pile to E, for `pick_up`, and comes from the last player_state', () => {
+  it('is a pile to E, and comes from the last player_state', () => {
     const body = corpse('corpse_1', 10);
     expect(usedByE(at(10), from([body]))).toEqual({ kind: 'pile', tiles: 0, pile: body, salvage: { corpse: body, others: 0, takes: true } });
   });
@@ -377,8 +375,19 @@ describe('a corpse E takes from', () => {
       expect(corpseInReach(at(10), [corpse('corpse_1', 10, { items: [{ ...HEAVY, weight: 1, amount: 4 }] })], 3)).toMatchObject({ salvage: { takes: false } });
     });
 
-    it('takes any bionic to be something E can take, as only the server knows its weight', () => {
-      expect(corpseInReach(at(10), [corpse('corpse_1', 10, { bionics: ['bionic_legs_3'] })], 0)).toMatchObject({ salvage: { takes: true } });
+    it('weighs a bionic by what the server says it comes out as', () => {
+      const legs = { id: 'bionic_legs_3', kind: 'bionic', name: 'Legs', weight: 8, bionic: 'bionic_legs_3', charge: null, on: null } as const;
+      const body = corpse('corpse_1', 10, { bionics: ['bionic_legs_3'] });
+      expect(corpseInReach(at(10), [body], 7.5, [legs])).toMatchObject({ salvage: { takes: false } });
+      expect(corpseInReach(at(10), [body], 8, [legs])).toMatchObject({ salvage: { takes: true } });
+      expect(usedByE(at(10), from([body], { room: () => 7.5, bionics: () => [legs], buyer: () => CLINIC }))).toMatchObject({ kind: 'clinic' });
+      expect(corpseInReach(at(10), [body], 0)).toMatchObject({ salvage: { takes: true } });
+    });
+
+    it('counts part of a stack that fits, as the server moves it', () => {
+      const rounds = { id: 'r', kind: 'rounds', name: 'R', weight: 0.1, amount: 50, charge: null, on: null } as const;
+      expect(corpseInReach(at(10), [corpse('corpse_1', 10, { items: [rounds] })], 0.2)).toMatchObject({ salvage: { takes: true } });
+      expect(corpseInReach(at(10), [corpse('corpse_1', 10, { items: [rounds] })], 0.05)).toMatchObject({ salvage: { takes: false } });
     });
 
     it('comes from the last player_state', () => {

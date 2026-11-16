@@ -4,6 +4,8 @@ import type { Salvage } from '../world/reach';
 import { NEWS_KEY } from './tuning';
 
 const E = NEWS_KEY.toUpperCase();
+const SLACK = 1e-9;
+const FINEST = 1_000_000;
 
 export const amount = (money: number) => String(Number(money.toFixed(2)));
 const lowerFirst = (text: string) => (/^[A-Z][A-Z]/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1));
@@ -12,6 +14,17 @@ const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 /** What it weighs, all of a stack. */
 export const loadOf = ({ weight, amount = 1 }: Item) => weight * amount;
 export const totalLoad = (items: readonly Item[]) => items.reduce((load, item) => load + loadOf(item), 0);
+
+/** How much of the stack fits in `room` kg, as the server's `fitting` has it. */
+export function stackFits(item: Item, room: number): number {
+  const { kind, weight, amount: whole = 1 } = item;
+  if (!weight || loadOf(item) <= room + SLACK) return whole;
+  const fits = (room + SLACK) / weight;
+  if (kind === 'rounds') return Math.max(Math.floor(fits), 0);
+  if (kind !== 'material') return 0;
+  const part = Math.max(Math.floor(fits * FINEST) / FINEST, 0);
+  return part > 0 && whole - part < 1 / FINEST ? whole : part;
+}
 
 /** "a", "a and b", or "a, b and c". */
 export function listed(parts: readonly string[]): string {
@@ -39,27 +52,25 @@ export function fitting(pile: Pile, player: Player): { taken: Item[]; kept: Item
   return { taken, kept };
 }
 
-/** What E picks up from a pile in reach: one in `left`, which can be a bot's haul, or salvage or a secret lying about. */
+/** What E does at a pile in reach: opens one in `left`, which can be a bot's haul, or picks up salvage or a secret lying about. */
 export function pickUpPrompt(pile: Pile, player: Player): string {
-  const loose = player.left?.includes(pile) ?? false;
+  if (player.left?.includes(pile)) return `Press ${E} to go through what's lying here.`;
   const { taken, kept } = fitting(pile, player);
   const money = pile.money ?? 0;
   const names = (items: Item[]) => counted(items).map((name) => `the ${name}`);
   if (!taken.length && !money) {
-    if (loose) return "You can't carry any more of what's lying here.";
     const are = kept.length > 1 ? 'are' : 'is';
     return `${upperFirst(listed(names(kept)))} ${are} too heavy to carry with what you have.`;
   }
-  if (loose) return `Press ${E} to pick up ${kept.length ? 'what you can carry of ' : ''}what's lying here.`;
   const what = listed([...names(taken), ...(money ? [`${amount(money)} in cash`] : [])]);
   const left = kept.length ? ` ${upperFirst(listed(names(kept)))} won't fit.` : '';
   return `Press ${E} to pick up ${what}.${left}`;
 }
 
-/** What E takes from a corpse in reach. A bionic's weight is the server's, so one might not fit. */
+/** What E opens at a corpse in reach, and whether anything on it fits. */
 export function salvagePrompt({ others, takes }: Salvage): string {
-  if (!takes) return `You can't carry any more of what's on ${others ? `the ${others + 1} bodies here` : 'your body'}.`;
-  return `Press ${E} to salvage what you can carry from ${others ? `the oldest of the ${others + 1} bodies here` : 'your body'}.`;
+  const open = `Press ${E} to go through ${others ? `the oldest of the ${others + 1} bodies here` : 'your body'}.`;
+  return takes ? open : `${open} You can't carry anything on it.`;
 }
 
 /** What the buyer where they stand would pay for what they carry, for E's panel, or that it buys. */

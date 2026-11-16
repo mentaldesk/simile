@@ -1,3 +1,6 @@
+import contextlib
+import queue
+import threading
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -15,7 +18,18 @@ from simile.economy.economy import economy_of
 from simile.persistence import player_of
 from simile.player.health import health_of
 from simile.protocol import Vital
-from simile.schema import PLAYER_ID, Bionic, Body, Effect, EffectKind, Item, ItemKind, Mind, Player
+from simile.schema import (
+    PLAYER_ID,
+    Bionic,
+    Body,
+    Effect,
+    EffectKind,
+    Item,
+    ItemKind,
+    Mind,
+    Player,
+    lamp,
+)
 from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
 
@@ -110,6 +124,106 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_cell(make_package: Mak
     assert Player.model_validate(fitted["player"]).humanity < 1
 
 
+class Inbox:
+    """Every message from `ws`, read on a thread, since `receive_json` has no timeout."""
+
+    def __init__(self, ws: Any) -> None:
+        self.messages: queue.SimpleQueue[dict[str, Any]] = queue.SimpleQueue()
+        threading.Thread(target=self._read, args=(ws,), daemon=True).start()
+
+    def _read(self, ws: Any) -> None:
+        with contextlib.suppress(Exception):
+            while True:
+                self.messages.put(ws.receive_json())
+
+    def next(self, type: str, seconds: float = 5.0) -> dict[str, Any]:
+        deadline = time.monotonic() + seconds
+        while True:
+            try:
+                message = self.messages.get(timeout=max(deadline - time.monotonic(), 0))
+            except queue.Empty:
+                pytest.fail(f"no {type} within {seconds} s")
+            if message["type"] == type:
+                return message
+
+
+def test_take_goes_through_a_death_a_partial_take_a_reload_and_the_last_take(
+    make_package: MakePackage,
+) -> None:
+    wire = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
+    steel = Item(id="scrap_steel", kind=ItemKind.SALVAGE, name="Scrap steel", weight=13.0)
+    app = make_app(make_package)
+    start = player_of(app)
+    start.money = 40.0
+    start.items = [*start.items, wire, steel]
+    start.body = Body(vertebra=Bionic.DATAJACK)
+    move = {"type": "player_move", "position": {"x": 4, "y": 2, "map": CLINIC.map}}
+    take: dict[str, object] = {
+        "type": "take",
+        "corpse": "corpse_1",
+        "pile": None,
+        "item": None,
+        "index": None,
+        "bionic": None,
+    }
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        inbox = Inbox(ws)
+        inbox.next("player_state")
+        player = player_of(app)
+        ws.send_json(move)
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        client.portal.call(health_of(app).hurt, 1.0, Vital.HEALTH)
+        client.portal.call(world_of(app).loop.tick)
+        inbox.next("player_died")
+        dead = inbox.next("player_state")
+        ws.send_json(move)
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        ws.send_json(take | {"item": "copper_wire", "index": 0})
+        partial = inbox.next("player_state")
+        ws.send_json(take | {"item": "scrap_steel", "index": 0})
+        ws.send_json(take | {"bionic": "datajack"})
+        jack = inbox.next("player_state")
+        saved = player.model_dump_json()
+
+    assert dead["player"]["bodies"] == 1
+    assert dead["bionics"][0]["weight"] == 0.5
+    [corpse] = dead["player"]["corpses"]
+    assert (corpse["money"], corpse["bionics"]) == (40, ["datajack"])
+    assert [item["id"] for item in partial["player"]["items"]] == ["lamp", "copper_wire"]
+    assert [item["id"] for item in jack["player"]["items"]] == ["lamp", "copper_wire", "datajack"]
+    assert [item["id"] for item in jack["player"]["corpses"][0]["items"]] == ["scrap_steel"]
+
+    again = make_app(make_package)
+    again.state.player = Player.model_validate_json(saved)
+    again.state.player.items = [lamp()]
+
+    with TestClient(again) as client, client.websocket_connect("/ws") as ws:
+        inbox = Inbox(ws)
+        loaded = inbox.next("player_state")
+        ws.send_json(move)
+        until(client, lambda: movement_of(again).entities().get(PLAYER_ID) == CLINIC)
+        ws.send_json(take)
+        ws.send_json(take | {"item": "scrap_steel", "index": 0})
+        ws.send_json(take | {"corpse": "corpse_9"})
+        until(client, lambda: not player_of(again).corpses)
+        client.portal.call(world_of(again).loop.tick)
+        gone = inbox.next("player_state")
+        while "corpses" in gone["player"]:
+            client.portal.call(world_of(again).loop.tick)
+            gone = inbox.next("player_state")
+        client.portal.call(health_of(again).hurt, 1.0, Vital.HEALTH)
+        client.portal.call(world_of(again).loop.tick)
+        inbox.next("player_died")
+        reborn = inbox.next("player_state")
+
+    assert loaded["player"]["corpses"][0]["money"] == 40
+    assert gone["player"]["money"] == 40
+    assert gone["player"]["bodies"] == 1
+    assert "bionics" not in gone
+    assert reborn["player"]["corpses"][0]["id"] == "corpse_2"
+
+
 def test_dying_salvaging_and_refitting_gives_a_bionic_back_at_its_grade(
     make_package: MakePackage,
 ) -> None:
@@ -132,10 +246,12 @@ def test_dying_salvaging_and_refitting_gives_a_bionic_back_at_its_grade(
         dead = next_of(ws, "player_state")
         ws.send_json(move)
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
-        ws.send_json({"type": "pick_up"})
-        until(client, lambda: player.money == 150)
+        for bionic in (None, cell.value, legs.value):
+            take = {"type": "take", "corpse": "corpse_1", "pile": None, "item": None, "index": None}
+            ws.send_json(take | {"bionic": bionic})
+        until(client, lambda: not player.corpses)
         salvaged = next_of(ws, "player_state")
-        while "fittings" not in salvaged["buyer"]:
+        while "corpses" in salvaged["player"] or "fittings" not in salvaged["buyer"]:
             client.portal.call(tick)
             salvaged = next_of(ws, "player_state")
         ws.send_json({"type": "fit", "bionic": "bionic_legs_2", "part": "legs"})
@@ -144,15 +260,23 @@ def test_dying_salvaging_and_refitting_gives_a_bionic_back_at_its_grade(
         until(client, lambda: player.money == 150 - 63 - 75)
         client.portal.call(tick)
         fitted = next_of(ws, "player_state")
+        while "stomach" not in fitted["player"]["body"]:
+            client.portal.call(tick)
+            fitted = next_of(ws, "player_state")
         economy = economy_of(app)
 
     assert "stomach" not in dead["player"]["body"]
     [corpse] = dead["player"]["corpses"]
     assert corpse["money"] == 150
     assert sorted(corpse["bionics"]) == ["bionic_legs_2", "power_cell_2"]
+    assert {part["id"]: part["weight"] for part in dead["bionics"]} == {
+        "bionic_legs_2": 7.0,
+        "power_cell_2": 3.0,
+    }
     taken = [item for item in salvaged["player"]["items"] if item["kind"] == "bionic"]
     assert sorted(item["bionic"] for item in taken) == ["bionic_legs_2", "power_cell_2"]
-    assert salvaged["player"]["corpses"] == [corpse | {"money": 0, "bionics": []}]
+    assert "corpses" not in salvaged["player"]
+    assert "bionics" not in salvaged
     fittings = {f["bionic"]: f for f in salvaged["buyer"]["fittings"]}
     assert fittings["power_cell_2"]["price"] == 63
     assert fittings["bionic_legs_2"]["price"] == 75
