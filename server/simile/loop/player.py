@@ -1,4 +1,5 @@
 import heapq
+import json
 import math
 from collections import Counter, deque
 from collections.abc import Collection, Iterator, Sequence
@@ -180,7 +181,7 @@ class LoopPlayer:
     def put(self, frame: str | bytes) -> None:
         if isinstance(frame, bytes) or frame.startswith(SKIPPED):
             return
-        match server_messages.validate_json(frame):
+        match server_messages.validate_python(json.loads(frame)):
             case PlayerStateMessage() as state:
                 self._vitals(self.state.player, state.player)
                 self.state = state

@@ -1,11 +1,13 @@
 import asyncio
 import json
+import math
 import shutil
 from pathlib import Path
 
 import pytest
 from starlette.testclient import TestClient
 
+from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy import Kind
 from simile.loop.maker import SHEET, SPOOL, Made
 from simile.loop.playthrough import FEET, LEGS, Result, play
@@ -155,6 +157,8 @@ def test_they_die_once_on_purpose_and_salvage_every_bionic_from_their_body(
     assert set(after.bionics) == set(before.bionics)
     assert (after.left_kidney, after.right_kidney) == ("present", "present")
     assert stage.earned[Kind.RECOVERED] == -stage.earned[Kind.DROPPED] == stage.corpse.money
+    fees = sum(math.ceil(CLINIC.recipes[b].credits * CLINIC.refit) for b in stage.refitted)
+    assert result.earned[Kind.PURCHASE] - stage.earned[Kind.PURCHASE] == fees
 
 
 def test_scrap_off_their_body_is_pressed_and_printed_into_rounds_with_the_stashed_pistol(
