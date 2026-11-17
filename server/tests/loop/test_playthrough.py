@@ -7,16 +7,34 @@ import pytest
 from starlette.testclient import TestClient
 
 from simile.economy import Kind
+from simile.loop.maker import SHEET, SPOOL, Made
 from simile.loop.playthrough import FEET, LEGS, Result, play
 from simile.loop.serve import create_loop_app
 from simile.npc import load_npcs
-from simile.schema import Bionic
+from simile.schema import Bionic, CreatureKind, ItemKind
 from simile.social.bionics import tolerance
 from simile.social.config import DEFAULT_BIONICS
 from simile.story.disappearance import GONE, HATCH_LOG, LIFT_LOG, NOTED
+from simile.street.sewers import DEN_BEDROLL, PRINTER_CRATES
 from simile.world.paths import Spot
 
-BEATS = ("kidney", "cell", "datajack", "legs", "gate", "hatch", "feet")
+BEATS = (
+    "kidney",
+    "cell",
+    "datajack",
+    "legs",
+    "gate",
+    "hatch",
+    "feet",
+    "printer",
+    "dog",
+    "bot",
+    "stash",
+    "death",
+    "salvage",
+    "refit",
+    "recycle",
+)
 NPCS = {npc.id: npc for npc in load_npcs()}
 
 
@@ -96,6 +114,58 @@ def test_each_of_the_browsers_beats_has_a_save(saves: Path, result: Result) -> N
         assert set(info["at"]) == {"map", "x", "y"}
     gap = json.loads((saves / "gate.json").read_text())["gap"]
     assert gap["to"] - gap["from"] >= 5
+
+
+def made(result: Result) -> Made:
+    assert result.made is not None
+    return result.made
+
+
+def test_the_printer_and_the_recycler_are_repaired_from_what_the_world_holds(
+    result: Result,
+) -> None:
+    player = made(result).player
+
+    assert player.repaired == ["printer_3d", "recycler"]
+    assert {SHEET, PRINTER_CRATES, SPOOL, DEN_BEDROLL} <= set(player.searched)
+
+
+def test_the_pistol_puts_down_rats_a_dog_and_a_bot_whose_haul_they_take(result: Result) -> None:
+    stage = made(result)
+
+    assert stage.shot[CreatureKind.RAT] >= 2
+    assert stage.shot[CreatureKind.DOG] >= 1
+    assert stage.shot[CreatureKind.BOT] >= 1
+    assert stage.haul
+
+
+def test_they_die_once_on_purpose_and_salvage_every_bionic_from_their_body(
+    result: Result,
+) -> None:
+    stage = made(result)
+    before, after = result.player.body, stage.player.body
+
+    assert len(stage.died) == 1
+    assert stage.hurt == []
+    assert set(stage.corpse.bionics) == set(before.bionics)
+    assert stage.corpse.money == result.player.money
+    assert not any(item.kind is ItemKind.WEAPON for item in stage.corpse.items)
+    assert stage.player.corpses == []
+    assert set(stage.refitted) == set(before.bionics)
+    assert set(after.bionics) == set(before.bionics)
+    assert (after.left_kidney, after.right_kidney) == ("present", "present")
+    assert stage.earned[Kind.RECOVERED] == -stage.earned[Kind.DROPPED] == stage.corpse.money
+
+
+def test_scrap_off_their_body_is_pressed_and_printed_into_rounds_with_the_stashed_pistol(
+    result: Result,
+) -> None:
+    player = made(result).player
+    [pistol] = [item for item in player.items if item.kind is ItemKind.WEAPON]
+
+    assert pistol.rounds == pistol.capacity
+    assert player.stash.items == []
+    assert sum(made(result).earned.values()) == pytest.approx(player.money)
 
 
 def test_a_beats_server_starts_the_player_where_it_was_saved_among_the_creatures(
