@@ -280,7 +280,7 @@ const feet: Beat = async (page, _saved, shot) => {
 
 const MAKER_SPACE = 'maker_space';
 /** Tiles along the row within which a dog stands at the edge of its den, and a bot shot from out of its sight. */
-const RANGE = { dog: 6, bot: 11.5 };
+const RANGE = { dog: 6, bot: 10.5 };
 
 /** A tap of the arrow the way they're to face, too short to take them off their cell. */
 async function face(page: Page, facing: 'east' | 'west'): Promise<void> {
@@ -327,11 +327,15 @@ async function shootDown(page: Page, kind: string, near: number, what: string): 
     const at = (await seen(page))!;
     return (await alive()).some(({ position }) => position.map === at.map && Math.abs(position.y - at.y) < 0.5 && Math.abs(position.x - at.x) <= near);
   };
-  await awaitServer(page, inLine, `${what} coming in range`);
   const before = (await alive()).length;
   for (let shots = 0; (await alive()).length >= before; shots++) {
+    if (!loaded((await seen(page))!)) {
+      await page.keyboard.press('r');
+      await awaitServer(page, async () => loaded((await seen(page))!) > 0, `${what}: reloading`, 3).catch(() => {});
+    }
     const rounds = loaded((await seen(page))!);
     if (shots >= 8 || !rounds) throw new Error(`${what}: still up after ${shots} shots, with ${rounds} rounds left`);
+    await awaitServer(page, inLine, `${what} coming in range`);
     await page.keyboard.press('x');
     await awaitServer(page, async () => loaded((await seen(page))!) < rounds, `${what}: shot ${shots + 1}`);
     await run(page, 300);
