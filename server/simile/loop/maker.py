@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from simile.economy import Kind
-from simile.loop.player import SCRAP, LoopPlayer, Refused
+from simile.loop.player import LOCKERS, SCRAP, LoopPlayer, Refused
 from simile.loop.playthrough import LANDING, OUTSIDE_THE_CLINIC, Playthrough
 from simile.machines.materials import plastic
 from simile.machines.printer import PISTOL, ROUNDS
@@ -176,8 +176,9 @@ class MakerSpace:
         """Stores the pistol, then lets the bats in a room their own legs reach kill them by
         lamplight, and wakes whole in bed."""
         p = self.player
-        await p.store(*(id for id in (PISTOL.id, ROUNDS.id, PLASTIC) if self.carried(id)))
+        await p.to(p.stand_at(LOCKERS))
         await self.saves.write("stash", p)
+        await p.store(*(id for id in (PISTOL.id, ROUNDS.id, PLASTIC) if self.carried(id)))
         stand = self.under_bats()
         await p.to(stand)
         await self.saves.write("death", p)
