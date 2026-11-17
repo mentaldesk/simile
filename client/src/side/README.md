@@ -114,7 +114,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the player's way, and the loot above. A clue without a picture of its own isn't drawn. A searched thing gets a
   painted tick where its loot lay. The one E would use where the player stands (`glowing`, as `world/reach.ts`'s
   `eUse` finds it) gets a pulsing glow round its outline, made in code from its pictures; a jack
-  doesn't without the datajack, and the lift does with it.
+  doesn't without the datajack, and the lift does once it's open (`world/jacks.ts`'s `liftOpen`).
 
 Every texture is filtered smoothly, Phaser's default. A picture wider than the GPU's widest texture
 (16384 px on most), such as `sewer_vault` stretched across a level, is cut into parts within it,
@@ -205,9 +205,10 @@ The Phaser-free halves are tested under vitest.
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
   grade; the legs run half as fast again, then twice and two and a half times as fast, and so jump
   further. With both, the jump rises as the feet do and runs as the legs do. The scene reads the
-  body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the datajack
-  fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any other;
-  without, it isn't.
+  body from `player_state` each frame and sets the player's `rise` and `runSpeed`. The link from a
+  jack's stand tile, the lift down to the sewers, is a way like any other once the lift is open
+  (`liftOpen`): with the datajack fitted, or `player.lift_open` once any body of theirs has had one
+  or left a trace in the sewers. Until then, it isn't.
 - Landing on a rat (`stomp.ts`): feet that come down past a rat's back, `STOMP_TOP` (0.4) tiles
   over its floor, within `BOUNCE_REACH` (0.6) of it, stop there and bounce `BOUNCE_RISE` (1.2) tiles
   up, keeping their speed along. The scene sends that position at once, past the throttle, so the

@@ -10,7 +10,16 @@ from simile.loop.playthrough import LANDING, OUTSIDE_THE_CLINIC, Playthrough
 from simile.machines.materials import plastic
 from simile.machines.printer import PISTOL, ROUNDS
 from simile.protocol import LampMessage
-from simile.schema import POWER_CELLS, Bionic, Corpse, CreatureKind, Id, ItemKind, Player
+from simile.schema import (
+    POWER_CELLS,
+    Bionic,
+    Corpse,
+    CreatureKind,
+    Id,
+    ItemKind,
+    Player,
+    SideFacing,
+)
 from simile.street.jump import JUMP
 from simile.street.sewers import DEN_BEDROLL, DEN_LADDER, DEN_SECRET, PRINTER_CRATES, SEWERS
 from simile.world.paths import Spot
@@ -100,7 +109,7 @@ class MakerSpace:
         if any(short > 0 for short in missing.values()):
             raise Refused(f"Short of the printer's parts: {missing}")
         await p.to(p.stand_at(PRINTER))
-        await self.saves.write("printer", p)
+        await self.saves.write("printer", p, spool=p.stand_at(SPOOL).x)
         await p.repair(PRINTER)
 
     async def the_pistol(self) -> None:
@@ -127,7 +136,7 @@ class MakerSpace:
         den = self.play.pickup(DEN_SECRET).x
         stand = Spot(SEWERS, den + DEN_LADDER - 2, LANDING.y)
         await p.to(stand)
-        await self.saves.write("dog", p)
+        await self.saves.write("dog", p, facing=SideFacing.EAST)
         await p.shoot(CreatureKind.DOG, 1)
         await p.search(DEN_BEDROLL)
         for id in SCRAP_PICKUPS:
@@ -154,7 +163,7 @@ class MakerSpace:
             if town.standing(x, row)
         )
         await p.to(Spot(bot.position.map, x, row))
-        await self.saves.write("bot", p)
+        await self.saves.write("bot", p, facing=SideFacing.WEST, bot=BOT)
         left = list(p.player.left)
         await p.shoot(CreatureKind.BOT, 1)
         await p.wait(0.5)

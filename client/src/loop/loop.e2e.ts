@@ -1,4 +1,4 @@
-// Stage 2's loop in Chromium, by the keys, against the real server on the fake LLM: server/simile/loop/README.md.
+// Stages 2 and 3's loop in Chromium, by the keys, against the real server on the fake LLM: server/simile/loop/README.md.
 import { chromium, type Browser, type Page } from 'playwright';
 import { createServer } from 'vite';
 
@@ -24,7 +24,10 @@ const [{ spawn }, fs, { tmpdir }, net] = await Promise.all([
 
 type Place = { map: string; x: number; y: number };
 type Body = Record<string, string>;
-type Seen = Place & { money: number; body: Body };
+type Item = { id: string; kind: string; amount?: number; rounds?: number | null };
+type Pile = { at: Place; items: Item[] };
+type Player = { money: number; body: Body; items: Item[]; stash?: { items: Item[] }; left?: Pile[]; corpses?: { id: string }[] };
+type Seen = Place & Player;
 /** What `simile loop play --saves` writes beside each beat's world. */
 type Saved = {
   at: Place;
@@ -33,8 +36,17 @@ type Saved = {
   hatch_log?: string;
   hatch?: { x: number; y: number };
   gap?: { from: number; to: number; row: number };
+  spool?: number;
+  facing?: 'east' | 'west';
+  bot?: string;
+  corpse?: string;
 };
-type Probe = { view(): { positionOf(id: string): Place | undefined }; playerState: { latest?: { player: { money: number; body: Body } } } };
+type Tracked = { creature: { id: string; kind: string; position: Place }; down?: number };
+type Probe = {
+  view(): { positionOf(id: string): Place | undefined };
+  playerState: { latest?: { player: Player } };
+  creatures: { all: Map<string, Tracked> };
+};
 type Probed = { loopProbe: Probe };
 type Beat = (page: Page, saved: Saved, shot: (name: string) => Promise<void>) => Promise<void>;
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -89,8 +101,17 @@ const seen = (page: Page) =>
     const probe = (window as unknown as Probed).loopProbe;
     const at = probe.view().positionOf('player');
     const player = probe.playerState.latest?.player;
-    return at && player && { map: at.map, x: at.x, y: at.y, money: player.money, body: player.body };
+    return at && player && { ...player, map: at.map, x: at.x, y: at.y };
   });
+
+/** The creatures the client has that haven't gone, where it last heard they were. */
+const creatures = (page: Page) =>
+  page.evaluate(() =>
+    [...(window as unknown as Probed).loopProbe.creatures.all.values()].filter(({ down }) => down === undefined).map(({ creature }) => creature),
+  );
+
+const count = (items: readonly Item[], id: string) => items.filter((item) => item.id === id).reduce((sum, { amount = 1 }) => sum + amount, 0);
+const loaded = (at: Seen) => at.items.find(({ kind }) => kind === 'weapon')?.rounds ?? 0;
 
 const shown = (page: Page, selector: string) =>
   page.evaluate((selector) => {
@@ -257,6 +278,157 @@ const feet: Beat = async (page, _saved, shot) => {
   await shot('the secret on the high ledge');
 };
 
+const MAKER_SPACE = 'maker_space';
+/** Tiles along the row within which a dog stands at the edge of its den, and a bot shot from out of its sight. */
+const RANGE = { dog: 6, bot: 11.5 };
+
+/** A tap of the arrow the way they're to face, too short to take them off their cell. */
+async function face(page: Page, facing: 'east' | 'west'): Promise<void> {
+  const key = facing === 'east' ? 'ArrowRight' : 'ArrowLeft';
+  await page.keyboard.down(key);
+  await run(page, FRAME_MS);
+  await page.keyboard.up(key);
+  await run(page, 200);
+}
+
+async function openWithE(page: Page, panel: string, what: string): Promise<void> {
+  await page.keyboard.press('e');
+  await until(page, async () => (await shown(page, panel)) !== null, 3, `E opening ${what}`);
+}
+
+/** The rows of a panel's active column: each one's name, whether it's chosen and whether it's short. */
+const rows = (page: Page, panel: string) =>
+  page.$$eval(`${panel} .clinic-active li`, (items) =>
+    items.map((item) => [item.querySelector('.clinic-name')?.textContent ?? '', item.classList.contains('clinic-selected'), item.classList.contains('clinic-short')] as const),
+  );
+
+/** ↓ in `panel` until the row whose name starts `name` is chosen. */
+async function choose(page: Page, panel: string, name: string): Promise<void> {
+  for (let tries = 0; ; tries++) {
+    const found = await rows(page, panel);
+    if (found.some(([text, chosen]) => chosen && text.startsWith(name))) return;
+    if (tries > 20 || !found.some(([text]) => text.startsWith(name))) throw new Error(`${panel} has no ${name} to choose: ${JSON.stringify(found)}`);
+    await page.keyboard.press('ArrowDown');
+    await run(page, 50);
+  }
+}
+
+/** Enter on the machine panel's row `name`, until `done`. */
+async function make(page: Page, name: string, done: (at: Seen) => boolean): Promise<void> {
+  await choose(page, '.machine-panel', name);
+  await page.keyboard.press('Enter');
+  await awaitServer(page, async () => done((await seen(page))!), `making ${name}`);
+}
+
+/** X at the nearest creature of `kind` along their row once one is within `near`, a shot at a time, until it's down. */
+async function shootDown(page: Page, kind: string, near: number, what: string): Promise<void> {
+  const alive = async () => (await creatures(page)).filter((creature) => creature.kind === kind);
+  const inLine = async () => {
+    const at = (await seen(page))!;
+    return (await alive()).some(({ position }) => position.map === at.map && Math.abs(position.y - at.y) < 0.5 && Math.abs(position.x - at.x) <= near);
+  };
+  await awaitServer(page, inLine, `${what} coming in range`);
+  const before = (await alive()).length;
+  for (let shots = 0; (await alive()).length >= before; shots++) {
+    const rounds = loaded((await seen(page))!);
+    if (shots >= 8 || !rounds) throw new Error(`${what}: still up after ${shots} shots, with ${rounds} rounds left`);
+    await page.keyboard.press('x');
+    await awaitServer(page, async () => loaded((await seen(page))!) < rounds, `${what}: shot ${shots + 1}`);
+    await run(page, 300);
+  }
+}
+
+/** Enter on the salvage screen's first row that fits, each time what they carry changes, until nothing more fits or it's gone. */
+async function takeAll(page: Page, what: string): Promise<void> {
+  for (let taken = 0; (await shown(page, '.salvage-panel')) !== null; taken++) {
+    const found = await rows(page, '.salvage-panel');
+    const index = found.findIndex(([, , short]) => !short);
+    if (index === -1) return;
+    if (taken > 20) throw new Error(`${what}: still taking after ${taken}: ${JSON.stringify(found)}`);
+    await choose(page, '.salvage-panel', found[index][0]);
+    const before = JSON.stringify((await seen(page))!.items);
+    const money = (await seen(page))!.money;
+    await page.keyboard.press('Enter');
+    await awaitServer(page, async () => {
+      const at = (await seen(page))!;
+      return JSON.stringify(at.items) !== before || at.money !== money;
+    }, `${what}: taking ${found[index][0]}`);
+    await run(page, 100);
+  }
+}
+
+const printer: Beat = async (page, saved, shot) => {
+  const at = saved.at.x;
+  await openWithE(page, '.machine-panel', 'the 3D printer');
+  await shot('the broken printer');
+  await page.keyboard.press('Enter');
+  await awaitServer(page, async () => !!(await shown(page, '.machine-panel'))?.includes('Working'), 'repairing the printer');
+  await page.keyboard.press('Escape');
+  await walkTo(page, saved.spool!, REACH.cell, "to Aris's spool");
+  await page.keyboard.press('e');
+  await awaitServer(page, async () => count((await seen(page))!.items, 'plastic') === 8, "searching Aris's spool");
+  await walkTo(page, at, REACH.cell, 'back to the printer');
+  await openWithE(page, '.machine-panel', 'the working printer');
+  await make(page, 'Plastic pistol', (seen) => count(seen.items, 'plastic_pistol') === 1);
+  await make(page, 'Plastic rounds', (seen) => count(seen.items, 'plastic_rounds') === 6);
+  await shot('the pistol printed');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('r');
+  await awaitServer(page, async () => loaded((await seen(page))!) === 6, 'R loading the pistol');
+};
+
+const dog: Beat = async (page, saved, shot) => {
+  await face(page, saved.facing!);
+  await shootDown(page, 'dog', RANGE.dog, 'a dog');
+  await shot('a dog shot down');
+};
+
+const bot: Beat = async (page, saved, shot) => {
+  await face(page, saved.facing!);
+  await shootDown(page, 'bot', RANGE.bot, 'the bot');
+  await awaitServer(page, async () => !!(await seen(page))!.left?.length, "the bot's haul dropping");
+  const haul = (await seen(page))!.left![0]!.at;
+  await shot("the bot's haul");
+  await walkTo(page, haul.x, REACH.cell, "to the bot's haul");
+  await openWithE(page, '.salvage-panel', "the bot's haul");
+  await takeAll(page, "the bot's haul");
+  if ((await seen(page))!.left?.length) throw new Error(`the haul is still there: ${JSON.stringify((await seen(page))!.left)}`);
+};
+
+const stash: Beat = async (page, _saved, shot) => {
+  await openWithE(page, '.stash-panel', 'the lockers');
+  await choose(page, '.stash-panel', 'Plastic pistol');
+  await page.keyboard.press('Enter');
+  await awaitServer(page, async () => count((await seen(page))!.stash?.items ?? [], 'plastic_pistol') === 1, 'storing the pistol');
+  await shot('the pistol in the lockers');
+  await page.keyboard.press('Escape');
+};
+
+const death: Beat = async (page, _saved, shot) => {
+  await page.keyboard.press('l');
+  await awaitServer(page, async () => (await seen(page))!.map.startsWith(MAKER_SPACE), 'the bats killing them by lamplight, and waking at home', 120);
+  await shot('waking in bed');
+};
+
+const salvage: Beat = async (page, saved, shot) => {
+  await openWithE(page, '.salvage-panel', 'their body');
+  await shot('their body');
+  await takeAll(page, 'their body');
+  await awaitServer(page, async () => !(await seen(page))!.corpses?.some(({ id }) => id === saved.corpse), 'their emptied body going');
+  await shot('their body salvaged');
+};
+
+const refit: Beat = async (page, _saved, shot) => {
+  await fitted(page, 'Your power cell', (at) => at.body.stomach === 'power_cell');
+  await shot('the power cell refitted');
+};
+
+const recycle: Beat = async (page, _saved, shot) => {
+  await openWithE(page, '.machine-panel', 'the recycler');
+  await make(page, 'Plastic', (seen) => count(seen.items, 'plastic') > 0);
+  await shot('scrap pressed into plastic');
+};
+
 const BEATS: [string, Beat][] = [
   ['kidney', kidney],
   ['cell', cell],
@@ -265,6 +437,14 @@ const BEATS: [string, Beat][] = [
   ['gate', gate],
   ['hatch', hatch],
   ['feet', feet],
+  ['printer', printer],
+  ['dog', dog],
+  ['bot', bot],
+  ['stash', stash],
+  ['death', death],
+  ['salvage', salvage],
+  ['refit', refit],
+  ['recycle', recycle],
 ];
 
 function exited(child: Child, what: string): Promise<void> {
@@ -324,11 +504,11 @@ async function open(browser: Browser, url: string, failures: string[]): Promise<
   await page.clock.pauseAt(start + 1000);
   await page.goto(`${url}?play`);
   await page.evaluate(
-    async ([view, net]) => {
-      const [{ worldView }, { playerState }] = await Promise.all([import(view), import(net)]);
-      (window as unknown as Probed).loopProbe = { view: worldView, playerState };
+    async ([view, net, creatures]) => {
+      const [{ worldView }, { playerState }, { sideCreatures }] = await Promise.all([import(view), import(net), import(creatures)]);
+      (window as unknown as Probed).loopProbe = { view: worldView, playerState, creatures: sideCreatures };
     },
-    ['/src/ui/world-view.ts', '/src/net/index.ts'],
+    ['/src/ui/world-view.ts', '/src/net/index.ts', '/src/side/creatures/creatures.ts'],
   );
   return page;
 }
