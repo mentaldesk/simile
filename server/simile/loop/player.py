@@ -1,4 +1,5 @@
 import heapq
+import json
 import math
 from collections import Counter, deque
 from collections.abc import Collection, Iterator, Sequence
@@ -9,28 +10,40 @@ from pydantic import BaseModel
 from starlette.applications import Starlette
 
 from simile.behaviour import Activity
+from simile.clinic.config import DEFAULT_CONFIG as CLINIC
+from simile.combat.shooting import RANGE
 from simile.creatures.grid import sees
+from simile.economy.config import SALVAGE
+from simile.machines.workshop import MACHINES
 from simile.player.lamp import DEFAULT_LAMP
 from simile.protocol import (
     ConversationEndedMessage,
     ConversationStartedMessage,
     Creature,
     CreatureGoneMessage,
+    CreatureHitMessage,
     CreatureMovedMessage,
     EatMessage,
+    FireMessage,
     FitMessage,
     JournalMessage,
     LampMessage,
     LineMessage,
+    MachineChangedMessage,
+    MakeMessage,
     PickUpMessage,
     PlayerDiedMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     PlayerStateMessage,
     Position,
+    ReloadMessage,
+    RepairMessage,
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
+    StashMessage,
+    TakeMessage,
     hub_of,
 )
 from simile.protocol.messages import server_messages
@@ -39,6 +52,7 @@ from simile.schema import (
     SOLD,
     Bionic,
     BodyPart,
+    Corpse,
     CreatureKind,
     CreatureState,
     DoorKind,
@@ -48,19 +62,26 @@ from simile.schema import (
     Item,
     ItemKind,
     JournalEntry,
+    Machine,
+    MachineState,
+    MapTile,
     Pile,
     Player,
+    SideFacing,
 )
 from simile.sim import world_of
 from simile.street.charge import CLIMB, JUMPING
+from simile.street.finds import COPPER_PIPE
 from simile.street.jump import Jump, jump_of
 from simile.street.moves import moves, possible
+from simile.street.sewers import SEWERS
 from simile.voicing.distance import between
 from simile.world import Point, movement_of
 from simile.world.map import WALKING_SPEED, Pickup, TownMap
 from simile.world.paths import CROSSING_SPEED, DOOR, Spot, octile
 
 HOME, BUYERS = "maker_space", ("clinic", "scrap_stall")
+LOCKERS = "lockers"
 HUNGRY = 0.5
 NEAR = 2.0
 """How near a resident, in tiles along the street, the player walks up before talking."""
@@ -87,10 +108,25 @@ PLAN = 30
 WAITS = 40.0
 """Sim seconds they wait at most for a creature to move off."""
 LIGHT = DEFAULT_LAMP.light
+USED = {
+    *(id for recipe in CLINIC.recipes.values() for id in recipe.parts),
+    *(id for machine in MACHINES.values() for id in machine.parts),
+    COPPER_PIPE.id,
+}
+SCRAP = frozenset(SALVAGE) - USED
+"""What the recycler presses into plastic: the salvage no recipe or repair uses, but copper pipe."""
 
 
 class Refused(Exception):
     """The server didn't do what the player's message asked."""
+
+
+def amounts(items: Collection[Item]) -> Counter[str]:
+    """How many of each item, by id."""
+    counted: Counter[str] = Counter()
+    for item in items:
+        counted[item.id] += item.amount
+    return counted
 
 
 class LoopPlayer:
@@ -120,6 +156,12 @@ class LoopPlayer:
         """The bats that came for them."""
         self.by_bats = False
         self.lamp_off_by_bats = 0
+        self.machines: dict[Id, Machine] = {}
+        self.hit: list[Id] = []
+        """Each creature a shot of theirs hit, in order."""
+        self.shot: Counter[CreatureKind] = Counter()
+        """The creatures their shots put down, by kind."""
+        self.died: list[str] = []
         self._reach: dict[Jump, set[Spot]] = {}
 
     @property
@@ -139,7 +181,7 @@ class LoopPlayer:
     def put(self, frame: str | bytes) -> None:
         if isinstance(frame, bytes) or frame.startswith(SKIPPED):
             return
-        match server_messages.validate_json(frame):
+        match server_messages.validate_python(json.loads(frame)):
             case PlayerStateMessage() as state:
                 self._vitals(self.state.player, state.player)
                 self.state = state
@@ -151,8 +193,15 @@ class LoopPlayer:
                     self.roused.add(creature.id)
             case CreatureGoneMessage(creature_id=id):
                 self.creatures.pop(id, None)
-            case PlayerDiedMessage(cause=cause):
+            case CreatureHitMessage(creature_id=id):
+                self.hit.append(id)
+            case MachineChangedMessage(machine=machine):
+                self.machines[machine.id] = machine
+            case PlayerDiedMessage(cause=cause, position=at):
                 self.hurt.append(f"{self.world.clock}  Died: {cause}")
+                self.died.append(f"{self.world.clock}  Died of {cause} at {self.where}")
+                self.where = Point(at.x, at.y, at.map)
+                self._reach.clear()
             case ConversationStartedMessage(conversation=talk) if PLAYER_ID in talk.participants:
                 self.mine.add(talk.id)
             case LineMessage(line=line) as message if line.conversation_id in self.mine:
@@ -181,7 +230,9 @@ class LoopPlayer:
         await self.world.loop.run(timedelta(seconds=seconds))
 
     def join(self, at: Spot) -> None:
-        self.creatures = {creature.id: creature for creature in self.hub.snapshot().creatures}
+        snapshot = self.hub.snapshot()
+        self.creatures = {creature.id: creature for creature in snapshot.creatures}
+        self.machines = {machine.id: machine for machine in snapshot.machines}
         self.hub.connections.add(self)
         self.move(at)
 
@@ -229,11 +280,20 @@ class LoopPlayer:
                     return True
         return False
 
+    def doors(self) -> dict[Spot, Spot]:
+        """Each door's far end, by where it's taken from: the lift down only once it's open."""
+        opened = self.player.lift_open or self.player.body.has(Bionic.DATAJACK)
+        return {
+            a: b
+            for a, b in self.movement.doors.items()
+            if opened or b.map != SEWERS or a.map == SEWERS
+        }
+
     def reach(self, jump: Jump | None = None) -> set[Spot]:
         """Everywhere their legs, or `jump`, get to from here, through doors and the lift."""
         legs = jump or jump_of(self.player.body)
         if legs not in self._reach:
-            maps, doors = self.movement.maps, self.movement.doors
+            maps, doors = self.movement.maps, self.doors()
             seen, ahead = {self.at}, deque([self.at])
             while ahead:
                 spot = ahead.popleft()
@@ -261,7 +321,7 @@ class LoopPlayer:
         """The cheapest way there from here or `start`, out of sight of bots and dogs."""
         if goal not in self.reach() or (start is not None and start not in self.reach()):
             return None
-        maps, doors, crossings = self.movement.maps, self.movement.doors, self.movement.crossings
+        maps, doors, crossings = self.movement.maps, self.doors(), self.movement.crossings
         legs, guarded, start = jump_of(self.player.body), self.guarded(), start or self.at
         exits: dict[str, list[tuple[int, int]]] = {}
         for end in doors:
@@ -546,6 +606,9 @@ class LoopPlayer:
             _, plug = min(ways)
             await self.go(plug)
         for _ in range(100):
+            if self.standing() and await self.dodge(plug):
+                await self.go(plug)
+                continue
             await self.wait(SAMPLE)
             if (self._lamp(self.player).charge or 0) >= 0.999 and self.player.power >= 0.999:
                 break
@@ -621,18 +684,27 @@ class LoopPlayer:
         self.note(f"Searched {id}: {', '.join(found) or 'nothing'}")
 
     def wanted(self) -> Counter[str]:
-        """The parts the recipes they know but haven't had fitted use up."""
+        """The parts the recipes they know but haven't had fitted use up, and a broken machine's."""
         wanted: Counter[str] = Counter()
         for recipe in self.state.recipes:
             if not self.player.body.has(recipe.bionic):
                 wanted.update(recipe.parts)
+        for machine in self.machines.values():
+            wanted.update(machine.parts)
         return wanted
 
+    def recycling(self) -> bool:
+        recycler = self.machines.get("recycler")
+        return recycler is not None and recycler.state is MachineState.WORKING
+
     def spare(self) -> list[Item]:
-        """What they carry that a buyer takes and no recipe they know needs."""
+        """What they carry that a buyer takes and nothing they know needs, or the recycler would
+        press once it works."""
         keep, spare = self.wanted(), []
         for item in self.player.items:
             if item.kind not in (ItemKind.SALVAGE, ItemKind.PART):
+                continue
+            if self.recycling() and item.id in SCRAP:
                 continue
             if keep[item.id]:
                 keep[item.id] -= 1
@@ -740,3 +812,192 @@ class LoopPlayer:
                 break
         self.note(f"Said {text!r} to {npc}, who said {' '.join(m.line.text for m in lines)!r}")
         return lines, ended
+
+    def stand_at(self, id: Id) -> Spot:
+        """A stand tile of the thing `id` that they can get to."""
+        thing = self.thing(id)
+        stands = [Spot(thing.map, tile.x, tile.y) for tile in thing.stand]
+        return next(spot for spot in stands if spot in self.reach())
+
+    async def repair(self, machine: Id) -> None:
+        """E at a broken machine, with every part it needs."""
+        await self.to(self.stand_at(machine))
+        self.send(RepairMessage(machine=machine))
+        await self.wait(SAMPLE)
+        if self.machines[machine].state is not MachineState.WORKING:
+            raise Refused(f"The {machine} wasn't repaired: {self.machines[machine]}")
+        self.note(f"Repaired the {machine}")
+
+    async def make(self, machine: Id, item: Id) -> None:
+        """Has a working machine make `item`, standing at it."""
+        await self.to(self.stand_at(machine))
+        before = list(self.player.items)
+        self.send(MakeMessage(machine=machine, item=item))
+        await self.wait(SAMPLE)
+        if self.player.items == before:
+            raise Refused(f"The {machine} didn't make {item}: {self.player.items}")
+        names = {i.id: i.name for i in self.player.items}
+        made = amounts(self.player.items) - amounts(before)
+        what = [f"{names[id]} ×{n:g}" for id, n in made.items()]
+        self.note(f"The {machine} made {', '.join(what)}")
+
+    def weapon(self) -> Item | None:
+        return next((item for item in self.player.items if item.kind is ItemKind.WEAPON), None)
+
+    def loaded(self) -> int:
+        weapon = self.weapon()
+        return (weapon.rounds or 0) if weapon else 0
+
+    def spare_rounds(self) -> int:
+        return round(sum(i.amount for i in self.player.items if i.kind is ItemKind.ROUNDS))
+
+    async def reload(self) -> None:
+        loaded = self.loaded()
+        self.send(ReloadMessage())
+        await self.wait(SAMPLE)
+        if self.loaded() <= loaded:
+            raise Refused(f"Nothing was loaded into {self.weapon()}")
+        self.note(f"Loaded {self.loaded() - loaded} rounds, {self.spare_rounds()} spare")
+
+    def in_line(self, kind: CreatureKind) -> tuple[Creature, SideFacing] | None:
+        """The nearest creature of `kind` that a shot from here would hit, as the server aims it,
+        and the way to face it."""
+        assert self.where is not None
+        here, (x, feet) = self.where, (self.at.x, self.at.y)
+        town = self.movement.maps[here.map]
+        for way, facing in ((1, SideFacing.EAST), (-1, SideFacing.WEST)):
+            rows = {feet, feet - 1}
+            for column in range(x, x + way * (RANGE + 1), way):
+                rows = {row for row in rows if not town.solid(column, row)}
+                if not rows:
+                    break
+                there = [
+                    c
+                    for c in self.creatures.values()
+                    if c.position.map == here.map
+                    and (c.position.x - here.x) * way >= 0
+                    and round(c.position.x) == column
+                    and math.ceil(round(c.position.y, 6)) in rows
+                ]
+                if there:
+                    nearest = min(there, key=lambda c: abs(c.position.x - here.x))
+                    if nearest.kind is kind:
+                        return nearest, facing
+                    break
+        return None
+
+    async def fire(self, facing: SideFacing) -> Id | None:
+        """A shot the way they face: the creature it put down, if any."""
+        hits, alive = len(self.hit), {id: c.kind for id, c in self.creatures.items()}
+        self.send(FireMessage(facing=facing))
+        await self.wait(SAMPLE)
+        gone = [id for id in self.hit[hits:] if id in alive and id not in self.creatures]
+        for id in gone:
+            self.shot[alive[id]] += 1
+            self.note(f"Shot {id} down, {self.loaded()} rounds left in the pistol")
+        return gone[0] if gone else None
+
+    async def shoot(self, kind: CreatureKind, count: int, seconds: float = 60.0) -> None:
+        """Shoots each creature of `kind` that comes in line from here until `count` are down."""
+        down = self.shot[kind]
+        for _ in range(round(seconds / SAMPLE)):
+            if self.shot[kind] - down >= count:
+                return
+            if not self.loaded():
+                await self.reload()
+            if (target := self.in_line(kind)) is not None:
+                await self.fire(target[1])
+                continue
+            if self.standing():
+                await self.dodge(self.at)
+            await self.wait(SAMPLE)
+        raise Refused(f"Shot {self.shot[kind] - down} of {count} {kind}s in {seconds:g} s")
+
+    async def store(self, *ids: Id) -> None:
+        """Puts each of `ids` they carry in the lockers."""
+        await self.to(self.stand_at(LOCKERS))
+        for id in ids:
+            before = list(self.player.items)
+            self.send(StashMessage(item=id, action="store"))
+            await self.wait(SAMPLE)
+            if self.player.items == before:
+                raise Refused(f"The lockers didn't take {id}")
+        self.note(f"Stored {', '.join(ids)} in the lockers")
+
+    async def take_out(self, *ids: Id) -> None:
+        """Takes each of `ids` out of the lockers."""
+        await self.to(self.stand_at(LOCKERS))
+        for id in ids:
+            before = list(self.player.items)
+            self.send(StashMessage(item=id, action="take"))
+            await self.wait(SAMPLE)
+            if self.player.items == before:
+                raise Refused(f"{id} didn't come out of the lockers")
+        self.note(f"Took {', '.join(ids)} out of the lockers")
+
+    def corpse(self, id: Id) -> Corpse | None:
+        return next((corpse for corpse in self.player.corpses if corpse.id == id), None)
+
+    def room(self) -> float:
+        return self.player.carry_limit - self.player.load + 1e-9
+
+    async def salvage(self, id: Id) -> list[str]:
+        """E at their corpse: the money, then each bionic and item that fits, one at a time."""
+        corpse = self.corpse(id)
+        assert corpse is not None
+        await self.to(Spot(corpse.at.map, corpse.at.x, corpse.at.y))
+        taken: list[str] = []
+        if corpse.money:
+            await self._take(TakeMessage(corpse=id, pile=None, item=None, index=None, bionic=None))
+            taken.append(f"{corpse.money:g} in cash")
+        while (corpse := self.corpse(id)) is not None:
+            weights = {item.bionic: item.weight for item in self.state.bionics}
+            bionic = next((b for b in corpse.bionics if weights[b] <= self.room()), None)
+            index = next((i for i, it in enumerate(corpse.items) if it.load <= self.room()), None)
+            if bionic is not None:
+                await self._take(
+                    TakeMessage(corpse=id, pile=None, item=None, index=None, bionic=bionic)
+                )
+                taken.append(bionic.replace("_", " "))
+            elif index is not None:
+                item = corpse.items[index]
+                await self._take(
+                    TakeMessage(corpse=id, pile=None, item=item.id, index=index, bionic=None)
+                )
+                taken.append(item.name)
+            else:
+                break
+        left = "and it's gone" if self.corpse(id) is None else "leaving what didn't fit"
+        self.note(f"Salvaged {', '.join(taken)} from {id}, {left}")
+        return taken
+
+    async def haul(self, at: MapTile) -> list[str]:
+        """E at a pile of theirs, such as a bot's haul: each thing in it that fits."""
+        await self.to(Spot(at.map, at.x, at.y))
+        taken: list[str] = []
+        while (pile := next((p for p in self.player.left if p.at == at), None)) is not None:
+            index = next((i for i, it in enumerate(pile.items) if it.load <= self.room()), None)
+            if pile.money:
+                await self._take(
+                    TakeMessage(corpse=None, pile=at, item=None, index=None, bionic=None)
+                )
+                taken.append(f"{pile.money:g} in cash")
+            elif index is not None:
+                item = pile.items[index]
+                await self._take(
+                    TakeMessage(corpse=None, pile=at, item=item.id, index=index, bionic=None)
+                )
+                taken.append(item.name)
+            else:
+                break
+        self.note(
+            f"Took {', '.join(taken) or 'nothing'} from what lay at {at.map} ({at.x}, {at.y})"
+        )
+        return taken
+
+    async def _take(self, message: TakeMessage) -> None:
+        before = (self.money, list(self.player.items))
+        self.send(message)
+        await self.wait(SAMPLE)
+        if (self.money, self.player.items) == before:
+            raise Refused(f"Nothing came of {message!r}")

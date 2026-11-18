@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from starlette.applications import Starlette
 
@@ -44,6 +45,9 @@ from simile.street.jump import JUMP
 from simile.street.sewers import GATE_BOX, SEWERS
 from simile.world.map import Pickup, PickupKind
 from simile.world.paths import Spot
+
+if TYPE_CHECKING:
+    from simile.loop.maker import Made
 
 START = datetime(2026, 10, 19, 8, tzinfo=UTC)
 WORLD = "world.db"
@@ -120,6 +124,8 @@ class Saves:
 
 @dataclass
 class Result:
+    """Stage 2's loop as it ended, and stage 3's after it in `made`."""
+
     start: datetime
     end: datetime
     away: timedelta
@@ -136,6 +142,7 @@ class Result:
     roused: set[Id]
     earned: dict[Kind, float] = field(default_factory=dict)
     """The player's money in and out of the ledger by kind: out is negative."""
+    made: "Made | None" = None
 
     @property
     def days(self) -> float:
@@ -174,30 +181,36 @@ class Playthrough:
         await self.the_gate()
         await self.the_feet()
         refused_by, seen_by = await self.residents_react()
-        ledger = self.app.state.economy.ledger
-        earned: dict[Kind, float] = {}
-        for entry in ledger.entries:
-            if PLAYER in (entry.payer, entry.payee):
-                sign = 1 if entry.payee == PLAYER else -1
-                earned[entry.kind] = earned.get(entry.kind, 0.0) + sign * entry.amount
         p = self.player
-        return Result(
+        result = Result(
             start,
             p.world.clock.now,
             p.away,
             self.notes,
-            p.player,
-            p.journal,
+            p.player.model_copy(deep=True),
+            list(p.journal),
             refused_by,
             seen_by,
-            p.hurt,
-            p.dark,
+            list(p.hurt),
+            list(p.dark),
             p.stomped,
             p.leapt,
             p.lamp_off_by_bats,
-            p.roused,
-            earned,
+            set(p.roused),
+            self.earned(),
         )
+        from simile.loop.maker import MakerSpace
+
+        result.made = await MakerSpace(self).run()
+        return result
+
+    def earned(self) -> dict[Kind, float]:
+        earned: dict[Kind, float] = {}
+        for entry in self.app.state.economy.ledger.entries:
+            if PLAYER in (entry.payer, entry.payee):
+                sign = 1 if entry.payee == PLAYER else -1
+                earned[entry.kind] = earned.get(entry.kind, 0.0) + sign * entry.amount
+        return earned
 
     async def sell_a_kidney(self) -> None:
         """The doctor tells them the power cell's recipe as they walk in, and buys a kidney."""
@@ -231,17 +244,15 @@ class Playthrough:
             raise Refused("The dead terminal held no clue")
         await p.to(LANDING)
 
-    async def the_rats(self) -> None:
-        """Stomps the biggest nest's rats as they come for the ration pack."""
-        p = self.player
-        if not p.carries(ItemKind.FOOD):
-            raise Refused("They have no food to draw the rats")
-        rats = [c for c in p.creatures.values() if c.kind is CreatureKind.RAT]
+    def nest(self) -> tuple[Spot, int]:
+        """Where to stand on the floor of the biggest nest, a little off its middle, and how many
+        rats it has."""
+        rats = [c for c in self.player.creatures.values() if c.kind is CreatureKind.RAT]
         rows: dict[tuple[str, int], list[float]] = {}
         for rat in rats:
             rows.setdefault((rat.position.map, round(rat.position.y)), []).append(rat.position.x)
         (map, row), xs = max(rows.items(), key=lambda kv: len(kv[1]))
-        town, middle = p.movement.maps[map], round(sum(xs) / len(xs))
+        town, middle = self.player.movement.maps[map], round(sum(xs) / len(xs))
         floor = {middle}
         for side in (-1, 1):
             x = middle + side
@@ -252,12 +263,20 @@ class Playthrough:
             (x for x in floor if abs(x - middle) >= 3 and not town.climb(x, row - 1)),
             key=lambda x: abs(x - middle),
         )
+        return Spot(map, stand, row), len(xs)
+
+    async def the_rats(self) -> None:
+        """Stomps the biggest nest's rats as they come for the ration pack."""
+        p = self.player
+        if not p.carries(ItemKind.FOOD):
+            raise Refused("They have no food to draw the rats")
+        stand, rats = self.nest()
         stomped = p.stomped
-        await p.to(Spot(map, stand, row))
+        await p.to(stand)
         for _ in range(300):
             await p.dodge(p.at)
             await p.wait(0.1)
-            if p.stomped - stomped >= len(xs):
+            if p.stomped - stomped >= rats:
                 break
         if p.stomped == stomped:
             raise Refused("No rat came for the food")
@@ -403,13 +422,16 @@ class Playthrough:
         return next(fact.what for fact in self.disappearance.facts if fact.id == id)
 
     def salvage_back(self) -> datetime:
-        """When everything they've picked up of the salvage lies there again."""
-        taken = [
-            when
-            for id, when in self.player.player.taken.items()
-            if self.pickup(id).kind is PickupKind.SALVAGE
-        ]
-        return max(taken) + timedelta(hours=PLAYER_CONFIG.respawn)
+        """When everything they've picked up of the salvage lies there again: a day after it was
+        taken, or two for the depot's parts a new body rebuilds from."""
+        back = []
+        for id, when in self.player.player.taken.items():
+            if self.pickup(id).kind is PickupKind.SALVAGE:
+                salvage = PLAYER_CONFIG.salvage.get(id)
+                own = salvage.respawn if salvage else None
+                hours = PLAYER_CONFIG.respawn if own is None else own
+                back.append(when + timedelta(hours=hours))
+        return max(back)
 
 
 async def play(*, seed: int = 0, start: datetime = START, saves: Path | None = None) -> Result:
@@ -462,4 +484,24 @@ def report(result: Result) -> str:
             for e in result.journal
         ),
     ]
+    if (made := result.made) is not None:
+        minutes = (made.end - result.end - (made.away - result.away)) / timedelta(minutes=1)
+        player, corpse = made.player, made.corpse
+        lines += [
+            "",
+            f"Stage 3: {minutes:.0f} minutes of play after stage 2's.",
+            f"Repaired: {', '.join(player.repaired)}",
+            "Shot down: " + ", ".join(f"{n} {kind}" for kind, n in sorted(made.shot.items())),
+            f"Hurt {len(made.hurt)} times but by what they let kill them.",
+            *made.hurt,
+            *made.died,
+            f"Their body held {corpse.money:g} in cash, {', '.join(corpse.bionics)} and "
+            f"{', '.join(item.name for item in corpse.items)}.",
+            f"Salvaged: {', '.join(made.salvaged)}",
+            f"Refitted: {', '.join(made.refitted)}",
+            f"Money by kind: {', '.join(f'{k} {v:g}' for k, v in sorted(made.earned.items()))}",
+            f"Body: {', '.join(f'{part} {state}' for part, state in player.body)}",
+            f"Carrying: {', '.join(f'{item.name} ×{item.amount:g}' for item in player.items)}",
+            f"In the lockers: {', '.join(item.name for item in player.stash.items) or 'nothing'}",
+        ]
     return "\n".join(lines) + "\n"
